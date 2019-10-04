@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>UserIdentificationPage.qml</file>
+        <file>UutIdentificationPage.qml</file>
+        <file>MdaTestConfirmationPage.qml</file>
+        <file>TestEquipmentIdentificationPage.qml</file>
+        <file>TestSelectionPage.qml</file>
+        <file>TestValidationPage.qml</file>
+        <file>TestCompletitionPage.qml</file>
+        <file>MyPage.qml</file>
+        <file>LabeledComboBox.qml</file>
+        <file>DataBaseField.qml</file>
+        <file>LabeledTextField.qml</file>
+    </qresource>
+</RCC>
