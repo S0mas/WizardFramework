@@ -10,16 +10,19 @@ void ProductionTestWizardData::loadUsersFromDataBase() noexcept {
 	QStringList usersList;
 	while (query.next())
 		usersList.append(query.value(0).toString());
+	usersList.append("TEST");
 
 	usersNamesModel = std::make_unique<QStringListModel>();
 	usersNamesModel->setStringList(usersList);
 }
 
 void ProductionTestWizardData::addTest(std::unique_ptr<AbstractTest>&& test) {
+	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
 	testsListModel->getTestsList().push_back(std::move(test));
 }
 
 void ProductionTestWizardData::addPreTest(std::unique_ptr<AbstractTest>&& test) {
+	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
 	preTestsListModel->getTestsList().push_back(std::move(test));
 }
 ProductionTestWizardData::ProductionTestWizardData() {
@@ -43,14 +46,22 @@ ProductionTestWizardData::ProductionTestWizardData() {
 	loadUsersFromDataBase();
 
 	printer = std::make_unique<PrintInterface>();
+	connect(&printerThread, &QThread::started, printer.get(), &PrintInterface::printingProcess);
+	printer->moveToThread(&printerThread);
 }
 
 ProductionTestWizardData::~ProductionTestWizardData() {
 	emit stopTests();
+	printerThread.requestInterruption();
+
 	preTestingThread.quit();
 	preTestingThread.wait();
+
 	testingThread.quit();
 	testingThread.wait();
+
+	printerThread.quit();
+	printerThread.wait();
 }
 
 Q_INVOKABLE int ProductionTestWizardData::getActiveUser() const noexcept {

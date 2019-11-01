@@ -1,45 +1,32 @@
 #pragma once
 #include <QString>
 #include <QObject>
-#include <QDebug>
 #include <QThread>
-#include <QTimer>
-#include <QMutex>
-#include <QMutexLocker>
+#include <thread>
+#include <chrono>
+#include <QCoreApplication>
+#include <QDebug>
 
 class PrintInterface : public QObject {
 	Q_OBJECT
-	mutable QString block;
-	mutable QMutex m;
+	mutable QString logs;
 public:
-	PrintInterface() {
-		QTimer* timer = new QTimer(this);
-		connect(timer, &QTimer::timeout, this, &PrintInterface::sendBlock);
-		timer->start(10);
-	}
+	PrintInterface() {}
 
-	template<typename ...Args>
-	void printf(const char* str, Args&& ...args) const noexcept {
-		char buffer[1024];
-		sprintf(buffer, str, args...);
-		addToBlock(buffer);
-	}
-
-	void printf(const QString& str) const noexcept {
-		addToBlock(str);
-	}
-
-	void sendBlock() {
-		QMutexLocker locker(&m);
-		if (!block.isEmpty()) {
-			emit printLog(block);
-			block.clear();
+	void printingProcess() const noexcept {
+		while (!QThread::currentThread()->isInterruptionRequested()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			if (!logs.isEmpty()) {
+				emit printLog(logs);
+				logs.clear();
+			}
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
 		}
 	}
-
-	void addToBlock(const QString& msg) const noexcept {
-		QMutexLocker locker(&m);
-		block += msg;
+public slots:
+	void addLog(const QString& msg) const noexcept {
+		logs += msg;
+		qDebug() << msg;
 	}
 signals:
 	void printLog(const QString& msg) const;

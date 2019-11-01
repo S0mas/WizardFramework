@@ -4,7 +4,7 @@ import QtQuick.Controls 2.4
 Row {
     property alias label : labelId
     property alias textField : textFieldId
-	property int holderWidth : 150
+	property int holderWidth : 200
 	property int holderWidth2 : 150
 	width: parent.width
 	height: 45

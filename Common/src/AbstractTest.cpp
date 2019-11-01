@@ -1,5 +1,4 @@
 #include "..\include\AbstractTest.h"
-#include <QDebug>
 #include <QThread>
 AbstractTest::AbstractTest(const QString& name) : name(name) {}
 
@@ -8,7 +7,7 @@ QString AbstractTest::getName() const noexcept {
 }
 
 void AbstractTest::run() const {
-	printf(QString("-----------> %1 <-----------\n").arg(name));
+	log(QString("-----------> %1 <-----------\n").arg(name));
 	try {
 		wasRunned = true;
 		preTestSetUp();
@@ -17,12 +16,12 @@ void AbstractTest::run() const {
 	}
 	catch (const std::runtime_error & exc) {
 		result = false;
-		printf(QString(exc.what()));
+		log(QString(exc.what()));
 	}
 	catch (...) {
-		printf("Exception thrown...\n");
+		log("Exception thrown...\n");
 	}
-	printf(QString("-----------> %1 <-----------\n").arg(result ? "PASSED" : "FAILED"));
+	log(QString("-----------> %1 <-----------\n").arg(result ? "PASSED" : "FAILED"));
 }
 
 bool AbstractTest::getShouldBeRun() const noexcept {

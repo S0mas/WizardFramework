@@ -2,18 +2,17 @@
 #include <QQmlApplicationEngine>
 #include <QStringListModel>
 #include <QQmlContext>
-#include "include/ProductionTestWizardData_6716.h"
+#include "../Common/include/ProductionTestWizardDataMock.h"
+#include <QThread>
 #include "../Common/include/Clipboard.h"
-#include <QDebug>
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-	qDebug() << "MAIN:" <<QThread::currentThreadId();
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 	QmlClipboardAdapter clipboard;
-	std::unique_ptr<ProductionTestWizardData_6716> data = std::make_unique<ProductionTestWizardData_6716>();
+	std::unique_ptr<ProductionTestWizardData> data = std::make_unique<ProductionTestWizardDataMock>();
 	qmlRegisterUncreatableType<AbstractTest>("abstractTest", 1, 0, "AbstractTests", "creation unavailable"); // MyQMLType will be usable with: import com.yourcompany.xyz 1.0
 
     engine.rootContext()->setContextProperty("dataObject", data.get());

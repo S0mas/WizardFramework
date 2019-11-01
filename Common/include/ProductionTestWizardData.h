@@ -11,6 +11,7 @@ class ProductionTestWizardData : public QObject {
     bool mdaTestPassed = true;
 	QThread testingThread;
 	QThread preTestingThread;
+	QThread printerThread;
 	std::unique_ptr<TestListModel> testsListModel = nullptr;
 	std::unique_ptr<TestListModel> preTestsListModel = nullptr;
 	std::unique_ptr<QStringListModel> usersNamesModel = nullptr;

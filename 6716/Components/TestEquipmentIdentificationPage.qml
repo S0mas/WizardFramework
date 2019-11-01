@@ -16,49 +16,49 @@ MyPage {
             label.text: "T028 serial number:"
 			textField.text: dataObject.getSnT028()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
 		LabeledTextField {
             label.text: "T028 version:"
 			textField.text: dataObject.getVersionT028()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
 		LabeledTextField {
             label.text: "3416 wired to T028 serial number:"
 			textField.text: dataObject.getSn3416_T028()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
 		LabeledTextField {
             label.text: "3416 wired to T028 version:"
 			textField.text: dataObject.getVersion3416_T028()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
         LabeledTextField {
             label.text: "3416 wired to 6716 serial number:"
 			textField.text: dataObject.getSn3416_6716()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
 		LabeledTextField {
             label.text: "3416 wired to 6716 version:"
 			textField.text: dataObject.getVersion3416_6716()
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
 
 	    LabeledTextField {
             label.text: "Testing software version"
 			textField.text: "0.9"
 			textField.readOnly: true
-			holderWidth : 300
+			holderWidth : 400
         }
     }
 }

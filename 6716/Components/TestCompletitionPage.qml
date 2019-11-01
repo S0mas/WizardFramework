@@ -22,9 +22,9 @@ MyPage {
 				font.pointSize: 12
 			}
 			function getColor(index) {
-				if(testsModel.getTestResult(index))
+				if(testsModel.getTestResult(index) && testsModel.getTestRunned(index))
 					return "green"
-				else if(testsModel.getTestRunned(index))
+				else if(!testsModel.getTestResult(index) && testsModel.getTestRunned(index))
 					return "red"
 				return "black"
 			}
