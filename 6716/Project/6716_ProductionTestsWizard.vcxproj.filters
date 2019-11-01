@@ -1,0 +1,335 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{a01d2fb9-b6c9-4c4c-82b1-3451285c7964}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{4292afbd-c74c-4d99-a401-32f74455fb77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\6716">
+      <UniqueIdentifier>{044c969f-103d-4568-9029-4e3b95f8220c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\6716">
+      <UniqueIdentifier>{2e6b591d-5931-40e3-be3b-9321f7cd41ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Common">
+      <UniqueIdentifier>{4350f2d1-b87f-4c97-ba11-52155ee2a22d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\6716">
+      <UniqueIdentifier>{ea0a8461-e7e3-439d-bf17-cd2749694382}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\6716\Tests">
+      <UniqueIdentifier>{12385402-90cc-44a1-9c44-6c61ffbb0896}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\6716\Tests">
+      <UniqueIdentifier>{fda71ac4-cf04-4542-9b7b-70e40316d4ad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Common\src\AbstractTest.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DataBasseConnector.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\ProductionTestWizardData.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestListModel.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestSuit.cpp">
+      <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main.cpp">
+      <Filter>Source Files\6716</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ProductionTestWizardData_6716.cpp">
+      <Filter>Source Files\6716</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\AbstractTest_6716.cpp">
+      <Filter>Source Files\6716</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Communication_6716.cpp">
+      <Filter>Source Files\6716</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\ACCouplingTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\AutobalanceDACTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\ChannelGainTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\ExcitationCalibrationTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\HalfBridgeTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\I2CAccessToChannelConfigurationControlPortExpandersTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\I2CSegmentsSwitchingAndTemperatureSensorAccessTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\IEPETest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\PositiveExcitationCurrentLimitTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\SignalPathCalibrationTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\TedsClass1Test.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\TedsClass2Test.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\SignalPathTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\ShuntTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\QuarterBridgeTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\SCUErrorTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\NegativeExcitationCurrentLimitTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\InitialExcitationTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\LEDsTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\I2CAccessToFPGATest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tests\I2CAccessTo1WireControllersTest.cpp">
+      <Filter>Source Files\6716\Tests</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\..\Common\include\AbstractTest.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\..\bu6716\include\bu6716_revision.h">
+      <Filter>Header Files\6716</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\Common\include\PrintInterface.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\Clipboard.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+    <QtMoc Include="..\include\ProductionTestWizardData_6716.h">
+      <Filter>Header Files\6716</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="debug\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="release\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="..\..\Resources\qml.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+    <None Include="..\..\CommonComponents\DataBaseField.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledComboBox.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledTextField.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\MyPage.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\6716\Components\MdaTestConfirmationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\TestCompletitionPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\TestSelectionPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\TestEquipmentIdentificationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\TestValidationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\UserIdentificationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\6716\Components\UutIdentificationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Common\include\DataBasseConnector.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\ErrorChecker.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\AbstractTest_6716.h">
+      <Filter>Header Files\6716</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Communication_6716.h">
+      <Filter>Header Files\6716</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ErrorChecker_6716.h">
+      <Filter>Header Files\6716</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\ExcitationCalibrationTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\PositiveExcitationCurrentLimitTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\NegativeExcitationCurrentLimitTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\LEDsTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\InitialExcitationTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\IEPETest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\I2CSegmentsSwitchingAndTemperatureSensorAccessTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\I2CAccessToFPGATest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\I2CAccessToChannelConfigurationControlPortExpandersTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\I2CAccessTo1WireControllersTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\HalfBridgeTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\QuarterBridgeTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\ShuntTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\SignalPathCalibrationTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\SCUErrorTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\SignalPathTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\TedsClass1Test.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\TedsClass2Test.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\ChannelGainTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\AutobalanceDACTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\ACCouplingTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\defines.h">
+      <Filter>Header Files\6716</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Tests\InitialEEPROMProgrammingTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\..\Common\include\ProductionTestWizardData.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\TestListModel.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\TestSuit.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\6716\Components\main.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\Components\CommunicationTestPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\TestsRunner.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ScrollList.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\MyButton.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\PlaceHolder.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+  </ItemGroup>
+</Project>
