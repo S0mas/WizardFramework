@@ -14,13 +14,14 @@ MyPage {
 
 	TestsRunner {
 		id: testsRunnerId
-		runningTest: "None"
+		width: parent.width
+		height: parent.height
 		onRunClicked: {
-			if(!ready){
-				runEnabled = false
-				isPossibleToGoBack = false;
-				dataObject.startPreTests()
-			}
+			runningTest = "None"
+			runEnabled = false
+			isPossibleToGoBack = false
+			clearFinishedTestsList()
+			dataObject.startPreTests()
 		}
 	}
 
@@ -28,8 +29,9 @@ MyPage {
 		target: dataObject
 		onTestsDone: {
 			ready = preTestsModel.checkIfAllRunnedTestsPassed()
-			isPossibleToGoBack = true;
+			isPossibleToGoBack = true
 			testsRunnerId.runEnabled = true
+			testsRunnerId.runningTest = "all tests finished"
 			if(!ready)
 				nextPageComponent = ""
 			else
@@ -41,6 +43,9 @@ MyPage {
 		target: preTestsModel
 		onTestRunned: {
 			testsRunnerId.runningTest = name
+		}
+		onTestFinished: {
+			testsRunnerId.addFinishedTest(name, result)
 		}
 	}
 }

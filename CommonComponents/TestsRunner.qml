@@ -1,48 +1,46 @@
 import QtQuick 2.4
 import QtQuick.Controls 2.4
 
-Column {
+Row {
 	signal runClicked()
 	property alias runEnabled : runTestsButtonId.enabled
-	property string runningTest : ""
+	function addFinishedTest(name, result) {
+		runnedTestsListId.model.append({name: name, result: result})
+	}
+	function clearFinishedTestsList() {
+		runnedTestsListId.model.clear()
+	}
+	property string runningTest : "None"
 	width: parent.width
 	height: parent.height
-	Row {
-		width: parent.width
-		height: parent.height - 90
+	Column {
+		width: parent.width / 2
+		height: parent.height
 		ScrollView {
 			id: scrollViewId
-			width: parent.width * (2/3)
-			height: parent.height
+			width: parent.width
+			height: parent.height - 90
 			TextArea {
 				id: textAreaId
+				anchors.fill: parent
+				background: Rectangle {
+					border.width: 2
+					border.color: "#000000"
+					color: "#c3c3c3"
+				}
 				text: "Logs will be put here..."
 				readOnly: true
 				font.family: "Helvetica"
-				font.pointSize: 10
+				font.pointSize: 12
 				Connections {
 					target: dataObject
 					onLogMsg: textAreaId.append(msg)
 				}
 			}
 		}
-		Column {
-			width: parent.width * (1/3)
-			height: parent.height
-			Label {
-				width: parent.width
-				text: runningTest
-				font.family: "Helvetica"
-				font.pointSize: 10
-			}
-		}
-	}
-	Column {
-		width: parent.width
-		height: 90
 		Row {
 			width: parent.width
-			height: parent.height/2
+			height: 45
 			MyButton {
 				id: clearButtonId
 				width: parent.width/2
@@ -60,7 +58,7 @@ Column {
 		MyButton {
 			id: runTestsButtonId
 			width: parent.width
-			height: parent.height/2
+			height: 45
 			text: "Run tests"
 			onClicked: {
 				clearButtonId.clicked()
@@ -68,4 +66,43 @@ Column {
 			}
 		}
 	}
-}
+	Column {
+		width: parent.width / 2
+		height: parent.height
+		ScrollList {
+			id: runnedTestsListId
+			height: parent.height - 30
+			model: ListModel{}
+			delegate: Row {
+				height: 25
+				width: parent.width
+				Label {
+					height: parent.height
+					text: name
+					color: result ? "green" : "red"
+					font.family: "Helvetica"
+					font.pointSize: 12
+				}
+			}
+			background: Rectangle {
+				border.width: 2
+				border.color: "#000000"
+				color: "#c3c3c3"
+			}
+		}
+		Label {
+			width: parent.width
+			height: 30
+			text: "Currently running test: " + runningTest
+			verticalAlignment: Text.AlignVCenter
+			horizontalAlignment: Text.AlignHCenter
+			font.family: "Helvetica"
+			font.pointSize: 12
+			background: Rectangle {
+				border.width: 2
+				border.color: "#000000"
+				color: "#c3c3c3"
+			}
+		}
+	}
+}	

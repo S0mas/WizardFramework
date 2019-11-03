@@ -375,6 +375,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\MockTest.h" />
+    <QtMoc Include="..\include\ProductionTestWizardDataMock.h" />
     <QtMoc Include="..\..\Common\include\Clipboard.h" />
     <QtMoc Include="..\..\Common\include\AbstractTest.h">
     </QtMoc>

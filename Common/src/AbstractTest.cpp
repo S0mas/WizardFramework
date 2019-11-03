@@ -7,7 +7,7 @@ QString AbstractTest::getName() const noexcept {
 }
 
 void AbstractTest::run() const {
-	log(QString("-----------> %1 <-----------\n").arg(name));
+	log(QString("%1 -----------> STARTED\n").arg(name));
 	try {
 		wasRunned = true;
 		preTestSetUp();
@@ -21,7 +21,8 @@ void AbstractTest::run() const {
 	catch (...) {
 		log("Exception thrown...\n");
 	}
-	log(QString("-----------> %1 <-----------\n").arg(result ? "PASSED" : "FAILED"));
+	log(QString("%1 -----------> %2\n").arg(name).arg(result ? "PASSED" : "FAILED"));
+	log(QString("\n****** ***** ***** ***** ***** *****\n\n"));
 }
 
 bool AbstractTest::getShouldBeRun() const noexcept {

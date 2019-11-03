@@ -7,7 +7,7 @@ Button {
 	font.family: "Helvetica"
 	font.pointSize: 12
 	background: Rectangle {
-		color: button.down ? "#d6d6d6" : "#c3c3c3"
+		color: button.down ? "#d6d6d6" : "#aac3c3"
 		border.color: "#26282a"
 		border.width: 1
 		radius: 4

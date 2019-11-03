@@ -47,36 +47,54 @@
     <Filter Include="Resource Files\6716">
       <UniqueIdentifier>{ea0a8461-e7e3-439d-bf17-cd2749694382}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common\include">
+      <UniqueIdentifier>{d1214855-4690-4b4e-97e0-7bbbdce0ef7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common\src">
+      <UniqueIdentifier>{82b985da-953f-4e44-8608-649a36b9fceb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\AbstractTest.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\DataBasseConnector.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ProductionTestWizardData.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\TestListModel.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\TestSuit.cpp">
-      <Filter>Source Files\Common</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Common\src\AbstractTest.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DataBasseConnector.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\ProductionTestWizardData.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestListModel.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestSuit.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\include\AbstractTest.h">
-      <Filter>Header Files\Common</Filter>
+    <QtMoc Include="..\..\Common\include\TestSuit.h">
+      <Filter>Header Files\Common\include</Filter>
     </QtMoc>
-    <QtMoc Include="..\include\PrintInterface.h">
-      <Filter>Header Files\Common</Filter>
+    <QtMoc Include="..\..\Common\include\ProductionTestWizardData.h">
+      <Filter>Header Files\Common\include</Filter>
     </QtMoc>
-    <QtMoc Include="..\include\Clipboard.h">
-      <Filter>Header Files\Common</Filter>
+    <QtMoc Include="..\..\Common\include\TestListModel.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\PrintInterface.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\Clipboard.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractTest.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\include\ProductionTestWizardDataMock.h">
+      <Filter>Header Files\Common\include</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -126,29 +144,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\DataBasseConnector.h">
-      <Filter>Header Files\Common</Filter>
+    <ClInclude Include="..\..\Common\include\ErrorChecker.h">
+      <Filter>Header Files\Common\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ErrorChecker.h">
-      <Filter>Header Files\Common</Filter>
+    <ClInclude Include="..\..\Common\include\DataBasseConnector.h">
+      <Filter>Header Files\Common\include</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\include\ProductionTestWizardData.h">
-      <Filter>Header Files\Common</Filter>
-    </QtMoc>
-    <QtMoc Include="..\include\TestListModel.h">
-      <Filter>Header Files\Common</Filter>
-    </QtMoc>
-    <QtMoc Include="..\include\TestSuit.h">
-      <Filter>Header Files\Common</Filter>
-    </QtMoc>
+    <ClInclude Include="..\include\MockTest.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\6716\Components\main.qml">
-      <Filter>Resource Files\6716</Filter>
-    </None>
-    <None Include="..\Components\CommunicationTestPage.qml">
       <Filter>Resource Files\6716</Filter>
     </None>
     <None Include="..\..\CommonComponents\TestsRunner.qml">
@@ -162,6 +169,9 @@
     </None>
     <None Include="..\..\CommonComponents\PlaceHolder.qml">
       <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\6716\Components\CommunicationTestPage.qml">
+      <Filter>Resource Files\6716</Filter>
     </None>
   </ItemGroup>
 </Project>

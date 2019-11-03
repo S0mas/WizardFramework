@@ -26,4 +26,5 @@ public:
 	/*DUMMY*/QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;/*DUMMY*/
 signals:
 	void testRunned(QString name) const;
+	void testFinished(QString name, bool result) const;
 };

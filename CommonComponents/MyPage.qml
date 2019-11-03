@@ -15,6 +15,8 @@ Page {
     height: parent.height
 
     header: Column {
+		height: 225
+		width: parent.width
 		Image {
 			width: 200
 			height: 80

@@ -47,7 +47,9 @@ ProductionTestWizardData::ProductionTestWizardData() {
 
 	printer = std::make_unique<PrintInterface>();
 	connect(&printerThread, &QThread::started, printer.get(), &PrintInterface::printingProcess);
+	connect(printer.get(), &PrintInterface::printLog, this, &ProductionTestWizardData::logMsg);
 	printer->moveToThread(&printerThread);
+	printerThread.start();
 }
 
 ProductionTestWizardData::~ProductionTestWizardData() {

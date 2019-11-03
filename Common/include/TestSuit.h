@@ -1,5 +1,6 @@
 #pragma once
 #include <QCoreApplication>
+#include <QObject>
 #include "AbstractTest.h"
 #include <memory>
 
@@ -16,4 +17,5 @@ public slots:
 signals:
 	void testsDone() const;
 	void testRunned(QString name) const;
+	void testFinished(QString name, bool result) const;
 };

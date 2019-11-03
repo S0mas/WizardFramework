@@ -19,6 +19,7 @@ void TestSuit::runTests() const {
 		if (test->getShouldBeRun() && !stopped){
 			emit testRunned(test->getName());
 			test->run();
+			emit testFinished(test->getName(), test->getResult());
 		}
 	});
 	emit testsDone();

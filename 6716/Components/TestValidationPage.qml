@@ -15,11 +15,11 @@ MyPage {
 		id: testsRunnerId
 		runningTest: "None"
 		onRunClicked: {
-			if(!ready){
-				runEnabled = false
-				isPossibleToGoBack = false;
-				dataObject.startTests()
-			}
+			runningTest = "None"
+			runEnabled = false
+			isPossibleToGoBack = false
+			clearFinishedTestsList()
+			dataObject.startTests()
 		}
 	}
 
@@ -27,8 +27,9 @@ MyPage {
 		target: dataObject
 		onTestsDone: {
 			ready = true
-			isPossibleToGoBack = true;
+			isPossibleToGoBack = true
 			testsRunnerId.runEnabled = true
+			testsRunnerId.runningTest = "all tests finished"
 		}
 	}
 
@@ -36,6 +37,9 @@ MyPage {
 		target: testsModel
 		onTestRunned: {
 			testsRunnerId.runningTest = name
+		}
+		onTestFinished: {
+			testsRunnerId.addFinishedTest(name, result)
 		}
 	}
 }

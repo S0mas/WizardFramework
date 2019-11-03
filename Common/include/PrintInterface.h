@@ -5,7 +5,6 @@
 #include <thread>
 #include <chrono>
 #include <QCoreApplication>
-#include <QDebug>
 
 class PrintInterface : public QObject {
 	Q_OBJECT
@@ -26,7 +25,6 @@ public:
 public slots:
 	void addLog(const QString& msg) const noexcept {
 		logs += msg;
-		qDebug() << msg;
 	}
 signals:
 	void printLog(const QString& msg) const;

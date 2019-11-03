@@ -2,6 +2,7 @@
 
 TestListModel::TestListModel(QObject* parent) : QAbstractListModel(parent) {
 	connect(&tests, &TestSuit::testRunned, this, &TestListModel::testRunned);
+	connect(&tests, &TestSuit::testFinished, this, &TestListModel::testFinished);
 }
 
 int TestListModel::rowCount(const QModelIndex& parent) const {
