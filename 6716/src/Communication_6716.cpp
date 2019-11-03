@@ -36,7 +36,7 @@ bool Communication_6716::writeTeds2(const unsigned char data) const {
 	writeI2C(0x19, bu6716_TEDS_CMD_1WWB, data);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
-			printf("%s: Timeout\n", __FUNCTION__);
+			log(QString("%1: Timeout\n").arg(__FUNCTION__));
 			return false;
 		}
 		statusByte = readI2C_no_addr(0x19);
@@ -50,7 +50,7 @@ unsigned char Communication_6716::readTeds2() const {
 	writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRB);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
-			printf("%s: Timeout\n", __FUNCTION__);
+			log(QString("%1: Timeout\n").arg(__FUNCTION__));
 			throw std::runtime_error("Error teds class 2 timeout!");
 		}
 		statusByte = readI2C_no_addr(0x19);
@@ -75,7 +75,7 @@ ViStatus Communication_6716::_1wire_commander(ViUInt16* cmds) const {
 			ViUInt8 data_l = readFPGAreg(bu6716_FPGA_TEDS_DATA);
 			ViUInt8 data_h = readFPGAreg(bu6716_FPGA_TEDS_ACC);
 			ViInt16 val16 = (data_h << 8) | data_l;
-			//printf("d_l=%02hhx, d_h=%02hhx, val16 = %04hx\n", data_l, data_h, val16);
+			//log("d_l=%02hhx, d_h=%02hhx, val16 = %04hx\n", data_l, data_h, val16);
 			// ready ?
 			if (!(val16 & bu3416_TEDS_READY))
 				return bu3416_TEDS_NOTREADY;
@@ -109,7 +109,7 @@ void Communication_6716::initialize() {
 
 	errorChecker.checkErrorT028(0, t028_init, connectionDetails.viT028Master, VI_TRUE, VI_TRUE, &connectionDetails.viT028);
 	checkErrorStatus(QString("CMD: %1").arg("t028_init"));
-	printf(connectionDetails.toString());
+	log(connectionDetails.toString());
 }
 
 void Communication_6716::initializePrimitive() {
@@ -123,7 +123,7 @@ void Communication_6716::initializePrimitive() {
 }
 
 bool Communication_6716::checkErrorStatus(const QString& content) const {
-	printf(QString("%1 ---> status msg: %2\n").arg(content).arg(errorChecker.getLastStatus().toString()));
+	log(QString("%1 ---> status msg: %2\n").arg(content).arg(errorChecker.getLastStatus().toString()));
 	if (errorChecker.getLastStatus().statusType() == StatusType::ERR)
 		throw std::runtime_error("Error occured! Exception thrown.\n");
 	return true;

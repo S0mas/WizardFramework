@@ -21,28 +21,28 @@ bool LEDsTest::switchLED_inTestMode(unsigned char channel, LED_STATE state) cons
 bool LEDsTest::test() const {
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
-	printf("Press enter to start the sequence...\n");
+	log("Press enter to start the sequence...\n");
 	//getchar();
 	// Turn off all LEDs
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
 	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, (2 << 2) | (2 << 0));
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
 	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, (2 << 2) | (2 << 0));
-	printf("All LEDs should be off now!\n");
+	log("All LEDs should be off now!\n");
 	bu3100_sleep(2000);
 	// Test the LEDs
-	printf("Testing red LEDs...\n");
+	log("Testing red LEDs...\n");
 	for (int i = 0; i < 32; i++) {
-		printf("CHANNEL %d\n", (i % 16) + 1);
+		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::RED);
 		else
 			switchLED_inTestMode(i % 16, LED_STATE::OFF);
 		bu3100_sleep(50);
 	}
-	printf("Testing green LEDs...\n");
+	log("Testing green LEDs...\n");
 	for (int i = 0; i < 32; i++) {
-		printf("CHANNEL %d\n", (i % 16) + 1);
+		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::GREEN);
 		else

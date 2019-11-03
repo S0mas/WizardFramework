@@ -28,17 +28,17 @@ bool ChannelGainTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		printf("* CHANNEL = %d\n\n", i + 1);
+		log(QSTring("* CHANNEL = %1\n\n").arg(i + 1));
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
 		for (int j = 0; j < 4; j++) {
-			printf("* GAIN = %d\n\n", gains[j]);
+			log(QSTring("* GAIN = %1\n\n").arg(gains[j]));
 			connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, gains[j]);
 			for (int k = 0; k < 2; k++) {
 				vref = volts[j] * (1.0 - 2 * k);
 				connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", vref);
 				connection->callAndThrowOnError6716(bu6716_getVoltRefOutput, "bu6716_getVoltRefOutput", &vrefSet);
 
-				//printf("  VREF = %.6lf V  (set=%.6lf V)\n", vref, vrefSet);
+				//log("  VREF = %.6lf V  (set=%.6lf V)\n", vref, vrefSet);
 				bu3100_sleep(50);
 				auto value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1);
 				sprintf(limitName, "L19%02d", j + 1);

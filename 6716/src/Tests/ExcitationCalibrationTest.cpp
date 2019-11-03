@@ -10,13 +10,13 @@ bool ExcitationCalibrationTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		if (!excitCalibration(i + 1, &offPos, &offNeg, &gPos, &gNeg, storeToEEPROM)) {
-			printf("Excitation calibration failed\n");
+			log("Excitation calibration failed\n");
 			errorDetected |= (1 << i);
 		}
 		if ((errorDetected & (1 << i)) == 0)
-			printf("CH_%d: offsetPos=%.9lf, offsetNeg=%.9lf, gainPos=%lf, gainNeg=%lf\n", i + 1, offPos, offNeg, gPos, gNeg);
+			log(QString("CH_%1: offsetPos=%2, offsetNeg=%3, gainPos=%4, gainNeg=%5\n").arg(i + 1).arg(offPos).arg(offNeg).arg(gPos).arg(gNeg));
 		else
-			printf("CH_%d: ERROR\n", i + 1);
+			log(QString("CH_%1: ERROR\n").arg(i + 1));
 	}
 	return errorDetected == 0;
 }

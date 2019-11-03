@@ -18,7 +18,7 @@ ViStatus ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) cons
 			ViUInt16 mask = (1 << i);
 			corr = -2.0 / (pvalues[i] - nvalues[i]) * values[i];
 			setAutoDACPositive(mask, corr);
-			printf("Quick Auto Balance, ch_%d: %lf\n", i + 1, corr);
+			log(QString("Quick Auto Balance, ch_%1: %2\n").arg(i + 1).arg(corr));
 		}
 	}
 	return VI_SUCCESS;

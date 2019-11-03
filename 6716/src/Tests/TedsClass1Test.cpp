@@ -16,7 +16,7 @@ bool TedsClass1Test::test() const {
 	//BU6716_CHECK_ERR(readFPGAreg, connection->getVi6716(), bu6716_FPGA_SEGCONF, &segconf_dev);
 	segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
 	for (int j = 0; j < 3; j++) {
-		printf("ITERATION %d/%d\n", j + 1, 3);
+		log(QString("ITERATION %1/%2\n").arg(j + 1).arg(3));
 		for (int s = 0; s < 2; s++) {
 			if (s == 0) {
 				// 1 & 2
@@ -36,7 +36,7 @@ bool TedsClass1Test::test() const {
 
 				if (!(CHANNEL_MASK & 1 << (ch - 1)))
 					continue;
-				printf("CHANNEL %d\n", ch);
+				log(QString("CHANNEL %1\n").arg(ch));
 				// 3
 				portExp = connection->readPortExpander(ch);
 				connection->writePortExpander(ch, portExp & 0xafff);  // enable icpgnd and teds1																								// 4
@@ -49,10 +49,10 @@ bool TedsClass1Test::test() const {
 
 				if (status < VI_SUCCESS) {
 					if (status == bu3416_TEDS_NOTREADY)
-						printf("- ERROR! Cannot write to TEDS, not ready (channel: %d, step 5)\n", ch);
+						log(QString("- ERROR! Cannot write to TEDS, not ready (channel: %1, step 5)\n").arg(ch));
 
 					if (status == bu3416_TEDS_NOTPRESENT)
-						printf("- ERROR! Cannot write to TEDS, not present (channel: %d, step 5)\n", ch);
+						log(QString("- ERROR! Cannot write to TEDS, not present (channel: %1, step 5)\n").arg(ch));
 
 					errorDetected |= (1 << (ch - 1));
 				}
@@ -63,15 +63,15 @@ bool TedsClass1Test::test() const {
 				status = connection->_1wire_commander(read_cmd);
 				if (status < VI_SUCCESS) {
 					if (status == bu3416_TEDS_NOTREADY)
-						printf("- ERROR! Cannot read from TEDS, not ready (channel %d, step 7)\n", ch);
+						log(QString("- ERROR! Cannot read from TEDS, not ready (channel %1, step 7)\n").arg(ch));
 					if (status == bu3416_TEDS_NOTPRESENT)
-						printf("- ERROR! Cannot read from TEDS, not present (channel %d, step 7)\n", ch);
+						log(QString("- ERROR! Cannot read from TEDS, not present (channel %1, step 7)\n").arg(ch));
 					errorDetected |= (1 << (ch - 1));
 				}
 				for (i = 0; i < 2; i++) {
 					if ((read_cmd[4 + i] & 0x00FF) != (write_cmd[4 + i] & 0x00FF)) {
-						printf("- ERROR! Scratchpad read value %02hX from TEDS is not equal to 0x%02hX (channel %d, step 8)\n", read_cmd[4 + i] & 0x00FF, write_cmd[4 + i] & 0x00FF, ch);
-						printf("- ERROR! channel %d failed 0x%02hX 0x%02hX\n", ch, read_cmd[4 + i] & 0x00FF, write_cmd[4 + i] & 0x00FF);
+						log(QString("- ERROR! Scratchpad read value %1 from TEDS is not equal to 0x%2 (channel %3, step 8)\n").arg(read_cmd[4 + i] & 0x00FF).arg(write_cmd[4 + i] & 0x00FF).arg(ch));
+						log(QString("- ERROR! channel %1 failed 0x%2 0x%3\n").arg(ch).arg(read_cmd[4 + i] & 0x00FF).arg(write_cmd[4 + i] & 0x00FF));
 						errorDetected |= (1 << (ch - 1));
 					}
 				}
@@ -83,21 +83,21 @@ bool TedsClass1Test::test() const {
 
 				if (status != bu3416_TEDS_NOTPRESENT) {
 					if (status == bu3416_TEDS_READY)
-						printf("- ERROR! Cannot check TEDS, not ready (channel %d, step 10)", ch);
+						log(QString("- ERROR! Cannot check TEDS, not ready (channel %1, step 10)").arg(ch));
 					else if (status == VI_SUCCESS)
-						printf("- ERROR! TEDS present but should not be (channel %d, step 10)", ch);
+						log(QString("- ERROR! TEDS present but should not be (channel %1, step 10)").arg(ch));
 
 					errorDetected |= (1 << (ch - 1));
 				}
 				connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);
 				if (!(errorDetected & (1 << (ch - 1))))
-					printf("  OK\n");
+					log("  OK\n");
 			}
 		}
 	}
 	//BU6716_CHECK_ERR(writeFPGAreg, connection->getVi6716(), bu6716_FPGA_SEGCONF, segconf_dev);
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
-	printf("\nSCPI/driver functionality test:\n");
+	log("\nSCPI/driver functionality test:\n");
 	srand((unsigned int)time(nullptr));
 	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
 		unsigned char data[32];
@@ -105,30 +105,30 @@ bool TedsClass1Test::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", i + 1, T028_MODE_TEDS1);
-		printf("CHANNEL %d:\n", i + 1);
+		log(QString("CHANNEL %1:\n").arg(i + 1));
 		for (int j = 0; j < 32; j++)
 			data_wr[j] = rand();
 		if (bu6716_writeTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS1, 0, data_wr, 32) == VI_SUCCESS) {
-			printf("  EEPROM (written): ");
+			log("  EEPROM (written): ");
 			for (int j = 0; j < 32; j++)
-				printf("%02hhx ", data_wr[j]);
-			printf("\n");
+				log(QString("%1 ").arg(data_wr[j]));
+			log("\n");
 		}
 		else {
 			ViInt32 code;
 			ViChar message[1024] = { 0 };
 			bu6716_error_query(connection->getVi6716(), &code, message);
-			printf("  EEPROM: ERROR! %s\n", message);
+			log(QString("  EEPROM: ERROR! %1\n").arg(message));
 			errorDetected |= (1 << i);
 		}
 		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS1, bu6716_TEDS_MEM_EEPROM, data) == VI_SUCCESS) {
-			printf("  EEPROM (read)   : ");
+			log("  EEPROM (read)   : ");
 			for (int j = 0; j < 32; j++)
-				printf("%02hhx ", data[j]);
-			printf("\n");
+				log(QString("%1 ").arg(data[j]));
+			log("\n");
 			for (int j = 0; j < 32; j++) {
 				if (data[j] != data_wr[j]) {
-					printf("  ERROR! Data verification failed!\n");
+					log("  ERROR! Data verification failed!\n");
 					errorDetected |= (1 << i);
 					break;
 				}
@@ -138,33 +138,33 @@ bool TedsClass1Test::test() const {
 			ViInt32 code;
 			ViChar message[1024] = { 0 };
 			bu6716_error_query(connection->getVi6716(), &code, message);
-			printf("  EEPROM: ERROR! %s\n", message);
+			log(QString("  EEPROM: ERROR! %1\n").arg(message));
 			errorDetected |= (1 << i);
 		}
 		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS1, bu6716_TEDS_MEM_OTPROM, data) == VI_SUCCESS) {
-			printf("  OTPROM          : ");
+			log("  OTPROM          : ");
 			for (int j = 0; j < 8; j++)
-				printf("%02hhx ", data[j]);
-			printf("\n");
+				log(QString("%1 ").arg(data[j]));
+			log("\n");
 		}
 		else {
 			ViInt32 code;
 			ViChar message[1024] = { 0 };
 			bu6716_error_query(connection->getVi6716(), &code, message);
-			printf("  OTPROM: ERROR! %s\n", message);
+			log(QString("  OTPROM: ERROR! %1\n").arg(message));
 			errorDetected |= (1 << i);
 		}
 		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS1, bu6716_TEDS_MEM_ROM, data) == VI_SUCCESS) {
-			printf("  ROM             : ");
+			log("  ROM             : ");
 			for (int j = 0; j < 8; j++)
-				printf("%02hhx ", data[j]);
-			printf("\n");
+				log(QString("%1 ").arg(data[j]));
+			log("\n");
 		}
 		else {
 			ViInt32 code;
 			ViChar message[1024] = { 0 };
 			bu6716_error_query(connection->getVi6716(), &code, message);
-			printf("  ROM:    ERROR! %s\n", message);
+			log(QString("  ROM:    ERROR! %1\n").arg(message));
 			errorDetected |= (1 << i);
 		}
 		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);

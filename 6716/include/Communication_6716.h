@@ -1,9 +1,9 @@
 #pragma once
 #include <QString>
+#include <QObject>
 #include <optional>
 #include <string>
 #include <visa.h>
-#include "../../Common/include/PrintInterface.h"
 #include "ErrorChecker_6716.h"
 #include "defines.h"
 
@@ -27,10 +27,10 @@ public:
 	}
 };
 
-class Communication_6716 {
+class Communication_6716 : public QObject {
+	Q_OBJECT
 	ConnectionDetails connectionDetails;
 	ErrorChecker_6716 errorChecker;
-	PrintInterface* printer;
 	bool checkErrorStatus(const QString& content) const;
 public:
 	template<typename ...Args>
@@ -68,15 +68,8 @@ public:
 	ViSession getViT028() const noexcept;
 	ViSession getViT028Master() const noexcept;
 
-	template<typename ...Args>
-	void printf(Args&& ...args) const noexcept {
-		if (printer)
-			printer->printf(std::forward<Args>(args)...);
-	}
-
-	void setPrinter(PrintInterface* newPrinter) noexcept {
-		printer = newPrinter;
-	}
+signals:
+	void log(QString msg) const;
 };
 
 template<typename ...Args>

@@ -12,15 +12,15 @@ bool SCUErrorTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;
-		printf("Channel %d\n", i + 1);
-		printf("- IEPE\n");
+		log(QString("Channel %1\n").arg(i + 1));
+		log("- IEPE\n");
 		for (int s = 0; s < 2; s++) {
 			// Enable IEPE on T028 and on 6716 - the IEPE current shall be detected
 			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", channelMask, T028_MODE_ICP);
 			connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_IEPE);
 			connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channelMask, &sts, nullptr);
 			if (sts != bu6716_IEPE_OK) {
-				printf("  IEPE current NOT detected, but should be\n");
+				log("  IEPE current NOT detected, but should be\n");
 				errorDetected |= (1 << i);
 			}
 			// Disable IEPE on T028, so the error should happen. Enable IEPE to SCU_ERR in iteration s==1.
@@ -28,19 +28,19 @@ bool SCUErrorTest::test() const {
 			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
 			connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channelMask, &sts, nullptr);
 			if (sts == bu6716_IEPE_OK) {
-				printf("  IEPE current detected, but shouldn't be\n");
+				log("  IEPE current detected, but shouldn't be\n");
 				errorDetected |= (1 << i);
 			}
 			auto dsr = readDSR();
 			if (s == 0) {
 				if (dsr & 0x08) {
-					printf("  SCU_ERR detected, but shouldn't be in iteration s==0\n");
+					log("  SCU_ERR detected, but shouldn't be in iteration s==0\n");
 					errorDetected |= (1 << i);
 				}
 			}
 			else {
 				if (!(dsr & 0x08)) {
-					printf("  SCU_ERR not detected, but should be in iteration s==1\n");
+					log("  SCU_ERR not detected, but should be in iteration s==1\n");
 					errorDetected |= (1 << i);
 				}
 			}
@@ -48,13 +48,13 @@ bool SCUErrorTest::test() const {
 			for (int j = 0; j < bu6716_NUM_CHAN; j++) {
 				if (i == j) {
 					if (stsAll[j] != 1) {
-						printf("  No IEPE error detected, but should be\n");
+						log("  No IEPE error detected, but should be\n");
 						errorDetected |= (1 << i);
 					}
 				}
 				else {
 					if (stsAll[j] != 0) {
-						printf("  IEPE error detected, but shouldn't be\n");
+						log("  IEPE error detected, but shouldn't be\n");
 						errorDetected |= (1 << i);
 					}
 				}
@@ -62,7 +62,7 @@ bool SCUErrorTest::test() const {
 			connection->callAndThrowOnError6716(bu6716_getLatchedStatus, "bu6716_getLatchedStatus", stsAll, nullptr);
 			for (int j = 0; j < bu6716_NUM_CHAN; j++) {
 				if (stsAll[j] != 0) {
-					printf("  IEPE error detected, but shouldn't be\n");
+					log("  IEPE error detected, but shouldn't be\n");
 					errorDetected |= (1 << i);
 				}
 			}
@@ -70,7 +70,7 @@ bool SCUErrorTest::test() const {
 			connection->callAndThrowOnError6716(bu6716_setIEPEScuErrorMask, "bu6716_setIEPEScuErrorMask", 0xffff, false);
 		}
 		if (!(errorDetected & (1 << i)))
-			printf("  OK\n");
+			log("  OK\n");
 	}
 	return errorDetected == 0;
 }

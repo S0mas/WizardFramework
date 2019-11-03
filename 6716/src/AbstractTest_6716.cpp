@@ -4,7 +4,7 @@ bool Abstract6716Test::checkValue(const unsigned short expected, const unsigned 
 	const auto& status = expected == actual;
 	auto str = QString(" Expected: %1, Actual: %2\n").arg(QString::number(expected, form), width, fill).arg(QString::number(actual, form), width, fill);
 	status ? str.prepend("Success:") : str.prepend("Error:");
-	printf(str);
+	log(str);
 	return status;
 }
 
@@ -46,7 +46,7 @@ std::vector<ViReal64> Abstract6716Test::readValues(ViInt16 gain, const ViUInt16 
 			averageValues[j] /= scanCount;
 			n++;
 			if (max - min > warnMargin)
-				printf("WARNING: channel_%d: Difference between min and max exceeds margin\n\t(min=%lf, max=%lf, average=%lf, max-min=%lf, margin=%lf)\n", j + 1, min, max, averageValues[j], max - min, warnMargin);
+				log(QString("WARNING: channel_%1: Difference between min and max exceeds margin\n\t(min=%2, max=%3, average=%4, max-min=%5, margin=%6)\n").arg(j + 1).arg(min).arg(max).arg(averageValues[j]).arg(max - min).arg(warnMargin));
 		}
 	}
 	return averageValues;
@@ -105,45 +105,33 @@ void Abstract6716Test::setAutoDACNegative(const ViUInt16 channelMask, const ViRe
 ViUInt16 Abstract6716Test::checkValues(const ViUInt16 channelMask, const std::vector<ViReal64>& values, const std::string& limitName, const ViReal64 expected, const ViReal64 marginNeg, const ViReal64 marginPos, ViBoolean verbose, ViBoolean checkGains) const noexcept {
 	ViUInt16 errorMask = 0;
 	if (verbose) {
-		if (checkGains)
-			printf("Checking gain. Limit: %s, expecting %.2lf (range: %.2lf .. %.2lf): ", limitName.c_str(), expected, expected - marginNeg, expected + marginPos);
-		else
-			printf("Checking voltage. Limit: %s, expecting %lf V (range: %lf .. %lf): ", limitName.c_str(), expected, expected - marginNeg, expected + marginPos);
+		log("Checking value. Limit: %1, expecting %2 (range: %3 .. %4): ").arg(limitName.c_str()).arg(expected).arg(expected - marginNeg).arg(expected + marginPos));
 	}
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(channelMask & (1 << i)))
 			continue;
 		if (values[i] - expected > marginPos) {
 			if (errorMask == 0)
-				printf("\n");
+				log("\n");
 			errorMask |= (1 << i);
-			if (checkGains)
-				printf("ERROR (%s): channel_%d: Value exceeds positive margin (expected=%.2lf, measured=%.2lf, marginPos=%.2lf)\n", limitName.c_str(), i + 1, expected, values[i], marginPos);
-			else
-				printf("ERROR (%s): channel_%d: Value exceeds positive margin (expected=%lf, measured=%lf, marginPos=%lf)\n", limitName.c_str(), i + 1, expected, values[i], marginPos);
+			log(QString("ERROR (%1): channel_%2: Value exceeds positive margin (expected=%3, measured=%4, marginPos=%5)\n").arg(limitName.c_str()).arg(i + 1).arg(expected).arg(values[i]).arg(marginPos));
 		}
 		if (expected - values[i] > marginNeg) {
 			if (errorMask == 0)
-				printf("\n");
+				log("\n");
 			errorMask |= (1 << i);
-			if (checkGains)
-				printf("ERROR (%s): channel_%d: Value exceeds negative margin (expected=%.2lf, measured=%.2lf, marginNeg=%.2lf)\n", limitName.c_str(), i + 1, expected, values[i], marginNeg);
-			else
-				printf("ERROR (%s): channel_%d: Value exceeds negative margin (expected=%lf, measured=%lf, marginNeg=%lf)\n", limitName.c_str(), i + 1, expected, values[i], marginNeg);
+			log(QString("ERROR (%1): channel_%1: Value exceeds negative margin (expected=%3, measured=%4, marginNeg=%5)\n").arg(limitName.c_str()).arg(i + 1, expected).arg(values[i]).arg(marginNeg));
 		}
 	}
 	if (verbose) {
 		if (errorMask == 0)
-			printf("OK\n");
+			log("OK\n");
 		for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 			if (!(channelMask & (1 << i)))
 				continue;
-			if (checkGains)
-				printf("Channel_%d =\t%.2lf  %s\n", i + 1, values[i], errorMask & (1 << i) ? "[ERROR]" : "");
-			else
-				printf("Channel_%d =\t%lf V  %s\n", i + 1, values[i], errorMask & (1 << i) ? "[ERROR]" : "");
+			log(QString("Channel_%1 =\t%2  %3\n").arg(i + 1).arg(values[i]).arg(errorMask & (1 << i) ? "[ERROR]" : ""));
 		}
-		printf("\n");
+		log("\n");
 	}
 	return errorMask;
 }
@@ -271,7 +259,7 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 		for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 			if (CHANNEL_MASK & (1 << i)) {
 				if (excl_status[n] == bu6716_EXC_CURRENT_LIMIT_DETECTED) {
-					printf("CH_%d: Excitation current limit condition detected\n", i + 1);
+					log(QString("CH_%1: Excitation current limit condition detected\n").arg(i + 1));
 					errorDetected |= 1 << i;
 				}
 				n++;
@@ -290,7 +278,7 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 		for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 			if (CHANNEL_MASK & (1 << i)) {
 				if (excl_status[n] != bu6716_EXC_CURRENT_LIMIT_DETECTED) {
-					printf("CH_%d: Excitation current limit condition IS NOT detected, but should be\n", i + 1);
+					log(QString("CH_%1: Excitation current limit condition IS NOT detected, but should be\n").arg(i + 1));
 					errorDetected |= (1 << i);
 				}
 				n++;
@@ -345,13 +333,13 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 			return readValOff;
 		};
 
-		printf("  GAIN = %d\n", gain[g]);
+		log(QString("  GAIN = %1\n").arg(gain[g]));
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", channel, bu6716_INP_SRC_VREF);
 		connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, gain[g]);
 
 		//4
 		auto vrefOutput = setVrefVoltage(0);
-		printf("VRef ouput:%f, should be 0", vrefOutput);
+		log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
 
 		// 5
 		auto readValOff = readAndCheckValue(errorDetected, 0);
@@ -359,14 +347,14 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 			connection->callAndThrowOnError6716(bu6716_setSignalPathCalibCoeff, "bu6716_setSignalPathCalibCoeff", channelMask, gain[g], -readValOff, 1.0);
 		// 6
 		realPosVoltageValue = setVrefVoltage(vrefVal);
-		printf("VRef ouput:%f, should be %f", realPosVoltageValue, vrefVal);
+		log(QString("VRef ouput:%1, should be %2").arg(realPosVoltageValue).arg(vrefVal));
 
 		// 7
 		auto readValPos = readAndCheckValue(errorDetected, realPosVoltageValue * gain[g]);
 
 		// 8
 		realNegVoltageValue = setVrefVoltage(-vrefVal);
-		printf("VRef ouput:%f, should be %f", realNegVoltageValue, -vrefVal);
+		log(QString("VRef ouput:%1, should be %2").arg(realNegVoltageValue).arg(-vrefVal));
 
 		// 9
 		auto readValNeg = readAndCheckValue(errorDetected, realNegVoltageValue * gain[g]);
@@ -384,7 +372,7 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	}
 	// Restore settings
 	auto vrefOutput = setVrefVoltage(0);
-	printf("VRef ouput:%f, should be 0", vrefOutput);
+	log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
 	bu3100_sleep(100);
 	connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, bu6716_GAIN_1);
 	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, excitationVoltagePos);

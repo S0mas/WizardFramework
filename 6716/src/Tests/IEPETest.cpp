@@ -15,7 +15,7 @@ bool IEPETest::test() const {
 			continue;
 		ViUInt16 channelMask = 1 << i;
 		// 2
-		printf("Channel %d\n", i + 1);
+		log(QString("Channel %1\n").arg(i + 1));
 		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_4, T028_ON);
 		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_6, T028_ON);
 		connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_IEPE);
@@ -32,52 +32,51 @@ bool IEPETest::test() const {
 		ViInt16 channelMode;
 		connection->callAndThrowOnError6716(bu6716_getMode, "bu6716_getMode", channelMask, &channelMode);
 		if (channelMode != bu6716_MODE_IEPE)
-			printf("ERROR - server/driver - mode is not bu6716_MODE_IEPE !!!\n");
+			log("ERROR - server/driver - mode is not bu6716_MODE_IEPE !!!\n");
 		// 4
-		printf("Channel %d (IEPE connected)\n", i + 1);
+		log(QString("Channel %1 (IEPE connected)\n").arg(i + 1));
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
 		iepeStatus_mask = 0;
 		for (int j = 0; j < bu6716_NUM_CHAN; j++)
 			if (iepeStatus[j] == bu6716_IEPE_OK)
 				iepeStatus_mask |= (1 << j);
 		if (iepeStatus[i] == bu6716_IEPE_OK) {
-			printf("- Detected valid IEPE current (OK)\n");
+			log("- Detected valid IEPE current (OK)\n");
 		}
 		else if (iepeStatus[i] == bu6716_IEPE_NO_CURRENT) {
-			printf("- ERROR. Not valid IEPE current detected (channel: %d, icp_st: 0x%04hX step 4)\n", i + 1, iepeStatus_mask);
+			log(QString("- ERROR. Not valid IEPE current detected (channel: %1, icp_st: 0x%2 step 4)\n").arg(i + 1).arg(iepeStatus_mask));
 			errorDetected |= channelMask;
 		}
 		else {
 			if (iepeStatus_mask & (~(1 << i))) {
-				printf("- ERROR. Valid IEPE current detected on others channels (channel: %d, icp_st: 0x%04hX step 4)\n", i + 1, iepeStatus_mask);
+				log(QString("- ERROR. Valid IEPE current detected on others channels (channel: %1, icp_st: 0x%2 step 4)\n").arg(i + 1).arg(iepeStatus_mask));
 				errorDetected |= channelMask;
 			}
 		}
 		// 6
 		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_6, T028_OFF);
 		// 7
-		printf("Channel %d (IEPE disconnected)\n", i + 1);
+		log(QString("Channel %1 (IEPE disconnected)\n").arg(i + 1));
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
 		iepeStatus_mask = 0;
 		for (int j = 0; j < bu6716_NUM_CHAN; j++)
 			if (iepeStatus[j] == bu6716_IEPE_OK)
 				iepeStatus_mask |= (1 << j);
-		if (iepeStatus[i] == bu6716_IEPE_NO_CURRENT) {
-			printf("- IEPE current not detected (OK)\n");
-		}
+		if (iepeStatus[i] == bu6716_IEPE_NO_CURRENT)
+			log("- IEPE current not detected (OK)\n");
 		else if (iepeStatus[i] == bu6716_IEPE_OK) {
-			printf("- ERROR. Valid IEPE current detected (channel: %d, icp_st: 0x%04hX step 7)\n", i + 1, iepeStatus_mask);
+			log(QString("- ERROR. Valid IEPE current detected (channel: %1, icp_st: 0x2 step 7)\n").arg(i + 1).arg(iepeStatus_mask));
 			errorDetected |= channelMask;
 		}
 		else {
 			if (iepeStatus_mask & (~(1 << i))) {
-				printf("- ERROR. Valid IEPE current detected on others channels (channel: %d, icp_st: 0x%04hX step 7)\n", i + 1, iepeStatus_mask);
+				log(QString("- ERROR. Valid IEPE current detected on others channels (channel: %1, icp_st: 0x2 step 7)\n").arg(i + 1).arg(iepeStatus_mask));
 				errorDetected |= channelMask;
 			}
 		}
 		connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", channelMask, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
 		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_4, T028_OFF);
-		printf("\n");
+		log("\n");
 	}
 	return errorDetected == 0;
 }

@@ -23,7 +23,7 @@ bool ACCouplingTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		printf("CHANNEL %d\n", i + 1);
+		log(QString("CHANNEL %1\n").arg(i + 1));
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
 #ifdef AUTO_DAC  // Seems it's not needed. Not described in the TP doc, Stephen also doesn't remember why it was added in 5716 prodtest code...
 		ViReal64 autoDAC[2] = { 0.0, 0.0 };
@@ -45,14 +45,14 @@ bool ACCouplingTest::test() const {
 				}
 				// Debug
 				//BU6716_CHECK_ERR(readPortExpander, connection->getVi6716(), i + 1, &data16);
-				//printf("port expander: 0x%04hx\n", data16);
+				//log("port expander: 0x%04hx\n", data16);
 			}
 			bu3100_sleep(5000);  // Allow full discharge
 			BU3416_CHECK_ERR(readValue_oneChannel, env, bu3416_GAIN_1, i + 1, 0.1, &value, 5000, 100);
 			autoDAC[j] = -value / 0.00305 * bu6716_DAC_AUTO_GAIN;
 			BU6716_CHECK_ERR(bu6716_setCoupling, connection->getVi6716(), channelMask, bu6716_COUPLING_DC);
 		}
-		printf("autoDacpos = %lf, autoDACneg = %lf\n", autoDAC[0], autoDAC[1]);
+		log(QString("autoDacpos = %1, autoDACneg = %2\n").arg(autoDAC[0]).arg(autoDAC[1]));
 #endif
 		for (int j = 0; j < 2; j++) {
 			// 3 & 4

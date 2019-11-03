@@ -11,17 +11,17 @@ bool SignalPathCalibrationTest::test() const {
 	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
-		printf("  CHANNEL %d...\n", i + 1);
+		log(QString("  CHANNEL %1...\n").arg(i + 1));
 		if (!signalPathCalibration(i + 1, offsets, gainCoeffs, storeToEEPROM)) {
-			printf("Signal path calibration failed\n");
+			log("Signal path calibration failed\n");
 			errorDetected |= (1 << i);
 		}
 		if ((errorDetected & (1 << i)) == 0) {
 			for (int g = 0; g < 4; g++)
-				printf("CH_%d_GAIN_%d: offset=%.9lf, gainCoeff=%lf\n", i + 1, gain[g], offsets[g], gainCoeffs[g]);
+				log(QString("CH_%1_GAIN_%2: offset=%3, gainCoeff=%4\n").arg(i + 1).arg(gain[g]).arg(offsets[g]).arg(gainCoeffs[g]));
 		}
 		else
-			printf("CH_%d: ERROR\n", i + 1);
+			log(QString("CH_%1: ERROR\n").arg(i + 1));
 	}
 	return errorDetected == 0;
 }
