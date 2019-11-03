@@ -79,11 +79,6 @@ void ProductionTestWizardData_6716::testsInit() {
 	addTest(std::make_unique<ChannelGainTest>(connection));
 	addTest(std::make_unique<ACCouplingTest>(connection));
 	addTest(std::make_unique<IEPETest>(connection));
-	for (auto const& test : getTestsModel()->getTestsList())
-		test->setPrinter(getPrinter());
-
-	for (auto const& test : getPreTestsModel()->getTestsList())
-		test->setPrinter(getPrinter());
 }
 
 void ProductionTestWizardData_6716::loadTestEqData() {
@@ -112,9 +107,8 @@ ProductionTestWizardData_6716::ProductionTestWizardData_6716() {
 }
 
 void ProductionTestWizardData_6716::initialize() {
-	connect(getPrinter(), &PrintInterface::printLog, this, &ProductionTestWizardData::logMsg);
 	connection = std::make_shared<Communication_6716>();
-	connection->setPrinter(getPrinter());
+	connect(connection.get(), &Communication_6716::log, getPrinter(), &PrintInterface::addLog);
 	connection->initializePrimitive();
 	connection->initialize();
 	loadIDN();

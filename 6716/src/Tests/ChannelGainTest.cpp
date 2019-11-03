@@ -28,10 +28,10 @@ bool ChannelGainTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		log(QSTring("* CHANNEL = %1\n\n").arg(i + 1));
+		log(QString("* CHANNEL = %1\n\n").arg(i + 1));
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
 		for (int j = 0; j < 4; j++) {
-			log(QSTring("* GAIN = %1\n\n").arg(gains[j]));
+			log(QString("* GAIN = %1\n\n").arg(gains[j]));
 			connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, gains[j]);
 			for (int k = 0; k < 2; k++) {
 				vref = volts[j] * (1.0 - 2 * k);

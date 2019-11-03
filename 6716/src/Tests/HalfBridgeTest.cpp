@@ -18,11 +18,11 @@ bool HalfBridgeTest::test() const {
 		connection->callAndThrowOnError6716(bu6716_getMode, "bu6716_getMode", CHANNEL_MASK, &mode);
 		connection->callAndThrowOnError6716(bu6716_getGain, "bu6716_getGain", CHANNEL_MASK, &gain);
 		if (inputSource != bu6716_INP_SRC_FP || couplingNeg != bu6716_COUPLING_DC || couplingPos != bu6716_COUPLING_DC || mode != bu6716_MODE_HALF_BRIDGE || gain != bu6716_GAIN_1) {
-			printf("Device configuration error!");
+			log("Device configuration error!");
 			return false;
 		}
 		else
-			printf("Device configuration succeeds!");
+			log("Device configuration succeeds!");
 	}
 
 	//Step 2)
@@ -42,7 +42,7 @@ bool HalfBridgeTest::test() const {
 		connection->callAndThrowOnError6716(bu6716_getNegExcitation, "bu6716_getNegExcitation", CHANNEL_MASK, &neg);
 		connection->callAndThrowOnError6716(bu6716_getPosExcitation, "bu6716_getPosExcitation", CHANNEL_MASK, &pos);
 		if (neg != 0 || pos != 5) {
-			printf(QString("Excitation setting error: positive:%1, negative:%2\n").arg(pos).arg(neg));
+			log(QString("Excitation setting error: positive:%1, negative:%2\n").arg(pos).arg(neg));
 			return false;
 		}
 	}
@@ -62,11 +62,11 @@ bool HalfBridgeTest::test() const {
 		ViInt16 mode;
 		connection->callAndThrowOnError6716(bu6716_getMode, "bu6716_getMode", CHANNEL_MASK, &mode);
 		if (mode != bu6716_MODE_FULL_BRIDGE) {
-			printf(QString("Error! Fullbridge mode didnt set\n"));
+			log(QString("Error! Fullbridge mode didnt set\n"));
 			return false;
 		}
 		else
-			printf("Mode changed to fullbridge\n");
+			log("Mode changed to fullbridge\n");
 	}
 
 	//6)

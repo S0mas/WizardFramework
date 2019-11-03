@@ -168,6 +168,9 @@
     <QtMoc Include="..\include\ProductionTestWizardData_6716.h">
       <Filter>Header Files\6716</Filter>
     </QtMoc>
+    <QtMoc Include="..\include\Communication_6716.h">
+      <Filter>Header Files\6716</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="debug\moc_predefs.h.cbt">
@@ -223,9 +226,6 @@
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\include\AbstractTest_6716.h">
-      <Filter>Header Files\6716</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Communication_6716.h">
       <Filter>Header Files\6716</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ErrorChecker_6716.h">
