@@ -9,7 +9,7 @@ MyPage {
     previousPageComponent: "TestEquipmentIdentificationPage.qml"
     ready: true
 	description: "Selected tests will be runned in next step."
-	onNext: dataInterface.setStoreCalibrationDataToEeprom(checked)
+	onNext: dataInterface.setStoreCalibrationDataToEeprom(saveEepromCheckId.checked)
 	ChannelsSelectionDialog {
 		id: channelMaskDialogId
 		onAccepted: dataInterface.setChannelMask(channelMask)
@@ -60,6 +60,7 @@ MyPage {
 				onClicked: channelMaskDialogId.open()
 			}
 			CheckBox {
+				id: saveEepromCheckId
 				width: parent.width/4
 				height: parent.height
 				text: "Enable eeprom writing"

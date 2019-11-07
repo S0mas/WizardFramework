@@ -93,6 +93,7 @@ void ProductionTestWizardData::setMdaTestPassed(const bool value) {
 }
 
 void ProductionTestWizardData::setShouldStoreCalibrationDataToEeprom(const bool value) {
+	qDebug() << value;
 	AbstractTest::setStoreCalibrationDataToEeprom(value);
 }
 
