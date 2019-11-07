@@ -1,4 +1,5 @@
 #include "../include/AbstractTest_6716.h"
+#include <bu6100.h>
 
 bool Abstract6716Test::checkValue(const unsigned short expected, const unsigned short actual, const int form, const int width, const char fill) const noexcept {
 	const auto& status = expected == actual;
@@ -77,7 +78,7 @@ void Abstract6716Test::preTestSetUp() const {
 }
 
 void Abstract6716Test::postTestCleanUp() const {
-
+	//connection->callAndThrowOnError6716(bu6716_reset, "bu6716_reset");
 }
 
 std::vector<ViReal64> Abstract6716Test::getAutoDACPositive(const ViUInt16 channelMask) const {
@@ -105,7 +106,7 @@ void Abstract6716Test::setAutoDACNegative(const ViUInt16 channelMask, const ViRe
 ViUInt16 Abstract6716Test::checkValues(const ViUInt16 channelMask, const std::vector<ViReal64>& values, const std::string& limitName, const ViReal64 expected, const ViReal64 marginNeg, const ViReal64 marginPos, ViBoolean verbose, ViBoolean checkGains) const noexcept {
 	ViUInt16 errorMask = 0;
 	if (verbose) {
-		log("Checking value. Limit: %1, expecting %2 (range: %3 .. %4): ").arg(limitName.c_str()).arg(expected).arg(expected - marginNeg).arg(expected + marginPos));
+		log(QString("Checking value. Limit: %1, expecting %2 (range: %3 .. %4): ").arg(limitName.c_str()).arg(expected).arg(expected - marginNeg).arg(expected + marginPos));
 	}
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(channelMask & (1 << i)))
@@ -120,7 +121,7 @@ ViUInt16 Abstract6716Test::checkValues(const ViUInt16 channelMask, const std::ve
 			if (errorMask == 0)
 				log("\n");
 			errorMask |= (1 << i);
-			log(QString("ERROR (%1): channel_%1: Value exceeds negative margin (expected=%3, measured=%4, marginNeg=%5)\n").arg(limitName.c_str()).arg(i + 1, expected).arg(values[i]).arg(marginNeg));
+			log(QString("ERROR (%1): channel_%2: Value exceeds negative margin (expected=%3, measured=%4, marginNeg=%5)\n").arg(limitName.c_str()).arg(i + 1, expected).arg(values[i]).arg(marginNeg));
 		}
 	}
 	if (verbose) {
@@ -252,7 +253,13 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 		connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, excitationNeg);
 		bu3100_sleep(50);
 		// 4
-		auto errorDetected = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1401", positivePolarization ? excitationPos : excitationNeg, 0.010, 0.010);
+		std::string limit;
+		double margin = 0.01;
+		if (positivePolarization)
+			limit = "L1401";
+		else
+			limit = "L1501";
+		auto errorDetected = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, positivePolarization ? excitationPos : excitationNeg, margin, margin);
 		// 5
 		ViInt16 excl_status[bu3416_NUM_CHAN];
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", CHANNEL_MASK, nullptr, excl_status);
@@ -272,7 +279,20 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 		connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, excitationNeg);
 		bu3100_sleep(50);
 		// 7
-		checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1402", positivePolarization ? 7.2 : -7.2, 1.2, 0.0);
+		double marinP = 0;
+		double marinN = 0;
+		double expected = 0;
+		if (positivePolarization) {
+			limit = "L1402";
+			marinP = 1.2;
+			expected = 7.2;
+		}
+		else {
+			limit = "L1502";
+			marinN = 1.2;
+			expected = -7.2;
+		}
+		errorDetected |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, expected, marinP, marinN);
 		// 8
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", CHANNEL_MASK, nullptr, excl_status);
 		for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
@@ -285,6 +305,7 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 			}
 		}
 		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
+		bu3100_sleep(250);
 		return errorDetected == 0;
 	
 }
@@ -300,9 +321,9 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 
 	auto const& setVrefVoltage = [this](const double voltage) {
 		double output = 0;
-		connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_INT_MONITOR_ON);
-		connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", voltage);
-		connection->callAndThrowOnError6716(bu6716_getVoltRefOutput, "bu6716_getVoltRefOutput", &output);
+		configureVoltageReferanceSwitches(0x64);
+		connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", voltage);
+		connection->callAndThrowOnError6100(bu6100_getVoltRefOutput, "bu6100_getVoltRefOutput", &output);
 		bu3100_sleep(100);
 		return output;
 	};
@@ -326,7 +347,7 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	for (int g = 0; g < 4; g++) {
 		const ViInt16 gain[4] = { 1, 10, 100, 1000 };
 		ViReal64 vrefVal = 9.0 / gain[g];
-		auto const& readAndCheckValue = [this, channel, g](int& errorDetected, const int expected) {
+		auto const& readAndCheckValue = [this, channel, g](int& errorDetected, const double expected) {
 			const ViReal64 limit[4] = { 0.01, 0.01, 0.05, 0.25 };
 			auto readValOff = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
 			errorDetected |= checkValue_oneChannel(channel, readValOff, "L23xx", expected, limit[g], limit[g], false);
@@ -339,7 +360,7 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 
 		//4
 		auto vrefOutput = setVrefVoltage(0);
-		log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
+		log(QString("VRef ouput:%1, should be 0\n").arg(vrefOutput));
 
 		// 5
 		auto readValOff = readAndCheckValue(errorDetected, 0);
@@ -347,14 +368,14 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 			connection->callAndThrowOnError6716(bu6716_setSignalPathCalibCoeff, "bu6716_setSignalPathCalibCoeff", channelMask, gain[g], -readValOff, 1.0);
 		// 6
 		realPosVoltageValue = setVrefVoltage(vrefVal);
-		log(QString("VRef ouput:%1, should be %2").arg(realPosVoltageValue).arg(vrefVal));
+		log(QString("VRef ouput:%1, should be %2\n").arg(realPosVoltageValue).arg(vrefVal));
 
 		// 7
 		auto readValPos = readAndCheckValue(errorDetected, realPosVoltageValue * gain[g]);
 
 		// 8
 		realNegVoltageValue = setVrefVoltage(-vrefVal);
-		log(QString("VRef ouput:%1, should be %2").arg(realNegVoltageValue).arg(-vrefVal));
+		log(QString("VRef ouput:%1, should be %2\n").arg(realNegVoltageValue).arg(-vrefVal));
 
 		// 9
 		auto readValNeg = readAndCheckValue(errorDetected, realNegVoltageValue * gain[g]);
@@ -372,7 +393,7 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	}
 	// Restore settings
 	auto vrefOutput = setVrefVoltage(0);
-	log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
+	log(QString("VRef ouput:%1, should be 0\n").arg(vrefOutput));
 	bu3100_sleep(100);
 	connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, bu6716_GAIN_1);
 	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, excitationVoltagePos);
@@ -382,5 +403,21 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	setAutoDACNegative(channelMask, autoDacNeg[0]);
 	setAutoDACPositive(channelMask, autoDacPos[0]);
 	return errorDetected == 0;
+}
+
+bool Abstract6716Test::configureVoltageReferanceSwitches(const unsigned char newSegConfRegValue) const {
+	auto result = connection->writeFPGAreg(bu6716_FPGA_SEGCONF, newSegConfRegValue);
+	bu3100_sleep(50);
+	return result;
+}
+void Abstract6716Test::closeAll()  {
+	if (connection->getVi6716())
+		bu6716_close(connection->getVi6716());
+	if (connection->getVi3416())
+		bu3416_close(connection->getVi3416());
+	if (connection->getViT028())
+		t028_close(connection->getViT028());
+	if (connection->getViT028Master())
+		bu3416_close(connection->getViT028Master());
 }
 Abstract6716Test::Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection) : AbstractTest(name), connection(connection) {}

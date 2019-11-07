@@ -171,6 +171,9 @@
     <QtMoc Include="..\include\Communication_6716.h">
       <Filter>Header Files\6716</Filter>
     </QtMoc>
+    <QtMoc Include="..\include\ProductionTestWizardData_6716_SignalInterface.h">
+      <Filter>Header Files\6716</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="debug\moc_predefs.h.cbt">
@@ -329,6 +332,15 @@
       <Filter>Resource Files\Common</Filter>
     </None>
     <None Include="..\..\CommonComponents\PlaceHolder.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\Components\AddressesIdentificationPage.qml">
+      <Filter>Resource Files\6716</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledTextInput.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ChannelsSelectionDialog.qml">
       <Filter>Resource Files\Common</Filter>
     </None>
   </ItemGroup>

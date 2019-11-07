@@ -33,7 +33,7 @@ Row {
 				font.family: "Helvetica"
 				font.pointSize: 12
 				Connections {
-					target: dataObject
+					target: dataInterface
 					onLogMsg: textAreaId.append(msg)
 				}
 			}

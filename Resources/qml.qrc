@@ -8,6 +8,8 @@
         <file>../CommonComponents/ScrollList.qml</file>
         <file>../CommonComponents/MyButton.qml</file>
         <file>../CommonComponents/PlaceHolder.qml</file>
+		<file>../CommonComponents/LabeledTextInput.qml</file>
+		<file>../CommonComponents/ChannelsSelectionDialog.qml</file>
         <file>../6716/Components/main.qml</file>
         <file>../6716/Components/MdaTestConfirmationPage.qml</file>
         <file>../6716/Components/TestCompletitionPage.qml</file>
@@ -17,6 +19,7 @@
         <file>../6716/Components/UserIdentificationPage.qml</file>
         <file>../6716/Components/UutIdentificationPage.qml</file>
         <file>../6716/Components/CommunicationTestPage.qml</file>
+		<file>../6716/Components/AddressesIdentificationPage.qml</file>
         <file>images/bustec.jpg</file>
     </qresource>
 </RCC>

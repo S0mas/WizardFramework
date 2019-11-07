@@ -55,6 +55,7 @@ bool LEDsTest::test() const {
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
 	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0);
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
+	bu3100_sleep(250);
 	return true;
 }
 

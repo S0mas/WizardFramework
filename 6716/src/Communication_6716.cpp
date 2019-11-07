@@ -2,6 +2,8 @@
 #include <bu6716.h>
 #include <t028.h>
 #include <bu3416.h>
+#include <QDebug>
+#include <bu6100.h>
 
 QString Communication_6716::readResponse() const {
 	char data[1024];
@@ -93,32 +95,33 @@ ViStatus Communication_6716::_1wire_commander(ViUInt16* cmds) const {
 	return status;
 }
 
-void Communication_6716::initialize() {
-	std::string rsr = BU6716_RES;
-	std::string rsr2 = BU3416_T028_RES;
-	std::string rsr3 = BU3416_BU6716_RES;
+void Communication_6716::initialize(const QString& ip6100, const QString& ip6716, const int fcNo3416_6716, const int fcNo3416_t028) {
+	try{
+		errorChecker.checkError6100(0, bu6100_init, ip6100.toStdString().data(), VI_TRUE, VI_TRUE, &connectionDetails.viBu6100);
+		checkErrorStatus(QString("CMD: %1").arg("bu6100_init"));
 
-	errorChecker.checkError6716(0, bu6716_init, rsr.data(), true, true, &connectionDetails.viBu6716);
-	checkErrorStatus(QString("CMD: %1").arg("bu6716_init"));
+		errorChecker.checkError6716(0, bu6716_init, ip6716.toStdString().data(), true, true, &connectionDetails.viBu6716);
+		checkErrorStatus(QString("CMD: %1").arg("bu6716_init"));
 
-	errorChecker.checkError3416(0, bu3416_paramInit, rsr2.data(), BU3416_T028_FC, VI_TRUE, VI_FALSE, &connectionDetails.viT028Master);
-	checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
+		errorChecker.checkError3416(0, bu3416_paramInit, ip6100.toStdString().data(), fcNo3416_t028, VI_TRUE, VI_FALSE, &connectionDetails.viT028Master);
+		checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
 
-	errorChecker.checkError3416(0, bu3416_paramInit, rsr3.data(), BU3416_BU6716_FC, true, false, &connectionDetails.viBu3416);
-	checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
+		errorChecker.checkError3416(0, bu3416_paramInit, ip6100.toStdString().data(), fcNo3416_6716, true, false, &connectionDetails.viBu3416);
+		checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
 
-	errorChecker.checkErrorT028(0, t028_init, connectionDetails.viT028Master, VI_TRUE, VI_TRUE, &connectionDetails.viT028);
-	checkErrorStatus(QString("CMD: %1").arg("t028_init"));
+		errorChecker.checkErrorT028(0, t028_init, connectionDetails.viT028Master, VI_TRUE, VI_TRUE, &connectionDetails.viT028);
+		checkErrorStatus(QString("CMD: %1").arg("t028_init"));
+	}
+	catch (...) {
+		qDebug() << "Error while connecting to the device!";
+	}
 	log(connectionDetails.toString());
 }
 
-void Communication_6716::initializePrimitive() {
-	std::string rsr = BU6716_RES;
-	std::string rsr2 = BU3416_T028_RES;
-	std::string rsr3 = BU3416_BU6716_RES;
+void Communication_6716::initializePrimitive(const QString& ip6716) {
 	errorChecker.checkErrorVisa(0, viOpenDefaultRM, &connectionDetails.primitiveRmVi6716);
 	checkErrorStatus(QString("CMD: %1").arg("viOpenDefaultRM"));
-	errorChecker.checkErrorVisa(0, viOpen, connectionDetails.primitiveRmVi6716, rsr.data(), BU_NULL, BU_NULL, &connectionDetails.primitiveRmVi6716);
+	errorChecker.checkErrorVisa(0, viOpen, connectionDetails.primitiveRmVi6716, ip6716.toStdString().data(), BU_NULL, BU_NULL, &connectionDetails.primitiveVi6716);
 	checkErrorStatus(QString("CMD: %1").arg("viOpen"));
 }
 
@@ -127,6 +130,10 @@ bool Communication_6716::checkErrorStatus(const QString& content) const {
 	if (errorChecker.getLastStatus().statusType() == StatusType::ERR)
 		throw std::runtime_error("Error occured! Exception thrown.\n");
 	return true;
+}
+
+ViSession Communication_6716::getPrimitiveRmVi6716() const noexcept {
+	return connectionDetails.primitiveRmVi6716;
 }
 
 ViSession Communication_6716::getPrimitiveVi6716() const noexcept {
@@ -147,6 +154,20 @@ ViSession Communication_6716::getViT028() const noexcept {
 
 ViSession Communication_6716::getViT028Master() const noexcept {
 	return connectionDetails.viT028Master;
+}
+
+ViSession Communication_6716::getVi6100() const noexcept {
+	return connectionDetails.viBu6100;
+}
+
+void Communication_6716::setAllVisToInvalid() noexcept {
+	connectionDetails.viBu6716 = 0;
+	connectionDetails.viT028 = 0;
+	connectionDetails.viT028Master = 0;
+	connectionDetails.viBu3416 = 0;
+	connectionDetails.primitiveRmVi6716 = 0;
+	connectionDetails.primitiveVi6716 = 0;
+	connectionDetails.viBu6100 = 0;
 }
 
 void Communication_6716::writeI2C_no_addr(const unsigned char i2c_address, const unsigned char data) const {

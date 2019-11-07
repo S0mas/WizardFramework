@@ -14,7 +14,6 @@ public:
 	Q_INVOKABLE QString getTestName(const int index) const noexcept;
 	Q_INVOKABLE bool getTestResult(const int index) const noexcept;
 	Q_INVOKABLE bool getTestRunned(const int index) const noexcept;
-	Q_INVOKABLE AbstractTest* getTest(const int index) const noexcept;
 	Q_INVOKABLE bool checkIfAllRunnedTestsPassed() const noexcept;
 	Q_INVOKABLE bool getTestShouldBeRun(const int index) const noexcept;
 	Q_INVOKABLE void setTestShouldBeRun(const int index, const bool value) noexcept;
@@ -27,4 +26,5 @@ public:
 signals:
 	void testRunned(QString name) const;
 	void testFinished(QString name, bool result) const;
+	void testShouldBeRunChanged(bool value, int id) const;
 };

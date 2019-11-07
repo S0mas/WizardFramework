@@ -19,12 +19,12 @@ MyPage {
 			runEnabled = false
 			isPossibleToGoBack = false
 			clearFinishedTestsList()
-			dataObject.startTests()
+			dataInterface.startTests()
 		}
 	}
 
 	Connections {
-		target: dataObject
+		target: dataInterface
 		onTestsDone: {
 			ready = true
 			isPossibleToGoBack = true

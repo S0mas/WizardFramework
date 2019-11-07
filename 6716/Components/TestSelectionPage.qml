@@ -9,6 +9,11 @@ MyPage {
     previousPageComponent: "TestEquipmentIdentificationPage.qml"
     ready: true
 	description: "Selected tests will be runned in next step."
+	ChannelsSelectionDialog {
+		id: channelMaskDialogId
+		onAccepted: dataInterface.setChannelMask(channelMask)
+	}
+
 	Column {
 		width: parent.width
 		height: parent.height - buttonsRowId.height
@@ -21,13 +26,13 @@ MyPage {
 				height: 25
 				width: parent.width
 				text: testsModel.getTestName(index)
-				checked: testsModel.getTest(index).shouldBeRun
+				checked: testsModel.getTestShouldBeRun(index)
 				font.family: "Helvetica"
 				font.pointSize: 12
-				onClicked: testsModel.getTest(index).shouldBeRun = checked
+				onClicked: testsModel.setTestShouldBeRun(index, checked)
 				Connections {
-					target: testsModel.getTest(index)
-					onShouldBeRunChanged: checked = testsModel.getTest(index).shouldBeRun
+					target: testsModel
+					onTestShouldBeRunChanged: if(index == id) checked = value
 				}
 			}
 		}
@@ -36,16 +41,34 @@ MyPage {
 			width: parent.width
 			height: 45
 			MyButton {
-				width: parent.width/2
+				width: parent.width/4
 				height: parent.height
 				text: "Select all"
 				onClicked: testsModel.setAllTestsShouldBeRun(true)
 			}
 			MyButton {
-				width: parent.width/2
+				width: parent.width/4
 				height: parent.height
 				text: "Deselect all"
 				onClicked: testsModel.setAllTestsShouldBeRun(false)
+			}
+			MyButton {
+				width: parent.width/4
+				height: parent.height
+				text: "Set channel mask"
+				onClicked: channelMaskDialogId.open()
+			}
+			CheckBox {
+				width: parent.width/4
+				height: parent.height
+				text: "Enable eeprom writing"
+				font.family: "Helvetica"
+				font.pointSize: 12
+				onCheckedChanged: dataInterface.setStoreCalibrationDataToEeprom(checked)
+				Connections {
+					target: dataInterface
+					onShouldStoreCalibrationDataToEeprom: checked = value
+				}
 			}
 		}
 	}

@@ -21,10 +21,6 @@ Q_INVOKABLE bool TestListModel::getTestRunned(const int index) const noexcept {
 	return tests.getTestsList().at(index)->getRunned();
 }
 
-Q_INVOKABLE AbstractTest* TestListModel::getTest(const int index) const noexcept {
-	return tests.getTestsList()[index].get();
-}
-
 Q_INVOKABLE bool TestListModel::checkIfAllRunnedTestsPassed() const noexcept {
 	for (auto const& test : tests.getTestsList())
 		if (test->getRunned() && !test->getResult())
@@ -37,12 +33,18 @@ Q_INVOKABLE bool TestListModel::getTestShouldBeRun(const int index) const noexce
 }
 
 Q_INVOKABLE void TestListModel::setTestShouldBeRun(const int index, const bool value) noexcept {
-	return tests.getTestsList().at(index)->setShouldBeRun(value);
+	tests.getTestsList().at(index)->setShouldBeRun(value);
+	emit testShouldBeRunChanged(tests.getTestsList().at(index)->getShouldBeRun(), index);
 }
 
 Q_INVOKABLE void TestListModel::setAllTestsShouldBeRun(const bool value) noexcept {
-	for (auto const& test : tests.getTestsList())
+	int i = 0;
+	for (auto const& test : tests.getTestsList()) {
 		test->setShouldBeRun(value);
+		emit testShouldBeRunChanged(tests.getTestsList().at(i)->getShouldBeRun(), i);
+		i++;
+	}
+
 }
 
 const std::vector<std::unique_ptr<AbstractTest>>& TestListModel::getTestsList() const noexcept {

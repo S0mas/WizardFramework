@@ -13,27 +13,38 @@ MyPage {
 		width: parent.width
 		height: parent.height
         DataBaseField {
+			id: subtypeLabelId
             label.text: "Subtype:"
-            onSave: dataObject.setSubtype(textField.text)
-            onRefresh: textField.text = dataObject.getSubtype()
+            onSave: dataInterface.setSubtype(textField.text)
+            onRefresh: dataInterface.requestUnitUnderTestData()
         }
 
         DataBaseField {
+			id: snLabelId
             label.text: "Serial number"
-            onSave: dataObject.setSerialNumber(textField.text)
-            onRefresh: textField.text = dataObject.getSerialNumber()
+            onSave: dataInterface.setSerialNumber(textField.text)
+            onRefresh: dataInterface.requestUnitUnderTestData()
         }
 
 		DataBaseField {
+			id: firmwareLabelId
             label.text: "Firmware revision"
-            onSave: dataObject.setFirmwareRevision(textField.text)
-            onRefresh: textField.text = dataObject.getFirmwareRevision()
+            onSave: dataInterface.setFirmwareRevision(textField.text)
+            onRefresh: dataInterface.requestUnitUnderTestData()
         }
 
 		LabeledTextField {
+			id: driverLabelId
             label.text: "Driver revision"
-            textField.text: dataObject.getDriverRevision()
 			textField.enabled: false
         }
+
+		Connections {
+			target: dataInterface
+			onSubtype: subtypeLabelId.textField.text = value
+			onSerialNumber: snLabelId.textField.text = value
+			onFirmwareRevision: firmwareLabelId.textField.text = value
+			onDriverRevision: driverLabelId.textField.text = value
+		}
     }
 }

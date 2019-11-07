@@ -11,7 +11,7 @@
 #include "../AbstractTest_6716.h"
 
 class ShuntTest : public Abstract6716Test {
-	ViStatus quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const noexcept;
+	ViStatus quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const;
 protected:
 	bool test() const override;
 public:

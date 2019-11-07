@@ -18,12 +18,13 @@ bool ACCouplingTest::test() const {
 	setAutoDACPositive(CHANNEL_MASK, 0.0);
 	bu3100_sleep(100);
 	// 3
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_INT_MONITOR_ON);
+	configureVoltageReferanceSwitches(0x64);
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
 		log(QString("CHANNEL %1\n").arg(i + 1));
+
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
 #ifdef AUTO_DAC  // Seems it's not needed. Not described in the TP doc, Stephen also doesn't remember why it was added in 5716 prodtest code...
 		ViReal64 autoDAC[2] = { 0.0, 0.0 };
@@ -56,8 +57,8 @@ bool ACCouplingTest::test() const {
 #endif
 		for (int j = 0; j < 2; j++) {
 			// 3 & 4
-			connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", vref[j]);
-			connection->callAndThrowOnError6716(bu6716_getVoltRefOutput, "bu6716_getVoltRefOutput", &vrefSet);
+			connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", vref[j]);
+			connection->callAndThrowOnError6100(bu6100_getVoltRefOutput, "bu6100_getVoltRefOutput", &vrefSet);
 			bu3100_sleep(50);
 			// 5
 			auto value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1);
@@ -86,8 +87,8 @@ bool ACCouplingTest::test() const {
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
 	}
 	// 16, Restore
-	connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", 0.0);
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
+	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
+	//connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
 	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 		if (CHANNEL_MASK & (1 << i)) {
 			setAutoDACNegative(CHANNEL_MASK, autoDacNeg[n]);
@@ -95,6 +96,7 @@ bool ACCouplingTest::test() const {
 			n++;
 		}
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

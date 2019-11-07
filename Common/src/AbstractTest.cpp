@@ -2,7 +2,7 @@
 #include <QThread>
 AbstractTest::AbstractTest(const QString& name) : name(name) {}
 
-QString AbstractTest::getName() const noexcept {
+const QString& AbstractTest::getName() const noexcept {
 	return name;
 }
 
@@ -26,7 +26,7 @@ void AbstractTest::run() const {
 }
 
 bool AbstractTest::getShouldBeRun() const noexcept {
-	return m_shouldBeRun;
+	return shouldBeRun;
 }
 
 bool AbstractTest::getResult() const noexcept {
@@ -38,6 +38,14 @@ bool AbstractTest::getRunned() const noexcept {
 }
 
 void AbstractTest::setShouldBeRun(const bool value) noexcept {
-	m_shouldBeRun = value;
-	emit shouldBeRunChanged(m_shouldBeRun);
+	shouldBeRun = value;
+	emit shouldBeRunChanged(shouldBeRun);
+}
+
+void AbstractTest::setStoreCalibrationDataToEeprom(const bool value) noexcept {
+	storeCalibrationDataToEeprom = value;
+}
+
+bool AbstractTest::getStoreCalibrationDataToEeprom() noexcept {
+	return storeCalibrationDataToEeprom;
 }

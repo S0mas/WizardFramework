@@ -15,6 +15,7 @@ public:
 	ViSession viBu3416 = 0;
 	ViSession primitiveRmVi6716 = 0;
 	ViSession primitiveVi6716 = 0;
+	ViSession viBu6100 = 0;
 
 	QString toString() const noexcept {
 		QString str = "ConnectionDetails:\n";
@@ -59,14 +60,20 @@ public:
 	void callAndThrowOnErrorT028(Function&& function, const QString& functionName, Args&& ...format) const;
 	template<typename Function, typename ...Args>
 	void callAndThrowOnErrorMaster(Function&& function, const QString& functionName, Args&& ...format) const;
-	void initialize();
-	void initializePrimitive();
+	template<typename Function, typename ...Args>
+	void callAndThrowOnError6100(Function&& function, const QString& functionName, Args&& ...format) const;
+	void initialize(const QString& ip6100, const QString& ip6716, const int fcNo3416_6716, const int fcNo3416_t028);
+	void initializePrimitive(const QString& ip6716);
 
+	ViSession getPrimitiveRmVi6716() const noexcept;
 	ViSession getPrimitiveVi6716() const noexcept;
 	ViSession getVi6716() const noexcept;
 	ViSession getVi3416() const noexcept;
 	ViSession getViT028() const noexcept;
 	ViSession getViT028Master() const noexcept;
+	ViSession getVi6100() const noexcept;
+
+	void setAllVisToInvalid() noexcept;
 
 signals:
 	void log(QString msg) const;
@@ -108,4 +115,10 @@ template<typename Function, typename ...Args>
 void Communication_6716::callAndThrowOnErrorMaster(Function&& function, const QString& functionName, Args&& ...format) const {
 	errorChecker.checkError3416(getViT028Master(), std::forward<Function>(function), getViT028Master(), std::forward<Args>(format)...);
 	checkErrorStatus(QString("T028 Master 3416 driver function called: %1").arg(functionName));
+}
+
+template<typename Function, typename ...Args>
+void Communication_6716::callAndThrowOnError6100(Function&& function, const QString& functionName, Args&& ...format) const {
+	errorChecker.checkError6100(getVi6100(), std::forward<Function>(function), getVi6100(), std::forward<Args>(format)...);
+	checkErrorStatus(QString("6100 driver function called: %1").arg(functionName));
 }

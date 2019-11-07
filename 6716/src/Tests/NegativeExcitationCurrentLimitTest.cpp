@@ -2,6 +2,7 @@
 #include "../include/defines.h"
 
 bool NegativeExcitationCurrentLimitTest::test() const {
+	configureVoltageReferanceSwitches(0x60);
 	return excitationTest(false);
 }
 

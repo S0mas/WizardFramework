@@ -44,6 +44,8 @@ bool TedsClass2Test::test() const {
 	unsigned char read_data[2];
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
+	configureVoltageReferanceSwitches(0x60);
+
 	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
 	for (int s = 0; s < 2; s++) {
 		if (s == 0)
@@ -175,6 +177,7 @@ bool TedsClass2Test::test() const {
 		}
 		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", (unsigned short)0xffff, T028_MODE_EXCAL);
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 #undef CALL

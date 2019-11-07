@@ -11,9 +11,8 @@
 #include "../AbstractTest_6716.h"
 
 class ExcitationCalibrationTest : public Abstract6716Test {
-	bool storeToEEPROM;
 protected:
 	bool test() const override;
 public:
-	ExcitationCalibrationTest(const std::shared_ptr<Communication_6716>& connection, const bool storeToEEPROM = true);
+	ExcitationCalibrationTest(const std::shared_ptr<Communication_6716>& connection);
 };

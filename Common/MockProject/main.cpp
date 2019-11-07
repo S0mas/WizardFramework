@@ -13,8 +13,6 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 	QmlClipboardAdapter clipboard;
 	std::unique_ptr<ProductionTestWizardData> data = std::make_unique<ProductionTestWizardDataMock>();
-	qmlRegisterUncreatableType<AbstractTest>("abstractTest", 1, 0, "AbstractTests", "creation unavailable");
-
     engine.rootContext()->setContextProperty("dataObject", data.get());
 	engine.rootContext()->setContextProperty("testsModel", data->getTestsModel());
 	engine.rootContext()->setContextProperty("preTestsModel", data->getPreTestsModel());

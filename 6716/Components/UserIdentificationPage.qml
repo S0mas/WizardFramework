@@ -7,16 +7,20 @@ MyPage {
     title: qsTr("User Identification")
     nextPageComponent: "MdaTestConfirmationPage.qml"
     previousPageComponent: ""
-    ready: dataObject.getActiveUser() !== -1
+    ready: userNameComboboxId.combobox.currentIndex != -1
 	description: "Please, choose user name or add new one."
 
     LabeledComboBox {
+		id: userNameComboboxId
         label.text: "User name"
         combobox.model: usersNamesModel
         combobox.textRole: "display"
-        combobox.currentIndex: dataObject.getActiveUser()
-        combobox.onCurrentIndexChanged: dataObject.setActiveUser(combobox.currentIndex)
-        combobox.onActivated: ready = dataObject.getActiveUser() !== -1
+        combobox.onCurrentIndexChanged: dataInterface.setActiveUser(combobox.currentIndex)
+        combobox.onActivated: ready = combobox.currentIndex != -1
 		combobox.width: 300
+		Connections {
+			target: dataInterface
+			onActiveUser: userNameComboboxId.combobox.currentIndex = value
+		}
     }
 }

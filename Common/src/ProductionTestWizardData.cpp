@@ -12,31 +12,31 @@ void ProductionTestWizardData::loadUsersFromDataBase() noexcept {
 		usersList.append(query.value(0).toString());
 	usersList.append("TEST");
 
-	usersNamesModel = std::make_unique<QStringListModel>();
-	usersNamesModel->setStringList(usersList);
+	usersNamesModel_ = std::make_unique<QStringListModel>();
+	usersNamesModel_->setStringList(usersList);
 }
 
 void ProductionTestWizardData::addTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
-	testsListModel->getTestsList().push_back(std::move(test));
+	testsListModel_->getTestsList().push_back(std::move(test));
 }
 
 void ProductionTestWizardData::addPreTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
-	preTestsListModel->getTestsList().push_back(std::move(test));
+	preTestsListModel_->getTestsList().push_back(std::move(test));
 }
 ProductionTestWizardData::ProductionTestWizardData() {
 	//prepare testListModel
-	testsListModel = std::make_unique<TestListModel>();
-	preTestsListModel = std::make_unique<TestListModel>();
-	connect(this, &ProductionTestWizardData::startTests, &testsListModel->getTestsSuit(), &TestSuit::runTests);
-	connect(this, &ProductionTestWizardData::startPreTests, &preTestsListModel->getTestsSuit(), &TestSuit::runTests);
-	connect(this, &ProductionTestWizardData::stopTests, &testsListModel->getTestsSuit(), &TestSuit::stopTests);
-	connect(this, &ProductionTestWizardData::stopTests, &preTestsListModel->getTestsSuit(), &TestSuit::stopTests);
-	connect(&testsListModel->getTestsSuit(), &TestSuit::testsDone, this, &ProductionTestWizardData::testsDone);
-	connect(&preTestsListModel->getTestsSuit(), &TestSuit::testsDone, this, &ProductionTestWizardData::testsDone);
-	testsListModel->getTestsSuit().moveToThread(&testingThread);
-	preTestsListModel->getTestsSuit().moveToThread(&preTestingThread);
+	testsListModel_ = std::make_unique<TestListModel>();
+	preTestsListModel_ = std::make_unique<TestListModel>();
+	connect(this, &ProductionTestWizardData::startTests, &testsListModel_->getTestsSuit(), &TestSuit::runTests);
+	connect(this, &ProductionTestWizardData::startPreTests, &preTestsListModel_->getTestsSuit(), &TestSuit::runTests);
+	connect(this, &ProductionTestWizardData::stopTests, &testsListModel_->getTestsSuit(), &TestSuit::stopTests);
+	connect(this, &ProductionTestWizardData::stopTests, &preTestsListModel_->getTestsSuit(), &TestSuit::stopTests);
+	connect(&testsListModel_->getTestsSuit(), &TestSuit::testsDone, this, &ProductionTestWizardData::testsDone);
+	connect(&preTestsListModel_->getTestsSuit(), &TestSuit::testsDone, this, &ProductionTestWizardData::testsDone);
+	testsListModel_->getTestsSuit().moveToThread(&testingThread);
+	preTestsListModel_->getTestsSuit().moveToThread(&preTestingThread);
 	testingThread.start();
 	preTestingThread.start();
 	//connect to database
@@ -64,63 +64,46 @@ ProductionTestWizardData::~ProductionTestWizardData() {
 
 	printerThread.quit();
 	printerThread.wait();
+
+	dataThread.quit();
+	dataThread.wait();
 }
 
-Q_INVOKABLE int ProductionTestWizardData::getActiveUser() const noexcept {
-	return activeUser;
+void ProductionTestWizardData::setActiveUser(const int index) {
+	activeUser_ = index;
 }
 
-Q_INVOKABLE QString ProductionTestWizardData::getSubtype() const noexcept {
-	return subtype;
-}
-
-Q_INVOKABLE QString ProductionTestWizardData::getSerialNumber() const noexcept {
-	return serialNumber;
-}
-
-Q_INVOKABLE QString ProductionTestWizardData::getDriverRevision() const noexcept {
-	return driverRevision;
-}
-
-Q_INVOKABLE QString ProductionTestWizardData::getFirmwareRevision() const noexcept {
-	return firmwareRevision;
-}
-
-Q_INVOKABLE bool ProductionTestWizardData::getMdaTestPassed() const noexcept {
-	return mdaTestPassed;
-}
-
-Q_INVOKABLE void ProductionTestWizardData::setActiveUser(const int index) noexcept {
-	activeUser = index;
-}
-
-Q_INVOKABLE void ProductionTestWizardData::setSubtype(const QString& str) noexcept {
+void ProductionTestWizardData::setSubtype(const QString& str) {
 	saveSubtype(str);
 	loadSubtype();
 }
 
-Q_INVOKABLE void ProductionTestWizardData::setSerialNumber(const QString& str) noexcept {
+void ProductionTestWizardData::setSerialNumber(const QString& str) {
 	saveSerialNumber(str);
 	loadSerialNumber();
 }
 
-Q_INVOKABLE void ProductionTestWizardData::setFirmwareRevision(const QString& str) noexcept {
+void ProductionTestWizardData::setFirmwareRevision(const QString& str) {
 	saveFirmwareRevision(str);
 	loadFirmwareRevision();
 }
 
-Q_INVOKABLE void ProductionTestWizardData::setMdaTestPassed(const bool value) noexcept {
-	mdaTestPassed = value;
+void ProductionTestWizardData::setMdaTestPassed(const bool value) {
+	mdaTestPassed_ = value;
 }
 
-Q_INVOKABLE TestListModel* ProductionTestWizardData::getTestsModel() const noexcept {
-	return testsListModel.get();
+void ProductionTestWizardData::setShouldStoreCalibrationDataToEeprom(const bool value) {
+	AbstractTest::setStoreCalibrationDataToEeprom(value);
 }
 
-Q_INVOKABLE TestListModel* ProductionTestWizardData::getPreTestsModel() const noexcept {
-	return preTestsListModel.get();
+TestListModel* ProductionTestWizardData::testsModel() const noexcept {
+	return testsListModel_.get();
 }
 
-Q_INVOKABLE QStringListModel* ProductionTestWizardData::getUserListModel() const noexcept {
-	return usersNamesModel.get();
+TestListModel* ProductionTestWizardData::preTestsModel() const noexcept {
+	return preTestsListModel_.get();
+}
+
+QStringListModel* ProductionTestWizardData::userListModel() const noexcept {
+	return usersNamesModel_.get();
 }

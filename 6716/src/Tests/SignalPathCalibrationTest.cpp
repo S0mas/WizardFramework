@@ -12,7 +12,7 @@ bool SignalPathCalibrationTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		log(QString("  CHANNEL %1...\n").arg(i + 1));
-		if (!signalPathCalibration(i + 1, offsets, gainCoeffs, storeToEEPROM)) {
+		if (!signalPathCalibration(i + 1, offsets, gainCoeffs, getStoreCalibrationDataToEeprom())) {
 			log("Signal path calibration failed\n");
 			errorDetected |= (1 << i);
 		}
@@ -23,7 +23,8 @@ bool SignalPathCalibrationTest::test() const {
 		else
 			log(QString("CH_%1: ERROR\n").arg(i + 1));
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 
-SignalPathCalibrationTest::SignalPathCalibrationTest(const std::shared_ptr<Communication_6716>& connection, const bool storeToEEPROM) : Abstract6716Test("Signal Path Calibration", connection), storeToEEPROM(storeToEEPROM) {}
+SignalPathCalibrationTest::SignalPathCalibrationTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Signal Path Calibration", connection) {}

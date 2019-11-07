@@ -11,8 +11,8 @@ bool AutobalanceDACTest::test() const {
 	setAutoDACPositive(CHANNEL_MASK, 0.0);
 	setAutoDACNegative(CHANNEL_MASK, 0.0);
 	// 3
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_INT_MONITOR_OFF);
-	connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", 0.0);
+	configureVoltageReferanceSwitches(0x64);
+	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
 	int errorDetected = 0;
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(CHANNEL_MASK & (1 << i)))
@@ -57,6 +57,7 @@ bool AutobalanceDACTest::test() const {
 		setAutoDACNegative(channelMask, 0.0);
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

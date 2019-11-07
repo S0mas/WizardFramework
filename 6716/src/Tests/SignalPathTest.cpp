@@ -22,15 +22,13 @@ bool SignalPathTest::test() const {
 	connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", T028_CHAN_ALL, T028_RELAY_5, T028_ON);
 	for (int j = 0; j < 2; j++) {
 		// 5 & 7
-		connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_INT_MONITOR_ON);
-		connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", volts[j]);
-		bu3100_sleep(50);
+		configureVoltageReferanceSwitches(0x74);
+		connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", volts[j]);
 		// 6 & 8
 		errorDetected |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), j == 0 ? "L1801" : "L1802", volts[j], 10e-3, 10e-3);
 	}
 	// Restore
-	connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", 0.0);
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
+	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
 	connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", T028_CHAN_ALL, T028_RELAY_5, T028_OFF);
 
 	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
@@ -40,6 +38,7 @@ bool SignalPathTest::test() const {
 			n++;
 		}
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

@@ -8,6 +8,8 @@ bool IEPETest::test() const {
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	// 1
 	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	configureVoltageReferanceSwitches(0x60);
+
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
 	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
@@ -78,6 +80,7 @@ bool IEPETest::test() const {
 		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_4, T028_OFF);
 		log("\n");
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

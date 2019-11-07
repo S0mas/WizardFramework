@@ -4,7 +4,7 @@ import QtQuick.Controls 2.4
 
 ApplicationWindow {
     id:top
-    width:1024
+    width:1280
     height:780
     visible: true
     signal handlerLoader(string name)

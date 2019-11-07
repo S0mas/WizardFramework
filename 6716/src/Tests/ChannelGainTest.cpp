@@ -23,7 +23,7 @@ bool ChannelGainTest::test() const {
 	setAutoDACNegative(CHANNEL_MASK, 0.0);
 	setAutoDACPositive(CHANNEL_MASK, 0.0);
 	bu3100_sleep(50);
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_INT_MONITOR_ON);
+	configureVoltageReferanceSwitches(0x64);
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
@@ -35,8 +35,8 @@ bool ChannelGainTest::test() const {
 			connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, gains[j]);
 			for (int k = 0; k < 2; k++) {
 				vref = volts[j] * (1.0 - 2 * k);
-				connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", vref);
-				connection->callAndThrowOnError6716(bu6716_getVoltRefOutput, "bu6716_getVoltRefOutput", &vrefSet);
+				connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", vref);
+				connection->callAndThrowOnError6100(bu6100_getVoltRefOutput, "bu6100_getVoltRefOutput", &vrefSet);
 
 				//log("  VREF = %.6lf V  (set=%.6lf V)\n", vref, vrefSet);
 				bu3100_sleep(50);
@@ -46,14 +46,14 @@ bool ChannelGainTest::test() const {
 				calculatedGain = value / vrefSet;
 				sprintf(limitName, "L19%02d", j + 5);
 				errorDetected |= checkValue_oneChannel(i + 1, calculatedGain, limitName, gains[j], gainLimits[j], gainLimits[j], true, true);
-				connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", 0.0);
+				connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
 			}
 		}
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
 	}
 	// Restore
-	connection->callAndThrowOnError6716(bu6716_setVoltRefOutput, "bu6716_setVoltRefOutput", 0.0);
-	connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
+	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
+	//connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
 	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 		if (CHANNEL_MASK & (1 << i)) {
 			setAutoDACNegative(CHANNEL_MASK, autoDacNeg[n]);
@@ -61,6 +61,7 @@ bool ChannelGainTest::test() const {
 			n++;
 		}
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

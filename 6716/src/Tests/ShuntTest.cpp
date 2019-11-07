@@ -1,7 +1,7 @@
 #include "../include/Tests/ShuntTest.h"
 #include "../include/defines.h"
 
-ViStatus ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const noexcept {
+ViStatus ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const {
 	ViReal64 corr;
 	setAutoDACPositive(channelMask, -1.0);
 	setAutoDACNegative(channelMask, 0.0);
@@ -29,6 +29,8 @@ bool ShuntTest::test() const {
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	// 1
 	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_HALF_BRIDGE, gain, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	configureVoltageReferanceSwitches(0x60);
+
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 	// 2
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_SHCAL);
@@ -53,6 +55,7 @@ bool ShuntTest::test() const {
 	setAutoDACPositive(CHANNEL_MASK, 0.0);
 	setAutoDACNegative(CHANNEL_MASK, 0.0);
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

@@ -30,7 +30,7 @@
     <ProjectGuid>{E4000FA0-FCB3-3AD3-9B8F-7B1FE697AE3C}</ProjectGuid>
     <RootNamespace>6716_ProductionTestsWizard</RootNamespace>
     <Keyword>QtVS_v301</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -119,7 +119,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <QtInstall>QtLTS_64</QtInstall>
+    <QtInstall>msvc2017_64</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'" Label="QtSettings">
@@ -127,7 +127,7 @@
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="QtSettings">
-    <QtInstall>QtLTS_32</QtInstall>
+    <QtInstall>msvc2017</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'" Label="QtSettings">
@@ -135,11 +135,11 @@
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <QtInstall>QtLTS_64</QtInstall>
+    <QtInstall>msvc2017_64</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="QtSettings">
-    <QtInstall>QtLTS_32</QtInstall>
+    <QtInstall>msvc2017</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.props')">
@@ -239,7 +239,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\ksommerf\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -297,7 +297,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;debug;/include/Tests;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\ksommerf\bu6100\include;C:\ksommerf\bu5716\t028\include;.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\Qt\5.12.5\msvc2017_64\include\QtCore;$(QTDIR)\include;debug;/include/Tests;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>debug\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -317,7 +317,7 @@
       <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>visa64.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>visa64.lib;bu6100.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\win64\Debug;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -558,6 +558,7 @@
   <ItemGroup>
     <QtMoc Include="..\..\Common\include\Clipboard.h" />
     <ClInclude Include="..\include\defines.h" />
+    <QtMoc Include="..\include\ProductionTestWizardData_6716_SignalInterface.h" />
     <ClInclude Include="..\include\Tests\ACCouplingTest.h" />
     <ClInclude Include="..\include\Tests\AutobalanceDACTest.h" />
     <ClInclude Include="..\include\Tests\ChannelGainTest.h" />
@@ -636,10 +637,12 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\CommonComponents\ChannelsSelectionDialog.qml" />
     <None Include="..\..\CommonComponents\DataBaseField.qml" />
     <None Include="..\..\CommonComponents\LabeledComboBox.qml" />
     <None Include="..\..\CommonComponents\LabeledTextField.qml" />
     <None Include="..\..\6716\Components\MdaTestConfirmationPage.qml" />
+    <None Include="..\..\CommonComponents\LabeledTextInput.qml" />
     <None Include="..\..\CommonComponents\MyButton.qml" />
     <None Include="..\..\CommonComponents\MyPage.qml" />
     <None Include="..\..\6716\Components\TestCompletitionPage.qml" />
@@ -652,6 +655,7 @@
     <None Include="..\..\CommonComponents\PlaceHolder.qml" />
     <None Include="..\..\CommonComponents\ScrollList.qml" />
     <None Include="..\..\CommonComponents\TestsRunner.qml" />
+    <None Include="..\Components\AddressesIdentificationPage.qml" />
     <None Include="..\Components\CommunicationTestPage.qml" />
     <QtRcc Include="..\..\Resources\qml.qrc">
     </QtRcc>

@@ -8,8 +8,8 @@ MyPage {
 	height: parent.height
     title: qsTr("I2C devices R/W tests")
     nextPageComponent: "UutIdentificationPage.qml"
-    previousPageComponent: "MdaTestConfirmationPage.qml"
-    ready: false
+    previousPageComponent: "AddressesIdentificationPage.qml"
+    ready: true
 	description: "This tests will check communication with i2c devices.\nAll tests needs to pass to continue further."
 
 	TestsRunner {
@@ -21,12 +21,12 @@ MyPage {
 			runEnabled = false
 			isPossibleToGoBack = false
 			clearFinishedTestsList()
-			dataObject.startPreTests()
+			dataInterface.startPreTests()
 		}
 	}
 
 	Connections {
-		target: dataObject
+		target: dataInterface
 		onTestsDone: {
 			ready = preTestsModel.checkIfAllRunnedTestsPassed()
 			isPossibleToGoBack = true

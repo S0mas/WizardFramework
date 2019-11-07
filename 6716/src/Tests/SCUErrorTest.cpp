@@ -5,6 +5,14 @@ bool SCUErrorTest::test() const {
 	int errorDetected = 0;
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	//volt ref setup
+	auto reg = connection->readFPGAreg(bu6716_FPGA_SEGCONF);
+	log(QString("reg value is %1").arg(QString::number(reg, 2)));
+	connection->writeFPGAreg(bu6716_FPGA_SEGCONF, 0x60);
+	reg = connection->readFPGAreg(bu6716_FPGA_SEGCONF);
+	log(QString("reg value is %1").arg(QString::number(reg, 2)));
+	bu3100_sleep(50);
+
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
 	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
@@ -72,6 +80,7 @@ bool SCUErrorTest::test() const {
 		if (!(errorDetected & (1 << i)))
 			log("  OK\n");
 	}
+	bu3100_sleep(250);
 	return errorDetected == 0;
 }
 

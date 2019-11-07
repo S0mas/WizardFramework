@@ -5,15 +5,15 @@
 #include <bu6716.h>
 #include <t028.h>
 #include <bu3416.h>
+#include <bu6100.h>
 #include <stdio.h>
 #include <string>
 #include <QString>
 #include "../AbstractTest_6716.h"
 
 class SignalPathCalibrationTest : public Abstract6716Test {
-	bool storeToEEPROM;
 protected:
 	bool test() const override;
 public:
-	SignalPathCalibrationTest(const std::shared_ptr<Communication_6716>& connection, const bool storeToEEPROM = true);
+	SignalPathCalibrationTest(const std::shared_ptr<Communication_6716>& connection);
 };

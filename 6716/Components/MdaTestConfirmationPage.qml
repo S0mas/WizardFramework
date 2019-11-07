@@ -5,7 +5,7 @@ import "../../CommonComponents"
 MyPage {
     id: mdaTestConfirmationPageId
     title: qsTr("MDA Test Confirmation")
-    nextPageComponent: mdaTestCheckBoxId.checked ? "CommunicationTestPage.qml" : "TestCompletitionPage.qml"
+    nextPageComponent: mdaTestCheckBoxId.checked ? "AddressesIdentificationPage.qml" : "TestCompletitionPage.qml"
     previousPageComponent: "UserIdentificationPage.qml"
     ready: true
 	description: "In case MDA test failed, you will not be able to continue production tests."
@@ -19,10 +19,14 @@ MyPage {
 	    CheckBox {
 			id: mdaTestCheckBoxId
 			text: "Have MDA test passed?"
-			onCheckedChanged: dataObject.setMdaTestPassed(checked)
-			checked: dataObject.getMdaTestPassed()
+			onCheckedChanged: dataInterface.setMdaTestPassed(checked)
+			checked: true
 			font.family: "Helvetica"
 			font.pointSize: 12
+			Connections {
+				target: dataInterface
+				onMdaTestPassed: checked = value
+			}
 		}
 	}
 }

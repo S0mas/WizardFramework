@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Common/include/ErrorChecker.h"
 #include <visa.h>
+//#include <bu6100.h>
 
 class ErrorChecker_6716 : public ErrorChecker {
 	ErrorStatus lastStatus;
@@ -13,6 +14,8 @@ public:
 	void checkErrorT028(const ViSession vi, Function&& func, Args&& ...args) const;
 	template<typename Function, typename ...Args>
 	void checkErrorVisa(const ViSession vi, Function&& func, Args&& ...args) const;
+	template<typename Function, typename ...Args>
+	void checkError6100(const ViSession vi, Function&& func, Args&& ...args) const;
 };
 
 template<typename Function, typename ...Args>
@@ -33,4 +36,9 @@ void ErrorChecker_6716::checkErrorT028(const ViSession vi, Function&& func, Args
 template<typename Function, typename ...Args>
 void ErrorChecker_6716::checkErrorVisa(const ViSession vi, Function&& func, Args&& ...args) const {
 	checkError(vi, &viStatusDesc, std::forward<Function>(func), std::forward<Args>(args)...);
+}
+
+template<typename Function, typename ...Args>
+void ErrorChecker_6716::checkError6100(const ViSession vi, Function&& func, Args&& ...args) const {
+	checkError(vi, &bu6100_error_message, std::forward<Function>(func), std::forward<Args>(args)...);
 }
