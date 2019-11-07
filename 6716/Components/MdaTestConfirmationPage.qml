@@ -9,6 +9,7 @@ MyPage {
     previousPageComponent: "UserIdentificationPage.qml"
     ready: true
 	description: "In case MDA test failed, you will not be able to continue production tests."
+	onNext: dataInterface.setMdaTestPassed(mdaTestCheckBoxId.checked)
 	Row {
 		width: parent.width
 		height: parent.height
@@ -19,14 +20,9 @@ MyPage {
 	    CheckBox {
 			id: mdaTestCheckBoxId
 			text: "Have MDA test passed?"
-			onCheckedChanged: dataInterface.setMdaTestPassed(checked)
 			checked: true
 			font.family: "Helvetica"
 			font.pointSize: 12
-			Connections {
-				target: dataInterface
-				onMdaTestPassed: checked = value
-			}
 		}
 	}
 }

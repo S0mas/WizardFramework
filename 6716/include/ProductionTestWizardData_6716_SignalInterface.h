@@ -14,7 +14,6 @@ public:
 		connect(dataObject.get(), &ProductionTestWizardData_6716::snT028, this, &ProductionTestWizardData_6716_SignalInterface::snT028);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::sn3416_6716, this, &ProductionTestWizardData_6716_SignalInterface::sn3416_6716);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::sn3416_T028, this, &ProductionTestWizardData_6716_SignalInterface::sn3416_T028);
-		connect(dataObject.get(), &ProductionTestWizardData_6716::shouldStoreCalibrationDataToEeprom, this, &ProductionTestWizardData_6716_SignalInterface::shouldStoreCalibrationDataToEeprom);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::subtype, this, &ProductionTestWizardData_6716_SignalInterface::subtype);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::testsDone, this, &ProductionTestWizardData_6716_SignalInterface::testsDone);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::versionT028, this, &ProductionTestWizardData_6716_SignalInterface::versionT028);
@@ -50,7 +49,6 @@ signals:
 	void snT028(const QString& value) const;
 	void sn3416_6716(const QString& value) const;
 	void sn3416_T028(const QString& value) const;
-	void shouldStoreCalibrationDataToEeprom(const bool value) const;
 	void subtype(const QString& value) const;
 	void testsDone() const;
 	void versionT028(const QString& value) const;
@@ -62,7 +60,7 @@ signals:
 	void disconnectDevices() const;
 	void requestTestEquipmentData() const;
 	void requestUnitUnderTestData() const;
-	void setActiveUser(const int index) const;
+	void setActiveUser(const QString& index) const;
 	void setChannelMask(const QString& channelMask) const;
 	void setFirmwareRevision(const QString& str) const;
 	void setMdaTestPassed(const bool value) const;

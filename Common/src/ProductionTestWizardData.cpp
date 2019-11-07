@@ -69,8 +69,8 @@ ProductionTestWizardData::~ProductionTestWizardData() {
 	dataThread.wait();
 }
 
-void ProductionTestWizardData::setActiveUser(const int index) {
-	activeUser_ = index;
+void ProductionTestWizardData::setActiveUser(const QString& user) {
+	activeUser_ = user;
 }
 
 void ProductionTestWizardData::setSubtype(const QString& str) {

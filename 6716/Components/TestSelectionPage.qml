@@ -9,6 +9,7 @@ MyPage {
     previousPageComponent: "TestEquipmentIdentificationPage.qml"
     ready: true
 	description: "Selected tests will be runned in next step."
+	onNext: dataInterface.setStoreCalibrationDataToEeprom(checked)
 	ChannelsSelectionDialog {
 		id: channelMaskDialogId
 		onAccepted: dataInterface.setChannelMask(channelMask)
@@ -64,11 +65,7 @@ MyPage {
 				text: "Enable eeprom writing"
 				font.family: "Helvetica"
 				font.pointSize: 12
-				onCheckedChanged: dataInterface.setStoreCalibrationDataToEeprom(checked)
-				Connections {
-					target: dataInterface
-					onShouldStoreCalibrationDataToEeprom: checked = value
-				}
+				checked: true
 			}
 		}
 	}

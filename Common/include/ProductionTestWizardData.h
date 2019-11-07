@@ -21,7 +21,7 @@ protected:
 	QString serialNumber_ = "error while reading data from device";
 	QString driverRevision_ = "empty";
 	QString firmwareRevision_ = "error while reading data from device";
-	int activeUser_ = -1;
+	QString activeUser_ = "none";
 	bool mdaTestPassed_ = true;
 	std::unique_ptr<DataBaseConnectorInterface> dbConnection;
 
@@ -46,7 +46,7 @@ public:
 	TestListModel* preTestsModel() const noexcept;
 	QStringListModel* userListModel() const noexcept;
 public slots:
-	void setActiveUser(const int index);
+	void setActiveUser(const QString& user);
 	void setFirmwareRevision(const QString& str);
 	void setMdaTestPassed(const bool value);
 	void setSerialNumber(const QString& str);
@@ -55,7 +55,6 @@ public slots:
 signals:
 	void driverRevision(const QString& value) const;
 	void firmwareRevision(const QString& value) const;
-	bool shouldStoreCalibrationDataToEeprom(const bool value) const;
 	void logMsg(const QString& msg) const;
 	void serialNumber(const QString& value) const;
 	void startPreTests() const;
