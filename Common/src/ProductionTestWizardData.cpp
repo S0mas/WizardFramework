@@ -18,11 +18,15 @@ void ProductionTestWizardData::loadUsersFromDataBase() noexcept {
 
 void ProductionTestWizardData::addTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
+	connect(test.get(), &AbstractTest::askUserAction, this, &ProductionTestWizardData::askUserAction);
+	connect(this, &ProductionTestWizardData::continueAction, test.get(), &AbstractTest::continueTest);
 	testsListModel_->getTestsList().push_back(std::move(test));
 }
 
 void ProductionTestWizardData::addPreTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
+	connect(test.get(), &AbstractTest::askUserAction, this, &ProductionTestWizardData::askUserAction);
+	connect(this, &ProductionTestWizardData::continueAction, test.get(), &AbstractTest::continueTest);
 	preTestsListModel_->getTestsList().push_back(std::move(test));
 }
 ProductionTestWizardData::ProductionTestWizardData() {

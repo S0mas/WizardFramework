@@ -5,7 +5,6 @@
 #include <thread>
 #include <chrono>
 #include <QCoreApplication>
-#include <QDebug>
 
 class PrintInterface : public QObject {
 	Q_OBJECT
@@ -15,18 +14,17 @@ public:
 
 	void printingProcess() const noexcept {
 		while (!QThread::currentThread()->isInterruptionRequested()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::this_thread::sleep_for(std::chrono::milliseconds(5));
 			if (!logs.isEmpty()) {
 				emit printLog(logs);
 				logs.clear();
 			}
-			QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 5);
 		}
 	}
 public slots:
 	void addLog(const QString& msg) const noexcept {
 		logs += msg;
-		qDebug() << msg;
 	}
 signals:
 	void printLog(const QString& msg) const;

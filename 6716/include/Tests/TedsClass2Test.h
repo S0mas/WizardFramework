@@ -9,10 +9,11 @@
 #include <string>
 #include <QString>
 #include "../AbstractTest_6716.h"
+#include <atomic>
 
 class TedsClass2Test : public Abstract6716Test {
 	bool _initTeds2() const;
-	bool _resetTeds2(char channel, char step) const;
+	bool _resetTeds2(unsigned channel, unsigned step) const;
 protected:
 	bool test() const override;
 public:

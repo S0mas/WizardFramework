@@ -589,7 +589,7 @@
     <ClInclude Include="..\..\Common\include\DataBasseConnector.h" />
     <ClInclude Include="..\..\Common\include\ErrorChecker.h" />
     <QtMoc Include="..\..\Common\include\PrintInterface.h" />
-    <ClInclude Include="..\include\AbstractTest_6716.h" />
+    <QtMoc Include="..\include\AbstractTest_6716.h" />
     <QtMoc Include="..\include\Communication_6716.h" />
     <ClInclude Include="..\include\ErrorChecker_6716.h" />
     <QtMoc Include="..\include\ProductionTestWizardData_6716.h" />

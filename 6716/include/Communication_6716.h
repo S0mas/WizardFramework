@@ -48,6 +48,7 @@ public:
 	unsigned char readI2C(const unsigned char i2c_address, const unsigned char address) const;
 	bool writeTeds2(const unsigned char data) const;
 	unsigned char readTeds2() const;
+	ViStatus _1wire_commanderXX(ViUInt16* cmds) const;
 	ViStatus _1wire_commander(ViUInt16* cmds) const;
 
 	template<typename Function, typename ...Args>

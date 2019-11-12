@@ -7,7 +7,7 @@ bool TedsClass2Test::_initTeds2() const {
 	return true;
 }
 
-bool TedsClass2Test::_resetTeds2(char channel, char step) const {
+bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 	unsigned char statusByte;
 	ViReal64 startTime = bu3100_getStartTime();
 	connection->writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRS);
@@ -62,6 +62,11 @@ bool TedsClass2Test::test() const {
 			unsigned char ch = c + 1 + s * 8;
 			if (!(CHANNEL_MASK & 1 << (ch - 1)))
 				continue;
+
+			emit askUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch));
+			while (!continueTestClicked) {}
+			continueTestClicked = false;
+
 			log(QString("CHANNEL %1\n").arg(ch));
 			// 2
 			portExp = connection->readPortExpander(ch);
@@ -69,7 +74,7 @@ bool TedsClass2Test::test() const {
 			connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", ch, T028_MODE_TEDS2);
 			bu3100_sleep(100);
 			// 4
-			_resetTeds2(ch, 4);
+			_resetTeds2(c+1, 4);
 			// 5
 			write_data[0] = (ViUInt8)ch;
 			write_data[1] = (ViUInt8)(~ch);
@@ -81,7 +86,7 @@ bool TedsClass2Test::test() const {
 			for (int i = 0; i < 2; i++)
 				connection->writeTeds2(write_data[i]);
 			// 6
-			_resetTeds2(ch, 6);
+			_resetTeds2(c+1, 6);
 			// 7
 			connection->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
 			connection->writeTeds2(bu6716_1W_CMD_READ_SPD);
@@ -90,21 +95,25 @@ bool TedsClass2Test::test() const {
 				read_data[i] = connection->readTeds2();
 			for (int i = 0; i < 2; i++) {
 				if (read_data[i] != write_data[i]) {
-					log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)\n").arg(read_data[i]).arg(write_data[i]).arg(ch));
+					log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)\n").arg(read_data[i]).arg(write_data[i]).arg(c+1));
 					errorDetected |= (1 << (ch - 1));
 				}
 			}
 			// 8
-			_resetTeds2(ch, 8);
+			_resetTeds2(c+1, 8);
 			// 9
 			connection->writePortExpander(ch, portExp);
 			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);
-			_resetTeds2(ch, 9);
+			_resetTeds2(c+1, 9);
 			if (!(errorDetected & (1 << (ch - 1))))
 				log("  OK\n");
 		}
 	}
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
+	bu3100_sleep(250);
+	return errorDetected == 0;
+
+	///////// DRIVER TEST WILL WAIT (problem with write teds function
 	log("\nSCPI/driver functionality test:\n");
 	srand((unsigned int)time(nullptr));
 	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
@@ -112,6 +121,9 @@ bool TedsClass2Test::test() const {
 		unsigned char data_wr[32];
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
+		emit askUserAction(QString("Please connect sensor to channel %1 and click ok").arg(i+1));
+		while (!continueTestClicked) {}
+		continueTestClicked = false;
 		connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", i + 1, T028_MODE_TEDS2);
 		log(QString("CHANNEL %1:\n").arg(i + 1));
 		for (int j = 0; j < 32; j++)

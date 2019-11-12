@@ -23,14 +23,50 @@ MyPage {
 		}
 	}
 
+	Dialog {
+		id: userActionDialog
+		x: Math.round((parent.width - width) / 2)
+		y: Math.round((parent.height - height) / 2)
+		title: "Action required!"
+		standardButtons: Dialog.Ok
+		contentItem: Rectangle {
+			implicitWidth: 400
+			implicitHeight: 100
+			Text {
+				id: dialogTextId
+				font.family: "Helvetica"
+				font.pointSize: 12
+				anchors.centerIn: parent
+			}
+		}
+		onAccepted: dataInterface.continueAction()
+	}
+
 	Connections {
 		target: dataInterface
+		property var locale: Qt.locale()
+		property date currentDate: new Date()
+		property string dateString
 		onTestsDone: {
 			ready = true
 			isPossibleToGoBack = true
 			testsRunnerId.runEnabled = true
 			testsRunnerId.runningTest = "all tests finished"
+			dateString = currentDate.toLocaleDateString();
+			console.log(Date.fromLocaleDateString(dateString));
+			//saveFile("logs_Last.txt", testsRunnerId.text)
 		}
+		onAskUserAction: {
+			dialogTextId.text = str
+			userActionDialog.open()
+		}
+	}
+
+	function saveFile(fileUrl, text) {
+		var request = new XMLHttpRequest();
+		request.open("PUT", fileUrl, false);
+		request.send(text);
+		return request.status;
 	}
 
 	Connections {

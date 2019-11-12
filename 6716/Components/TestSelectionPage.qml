@@ -10,11 +10,11 @@ MyPage {
     ready: true
 	description: "Selected tests will be runned in next step."
 	onNext: dataInterface.setStoreCalibrationDataToEeprom(saveEepromCheckId.checked)
+	
 	ChannelsSelectionDialog {
 		id: channelMaskDialogId
 		onAccepted: dataInterface.setChannelMask(channelMask)
 	}
-
 	Column {
 		width: parent.width
 		height: parent.height - buttonsRowId.height

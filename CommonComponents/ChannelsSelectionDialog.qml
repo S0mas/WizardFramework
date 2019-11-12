@@ -8,7 +8,7 @@ Dialog {
 	y: Math.round((parent.height - height) / 2)
 	modal: true
 	focus: true
-	title: "Select yhe channels that will be tested"
+	title: "Select the channels that will be tested"
 	standardButtons: Dialog.Ok | Dialog.Cancel
 	property string channelMask : "1111111111111111"
 	Column {
@@ -55,6 +55,5 @@ Dialog {
 	closePolicy: Popup.CloseOnEscape
 	function toggleChannel(index, chr) {
 		channelMask = channelMask.substr(0, index) + chr + channelMask.substr(index+1);
-		console.log(channelMask)
 	}
 }

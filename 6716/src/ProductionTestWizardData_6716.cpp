@@ -21,7 +21,7 @@
 #include "../include/Tests/TedsClass1Test.h"
 #include "../include/Tests/TedsClass2Test.h"
 #include "../include/Tests/HalfBridgeTest.h"
-#include <QDebug>
+
 void ProductionTestWizardData_6716::loadIDN() {
 	connection->sendCmd("*IDN?\0");
 	auto const& list = connection->readResponse().split(',', QString::SplitBehavior::SkipEmptyParts);
@@ -62,12 +62,12 @@ void ProductionTestWizardData_6716::testsInit() {
 	addPreTest(std::make_unique<I2CAccessToChannelConfigurationControlPortExpandersTest>(connection));
 	addPreTest(std::make_unique<I2CAccessTo1WireControllersTest>(connection));
 
-	addTest(std::make_unique<TedsClass1Test>(connection));
-	addTest(std::make_unique<TedsClass2Test>(connection));
+	//user input/action needed
 	addTest(std::make_unique<LEDsTest>(connection));
+	addTest(std::make_unique<TedsClass2Test>(connection));
+
+	addTest(std::make_unique<TedsClass1Test>(connection));
 	addTest(std::make_unique<SCUErrorTest>(connection));
-
-
 	addTest(std::make_unique<InitialExcitationTest>(connection));
 	addTest(std::make_unique<HalfBridgeTest>(connection));
 	addTest(std::make_unique<QuarterBridgeTest>(connection));
@@ -138,7 +138,6 @@ void ProductionTestWizardData_6716::sendUnitUnderTestData() const {
 }
 
 void ProductionTestWizardData_6716::checkConnectionStatus() {
-	qDebug() << "checking started";
 	ViUInt16 status = 0;
 	try {
 		std::string str = "";

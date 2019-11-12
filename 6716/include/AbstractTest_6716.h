@@ -16,6 +16,7 @@ inline constexpr int decFormat = 10;
 inline constexpr int binFormat = 2;
 
 class Abstract6716Test : public AbstractTest {
+	Q_OBJECT
 	void setAutoDAC(const ViUInt16 channelMask, const ViReal64 voltage, const ViInt16 select) const;
 	std::vector<ViReal64> getAutoDAC(const ViUInt16 channelMask, const ViInt16 select) const;
 protected:
@@ -40,7 +41,7 @@ public:
 	bool signalPathCalibration(ViInt16 channel, ViReal64 offsets[4], ViReal64 gainCoeffs[4], ViBoolean store) const;
 	bool configureVoltageReferanceSwitches(const unsigned char newSegConfRegValue) const;
 	void closeAll();
-	inline static short unsigned CHANNEL_MASK = 0;
+	inline static short unsigned CHANNEL_MASK = 0xFFFF;
 public:
 	Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection);
 };

@@ -7,18 +7,16 @@ MyPage {
     title: qsTr("Addresses Identification")
     nextPageComponent: "CommunicationTestPage.qml"
     previousPageComponent: "MdaTestConfirmationPage.qml"
-	ready: ip6100.textInput.acceptableInput && ip6716.textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && fc3416_t028.textInput.acceptableInput
 	description: "All devices addresse needs to be specified here."
     Column {
 		width: parent.width
 		height: parent.heght
         LabeledTextInput {
 			id: ip6100
-            label.text: "6100 IP"
+            label.text: "6100 IP:"
 			textInput.text: "192.168.168.126"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})(\.0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})){3}$/ }
-			textInput.onTextChanged: ready = textInput.acceptableInput && ip6716.textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && fc3416_t028.textInput.acceptableInput
 			textInput.inputMask: "000.000.000.000;_"
         }
 
@@ -28,7 +26,6 @@ MyPage {
 			textInput.text: "192.168.168.147"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})(\.0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})){3}$/ }
-			textInput.onTextChanged: ready = ip6100.textInput.acceptableInput && textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && fc3416_t028.textInput.acceptableInput
 			textInput.inputMask: "000.000.000.000;_"
         }
 
@@ -38,7 +35,6 @@ MyPage {
 			textInput.text: "2"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /[1-4]{1}$/ }
-			textInput.onTextChanged: ready = ip6100.textInput.acceptableInput && ip6716.textInput.acceptableInput && textInput.acceptableInput && fc3416_t028.textInput.acceptableInput
 			textInput.inputMask: "0;_"
         }
 
@@ -48,16 +44,22 @@ MyPage {
 			textInput.text: "4"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /[1-4]{1}$/ }
-			textInput.onTextChanged: ready = ip6100.textInput.acceptableInput && ip6716.textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && textInput.acceptableInput
 			textInput.inputMask: "0;_"
         }
-
-		MyButton {
-			text: "Connect"
-			onClicked: {
-				dataInterface.disconnectDevices()
-				dataInterface.connectDevices(ip6100.textInput.text, ip6716.textInput.text, fc3416_6716.textInput.text, fc3416_t028.textInput.text)
-				dataInterface.requestConnectionStatus()
+		Row {
+			height: 45
+			width: parent.width
+			PlaceHolder {
+				height: parent.height
+				width: 200
+			}
+			MyButton {
+				text: "Connect"
+				onClicked: {
+					dataInterface.disconnectDevices()
+					dataInterface.connectDevices(ip6100.textInput.text, ip6716.textInput.text, fc3416_6716.textInput.text, fc3416_t028.textInput.text)
+					dataInterface.requestConnectionStatus()
+				}
 			}
 		}
 	}

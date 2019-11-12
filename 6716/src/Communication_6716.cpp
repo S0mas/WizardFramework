@@ -2,7 +2,6 @@
 #include <bu6716.h>
 #include <t028.h>
 #include <bu3416.h>
-#include <QDebug>
 #include <bu6100.h>
 
 QString Communication_6716::readResponse() const {
@@ -72,12 +71,12 @@ ViStatus Communication_6716::_1wire_commander(ViUInt16* cmds) const {
 		else {
 			// send cmd
 			writeFPGAreg(bu6716_FPGA_TEDS_DATA, cmds[i] & 0xff);
-			writeFPGAreg(bu6716_FPGA_TEDS_ACC, cmds[i] & 0xff00 >> 8);
+			writeFPGAreg(bu6716_FPGA_TEDS_ACC, (cmds[i] & 0xff00) >> 8);
 			bu3100_sleep(10);
 			ViUInt8 data_l = readFPGAreg(bu6716_FPGA_TEDS_DATA);
 			ViUInt8 data_h = readFPGAreg(bu6716_FPGA_TEDS_ACC);
 			ViInt16 val16 = (data_h << 8) | data_l;
-			//log("d_l=%02hhx, d_h=%02hhx, val16 = %04hx\n", data_l, data_h, val16);
+
 			// ready ?
 			if (!(val16 & bu3416_TEDS_READY))
 				return bu3416_TEDS_NOTREADY;
@@ -127,9 +126,11 @@ void Communication_6716::initializePrimitive(const QString& ip6716) {
 }
 
 bool Communication_6716::checkErrorStatus(const QString& content) const {
-	log(QString("%1 ---> status msg: %2\n").arg(content).arg(errorChecker.getLastStatus().toString()));
-	if (errorChecker.getLastStatus().statusType() == StatusType::ERR)
+	if (errorChecker.getLastStatus().statusType() == StatusType::ERR) {
+		log(QString("%1 ---> status msg: %2\n").arg(content).arg(errorChecker.getLastStatus().toString()));
 		throw std::runtime_error("Error occured! Exception thrown.\n");
+	}
+
 	return true;
 }
 

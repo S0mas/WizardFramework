@@ -4,7 +4,7 @@
 bool TedsClass1Test::test() const {
 	ViStatus status;
 	int errorDetected = 0;
-	unsigned char segconf_dev;  // No need to change this register - TEDS class 1 is always connected to set #2
+
 	ViUInt8 segsw_dev;
 	ViUInt16 reset_cmd[] = { 0x0300, 0x0000 };
 	ViUInt16 write_cmd[] = { 0x0300, 0x02CC, 0x0299, 0x0200, 0x0200, 0x0200, 0x0300, 0x0000 };
@@ -15,20 +15,16 @@ bool TedsClass1Test::test() const {
 	configureVoltageReferanceSwitches(0x60);
 
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
-	segconf_dev = connection->readFPGAreg(bu6716_FPGA_SEGCONF);
 	segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
 	for (int j = 0; j < 3; j++) {
 		log(QString("ITERATION %1/%2\n").arg(j + 1).arg(3));
 		for (int s = 0; s < 2; s++) {
 			if (s == 0) {
 				// 1 & 2
-				connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-				//BU6716_CHECK_ERR(writeFPGAreg, connection->getVi6716(), bu6716_FPGA_SEGCONF, segconf_dev & ~0x40);  // disconnect TEDS class 1 to seg #1 and #2 
+				connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1); 
 			}
 			else {
 				// 12
-				connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-				connection->writeFPGAreg(bu6716_FPGA_SEGCONF, segconf_dev | 0x40);  // connect TEDS class 1 to seg #1 and #2 (possible only when SEGSW==1)
 				connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
 			}
 			bu3100_sleep(100);
@@ -97,7 +93,6 @@ bool TedsClass1Test::test() const {
 			}
 		}
 	}
-	connection->writeFPGAreg(bu6716_FPGA_SEGCONF, segconf_dev);
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
 	log("\nSCPI/driver functionality test:\n");
 	srand((unsigned int)time(nullptr));

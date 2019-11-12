@@ -20,7 +20,7 @@ public:
 		connect(dataObject.get(), &ProductionTestWizardData_6716::version3416_6716, this, &ProductionTestWizardData_6716_SignalInterface::version3416_6716);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::version3416_T028, this, &ProductionTestWizardData_6716_SignalInterface::version3416_T028);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::connectionStatus, this, &ProductionTestWizardData_6716_SignalInterface::connectionStatus);
-
+		connect(dataObject.get(), &ProductionTestWizardData_6716::askUserAction, this, &ProductionTestWizardData_6716_SignalInterface::askUserAction);
 
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::connectDevices, dataObject.get(), &ProductionTestWizardData_6716::connectDevices);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::disconnectDevices, dataObject.get(), &ProductionTestWizardData_6716::disconnectDevices);
@@ -38,6 +38,7 @@ public:
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::startTests, dataObject.get(), &ProductionTestWizardData_6716::startTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::stopTests, dataObject.get(), &ProductionTestWizardData_6716::stopTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::requestConnectionStatus, dataObject.get(), &ProductionTestWizardData_6716::checkConnectionStatus);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::continueAction, dataObject.get(), &ProductionTestWizardData_6716::continueAction);
 	}
 
 	//void initialize() override;
@@ -58,6 +59,7 @@ signals:
 	void version3416_6716(const QString& value) const;
 	void version3416_T028(const QString& value) const;
 	void connectionStatus(const bool status) const;
+	void askUserAction(const QString& str) const;
 
 	//in
 	void connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) const;
@@ -75,4 +77,5 @@ signals:
 	void startPreTests() const;
 	void startTests() const;
 	void stopTests() const;
+	void continueAction() const;
 };

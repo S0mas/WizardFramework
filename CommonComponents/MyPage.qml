@@ -101,10 +101,8 @@ Page {
 
 	Connections {
 		target: dataInterface
-		onConnectionStatus: {
-			console.log("signal connection status " + status)
-			connectionStatusIndicatorId.active = status
-		}
+		onConnectionStatus: connectionStatusIndicatorId.active = status
+
 	}
 
 	Component.onCompleted: dataInterface.requestConnectionStatus()
