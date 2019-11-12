@@ -137,20 +137,40 @@ void ProductionTestWizardData_6716::sendUnitUnderTestData() const {
 	emit subtype(subtype_);
 }
 
+void ProductionTestWizardData_6716::checkConnectionStatus() {
+	qDebug() << "checking started";
+	ViUInt16 status = 0;
+	try {
+		std::string str = "";
+		connection->callAndThrowOnError6100(viPrintf, "viPrintf", str.data());
+		connection->callAndThrowOnError6716(viPrintf, "viPrintf", str.data());
+		connection->callAndThrowOnError3416(viPrintf, "viPrintf", str.data());
+		connection->callAndThrowOnErrorMaster(viPrintf, "viPrintf", str.data());
+		connection->callAndThrowOnErrorT028(viPrintf, "viPrintf", str.data());
+		emit connectionStatus(true);
+	}
+	catch (...) {
+		emit connectionStatus(false);
+	}
+}
+
 void ProductionTestWizardData_6716::connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) {
-	qDebug() << "CONNECTING";
-	connection->initializePrimitive(QString("TCPIP0::%1::5025::SOCKET").arg(ip6716));
-	connection->initialize(QString("TCPIP0::%1::INSTR").arg(ip6100), QString("TCPIP0::%1::5025::SOCKET").arg(ip6716), fc3416_6716.toInt(), fc3416_t028.toInt());
-	loadIDN();
-	loadTestEqData();
+	try {
+		connection->initializePrimitive(QString("TCPIP0::%1::5025::SOCKET").arg(ip6716));
+		connection->initialize(QString("TCPIP0::%1::INSTR").arg(ip6100), QString("TCPIP0::%1::5025::SOCKET").arg(ip6716), fc3416_6716.toInt(), fc3416_t028.toInt());		
+		emit connectionStatus(connection->getVi6716() && connection->getVi6100() && connection->getVi3416() && connection->getViT028Master() && connection->getViT028());
+		loadIDN();
+		loadTestEqData();		
+	}
+	catch (...) {}
 }
 
 void ProductionTestWizardData_6716::disconnectDevices() const {
-	if (connection->getPrimitiveVi6716())
-		viClose(connection->getPrimitiveVi6716());
+	//if (connection->getPrimitiveVi6716())
+	//	viClose(connection->getPrimitiveVi6716());
+	//if (connection->getPrimitiveRmVi6716())
+	//	viClose(connection->getPrimitiveRmVi6716());
 	if (connection->getVi6716())
-		viClose(connection->getPrimitiveRmVi6716());
-	if (connection->getPrimitiveRmVi6716())
 		bu6716_close(connection->getVi6716());
 	if (connection->getVi3416())
 		bu3416_close(connection->getVi3416());
@@ -161,4 +181,5 @@ void ProductionTestWizardData_6716::disconnectDevices() const {
 	if (connection->getVi6100())
 		bu6100_close(connection->getVi6100());
 	connection->setAllVisToInvalid();
+	emit connectionStatus(false);
 }

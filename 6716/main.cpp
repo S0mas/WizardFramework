@@ -8,13 +8,15 @@
 
 int main(int argc, char *argv[])
 {
+	qDebug() << "app started";
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 	QmlClipboardAdapter clipboard;
 	std::unique_ptr<ProductionTestWizardData_6716> data = std::make_unique<ProductionTestWizardData_6716>();
-	auto dataInterface = std::make_unique<ProductionTestWizardData_6716_SignalInterface>(data);
+	data->initialize();
 
+	auto dataInterface = std::make_unique<ProductionTestWizardData_6716_SignalInterface>(data);
 
 	engine.rootContext()->setContextProperty("dataInterface", dataInterface.get());
 	engine.rootContext()->setContextProperty("testsModel", data->testsModel());
@@ -30,6 +32,6 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
 
     engine.load(url);
-	data->initialize();
+
     return app.exec();
 }

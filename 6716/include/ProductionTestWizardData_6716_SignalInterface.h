@@ -19,6 +19,8 @@ public:
 		connect(dataObject.get(), &ProductionTestWizardData_6716::versionT028, this, &ProductionTestWizardData_6716_SignalInterface::versionT028);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::version3416_6716, this, &ProductionTestWizardData_6716_SignalInterface::version3416_6716);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::version3416_T028, this, &ProductionTestWizardData_6716_SignalInterface::version3416_T028);
+		connect(dataObject.get(), &ProductionTestWizardData_6716::connectionStatus, this, &ProductionTestWizardData_6716_SignalInterface::connectionStatus);
+
 
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::connectDevices, dataObject.get(), &ProductionTestWizardData_6716::connectDevices);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::disconnectDevices, dataObject.get(), &ProductionTestWizardData_6716::disconnectDevices);
@@ -35,6 +37,7 @@ public:
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::startPreTests, dataObject.get(), &ProductionTestWizardData_6716::startPreTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::startTests, dataObject.get(), &ProductionTestWizardData_6716::startTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::stopTests, dataObject.get(), &ProductionTestWizardData_6716::stopTests);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::requestConnectionStatus, dataObject.get(), &ProductionTestWizardData_6716::checkConnectionStatus);
 	}
 
 	//void initialize() override;
@@ -54,10 +57,12 @@ signals:
 	void versionT028(const QString& value) const;
 	void version3416_6716(const QString& value) const;
 	void version3416_T028(const QString& value) const;
+	void connectionStatus(const bool status) const;
 
 	//in
 	void connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) const;
 	void disconnectDevices() const;
+	void requestConnectionStatus() const;
 	void requestTestEquipmentData() const;
 	void requestUnitUnderTestData() const;
 	void setActiveUser(const QString& index) const;

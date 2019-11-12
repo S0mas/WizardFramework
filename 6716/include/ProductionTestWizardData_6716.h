@@ -48,4 +48,5 @@ public slots:
 	void setChannelMask(const QString& channelMask) const;
 	void sendTestEquipmentData() const;
 	void sendUnitUnderTestData() const;
+	void checkConnectionStatus() override;
 };

@@ -52,6 +52,7 @@ public slots:
 	void setSerialNumber(const QString& str);
 	void setShouldStoreCalibrationDataToEeprom(const bool value);
 	void setSubtype(const QString& str);
+	virtual void checkConnectionStatus() = 0;
 signals:
 	void driverRevision(const QString& value) const;
 	void firmwareRevision(const QString& value) const;
@@ -62,4 +63,5 @@ signals:
 	void stopTests() const;
 	void subtype(const QString& value) const;
 	void testsDone() const;
+	void connectionStatus(const bool status) const;
 };

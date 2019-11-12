@@ -41,7 +41,7 @@ Page {
 
     footer: Column {
 		width: parent.width
-		height: 65
+		height: 95
 		PlaceHolder {
 			width: parent.width
 			height: 20
@@ -79,5 +79,33 @@ Page {
 				enabled: ready && nextPageComponent != ""
 			}
 		}
+		Row {
+			width: parent.width
+			height: 30
+			Rectangle {
+				width: parent.width*(3/4)
+				height: parent.height
+				id: connectionStatusIndicatorId
+				property bool active: false
+				color: active ? "green" : "black"
+			}
+			MyButton {
+				width: parent.width/4
+				height: parent.height
+				id: refreshConnectionstatusButtonId
+				text: "Refresh status"
+				onClicked: dataInterface.requestConnectionStatus()
+			}
+		}
 	}
+
+	Connections {
+		target: dataInterface
+		onConnectionStatus: {
+			console.log("signal connection status " + status)
+			connectionStatusIndicatorId.active = status
+		}
+	}
+
+	Component.onCompleted: dataInterface.requestConnectionStatus()
 }

@@ -96,33 +96,34 @@ ViStatus Communication_6716::_1wire_commander(ViUInt16* cmds) const {
 }
 
 void Communication_6716::initialize(const QString& ip6100, const QString& ip6716, const int fcNo3416_6716, const int fcNo3416_t028) {
-	try{
-		errorChecker.checkError6100(0, bu6100_init, ip6100.toStdString().data(), VI_TRUE, VI_TRUE, &connectionDetails.viBu6100);
+	if (connectionDetails.viBu6100 == 0) {
+		errorChecker.checkError6100(0, bu6100_init, ip6100.toStdString().data(), VI_TRUE, VI_FALSE, &connectionDetails.viBu6100);
 		checkErrorStatus(QString("CMD: %1").arg("bu6100_init"));
-
+	}
+	if (connectionDetails.viBu6716 == 0) {
 		errorChecker.checkError6716(0, bu6716_init, ip6716.toStdString().data(), true, true, &connectionDetails.viBu6716);
 		checkErrorStatus(QString("CMD: %1").arg("bu6716_init"));
-
-		errorChecker.checkError3416(0, bu3416_paramInit, ip6100.toStdString().data(), fcNo3416_t028, VI_TRUE, VI_FALSE, &connectionDetails.viT028Master);
-		checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
-
+	}
+	if (connectionDetails.viBu3416 == 0) {
 		errorChecker.checkError3416(0, bu3416_paramInit, ip6100.toStdString().data(), fcNo3416_6716, true, false, &connectionDetails.viBu3416);
 		checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
-
+	}	
+	if (connectionDetails.viT028Master == 0) {
+		errorChecker.checkError3416(0, bu3416_paramInit, ip6100.toStdString().data(), fcNo3416_t028, VI_TRUE, VI_FALSE, &connectionDetails.viT028Master);
+		checkErrorStatus(QString("CMD: %1").arg("bu3416_paramInit"));
+	}
+	if (connectionDetails.viT028 == 0) {
 		errorChecker.checkErrorT028(0, t028_init, connectionDetails.viT028Master, VI_TRUE, VI_TRUE, &connectionDetails.viT028);
 		checkErrorStatus(QString("CMD: %1").arg("t028_init"));
-	}
-	catch (...) {
-		qDebug() << "Error while connecting to the device!";
 	}
 	log(connectionDetails.toString());
 }
 
 void Communication_6716::initializePrimitive(const QString& ip6716) {
-	errorChecker.checkErrorVisa(0, viOpenDefaultRM, &connectionDetails.primitiveRmVi6716);
-	checkErrorStatus(QString("CMD: %1").arg("viOpenDefaultRM"));
-	errorChecker.checkErrorVisa(0, viOpen, connectionDetails.primitiveRmVi6716, ip6716.toStdString().data(), BU_NULL, BU_NULL, &connectionDetails.primitiveVi6716);
-	checkErrorStatus(QString("CMD: %1").arg("viOpen"));
+	//errorChecker.checkErrorVisa(0, viOpenDefaultRM, &connectionDetails.primitiveRmVi6716);
+	//checkErrorStatus(QString("CMD: %1").arg("viOpenDefaultRM"));
+	//errorChecker.checkErrorVisa(0, viOpen, connectionDetails.primitiveRmVi6716, ip6716.toStdString().data(), BU_NULL, BU_NULL, &connectionDetails.primitiveVi6716);
+	//checkErrorStatus(QString("CMD: %1").arg("viOpen"));
 }
 
 bool Communication_6716::checkErrorStatus(const QString& content) const {

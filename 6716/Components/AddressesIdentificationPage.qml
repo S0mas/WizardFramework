@@ -9,10 +9,6 @@ MyPage {
     previousPageComponent: "MdaTestConfirmationPage.qml"
 	ready: ip6100.textInput.acceptableInput && ip6716.textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && fc3416_t028.textInput.acceptableInput
 	description: "All devices addresse needs to be specified here."
-	onNext: {
-		dataInterface.disconnectDevices()
-		dataInterface.connectDevices(ip6100.textInput.text, ip6716.textInput.text, fc3416_6716.textInput.text, fc3416_t028.textInput.text)
-	}
     Column {
 		width: parent.width
 		height: parent.heght
@@ -55,5 +51,19 @@ MyPage {
 			textInput.onTextChanged: ready = ip6100.textInput.acceptableInput && ip6716.textInput.acceptableInput && fc3416_6716.textInput.acceptableInput && textInput.acceptableInput
 			textInput.inputMask: "0;_"
         }
+
+		MyButton {
+			text: "Connect"
+			onClicked: {
+				dataInterface.disconnectDevices()
+				dataInterface.connectDevices(ip6100.textInput.text, ip6716.textInput.text, fc3416_6716.textInput.text, fc3416_t028.textInput.text)
+				dataInterface.requestConnectionStatus()
+			}
+		}
+	}
+
+	Connections {
+		target: dataInterface
+		onConnectionStatus: ready = status
 	}
 }
