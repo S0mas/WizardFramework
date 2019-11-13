@@ -309,6 +309,9 @@
     <ClInclude Include="..\..\Common\include\UserActionTypes.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Common\include\MockTest.h">
+      <Filter>Header Files\6716\Tests</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\..\Common\include\ProductionTestWizardData.h">

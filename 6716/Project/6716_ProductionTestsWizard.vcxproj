@@ -558,6 +558,7 @@
   <ItemGroup>
     <QtMoc Include="..\..\Common\include\Clipboard.h" />
     <QtMoc Include="..\..\Common\include\AppicationSettings.h" />
+    <ClInclude Include="..\..\Common\include\MockTest.h" />
     <ClInclude Include="..\..\Common\include\UserActionTypes.h" />
     <ClInclude Include="..\include\defines.h" />
     <QtMoc Include="..\include\ProductionTestWizardData_6716_SignalInterface.h" />

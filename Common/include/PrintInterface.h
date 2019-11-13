@@ -24,7 +24,7 @@ public:
 	}
 public slots:
 	void addLog(const QString& msg) const noexcept {
-		logs += msg;
+		logs += msg + "\n";
 	}
 signals:
 	void printLog(const QString& msg) const;

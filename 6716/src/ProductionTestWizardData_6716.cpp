@@ -21,6 +21,7 @@
 #include "../include/Tests/TedsClass1Test.h"
 #include "../include/Tests/TedsClass2Test.h"
 #include "../include/Tests/HalfBridgeTest.h"
+#include "../../Common/include/MockTest.h"
 
 void ProductionTestWizardData_6716::loadIDN() {
 	connection->sendCmd("*IDN?\0");

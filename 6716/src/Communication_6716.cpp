@@ -14,20 +14,20 @@ QString Communication_6716::readResponse() const {
 }
 
 bool Communication_6716::writeFPGAreg(const unsigned char address, const unsigned char data) const {
-	return sendCmd("BINT:MAIN:FPGA #h%02hhx, #h%02hhx\n", address, data);
+	return sendCmd("BINT:MAIN:FPGA #h%02hhx, #h%02hhx", address, data);
 }
 
 unsigned char Communication_6716::readFPGAreg(const unsigned char address) const {
-	sendCmd("BINT:MAIN:FPGA? #h%hhx\n", address);
+	sendCmd("BINT:MAIN:FPGA? #h%hhx", address);
 	return readResponse().toUInt(nullptr, 16);
 }
 
 bool Communication_6716::writePortExpander(const unsigned char channel, const unsigned short data) const {
-	return sendCmd("input%d:smax7318aug #h%04hx\n", channel, data);
+	return sendCmd("input%d:smax7318aug #h%04hx", channel, data);
 }
 
 unsigned short Communication_6716::readPortExpander(const unsigned char channel) const {
-	sendCmd("input%d:smax7318aug?\n", channel);
+	sendCmd("input%d:smax7318aug?", channel);
 	return readResponse().toUInt(nullptr, 16);
 }
 
@@ -37,7 +37,7 @@ bool Communication_6716::writeTeds2(const unsigned char data) const {
 	writeI2C(0x19, bu6716_TEDS_CMD_1WWB, data);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
-			log(QString("%1: Timeout\n").arg(__FUNCTION__));
+			log(QString("%1: Timeout").arg(__FUNCTION__));
 			return false;
 		}
 		statusByte = readI2C_no_addr(0x19);
@@ -51,7 +51,7 @@ unsigned char Communication_6716::readTeds2() const {
 	writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRB);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
-			log(QString("%1: Timeout\n").arg(__FUNCTION__));
+			log(QString("%1: Timeout").arg(__FUNCTION__));
 			throw std::runtime_error("Error teds class 2 timeout!");
 		}
 		statusByte = readI2C_no_addr(0x19);
@@ -127,8 +127,8 @@ void Communication_6716::initializePrimitive(const QString& ip6716) {
 
 bool Communication_6716::checkErrorStatus(const QString& content) const {
 	if (errorChecker.getLastStatus().statusType() == StatusType::ERR) {
-		log(QString("%1 ---> status msg: %2\n").arg(content).arg(errorChecker.getLastStatus().toString()));
-		throw std::runtime_error("Error occured! Exception thrown.\n");
+		log(QString("%1 ---> status msg: %2").arg(content).arg(errorChecker.getLastStatus().toString()));
+		throw std::runtime_error("Error occured! Exception thrown.");
 	}
 
 	return true;
@@ -173,19 +173,19 @@ void Communication_6716::setAllVisToInvalid() noexcept {
 }
 
 void Communication_6716::writeI2C_no_addr(const unsigned char i2c_address, const unsigned char data) const {
-	sendCmd("BINT:MAIN:ICNA #h%02hhx, #h%02hhx\n", i2c_address, data);
+	sendCmd("BINT:MAIN:ICNA #h%02hhx, #h%02hhx", i2c_address, data);
 }
 
 unsigned char Communication_6716::readI2C_no_addr(const unsigned char i2c_address) const {
-	sendCmd("BINT:MAIN:ICNA? #h%hhx\n", i2c_address);
+	sendCmd("BINT:MAIN:ICNA? #h%hhx", i2c_address);
 	return readResponse().toUInt(nullptr, 16);
 }
 
 void Communication_6716::writeI2C(const unsigned char i2c_address, const unsigned char address, const unsigned char data) const {
-	sendCmd("BINT:MAIN:IC #h%02hhx, #h%02hhx, #h%02hhx\n", i2c_address, address, data);
+	sendCmd("BINT:MAIN:IC #h%02hhx, #h%02hhx, #h%02hhx", i2c_address, address, data);
 }
 
 unsigned char Communication_6716::readI2C(const unsigned char i2c_address, const unsigned char address) const {
-	sendCmd("BINT:MAIN:ICNA? #h%hhx, #h%02hhx\n", i2c_address, address);
+	sendCmd("BINT:MAIN:ICNA? #h%hhx, #h%02hhx", i2c_address, address);
 	return readResponse().toUInt(nullptr, 16);
 }

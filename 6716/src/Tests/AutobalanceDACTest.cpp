@@ -13,7 +13,7 @@ bool AutobalanceDACTest::test() const {
 	// 3
 	configureVoltageReferanceSwitches(0x64);
 	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
-	int errorDetected = 0;
+	
 	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
@@ -28,14 +28,14 @@ bool AutobalanceDACTest::test() const {
 		};
 
 		// 5 
-		errorDetected = checkValueLambda("L1601", 30e-3);
+		channelsErrorsMask = checkValueLambda("L1601", 30e-3);
 
 		// 6
 		setAutoDACPositive(channelMask, -10.0);
 		bu3100_sleep(50);
 
 		// 7
-		errorDetected |= checkValueLambda("L1602", -30e-3);
+		channelsErrorsMask |= checkValueLambda("L1602", -30e-3);
 
 		// 8 & 9
 		setAutoDACPositive(channelMask, 0.0);
@@ -43,22 +43,21 @@ bool AutobalanceDACTest::test() const {
 		bu3100_sleep(50);
 
 		// 10
-		errorDetected |= checkValueLambda("L1602", -30e-3);
+		channelsErrorsMask |= checkValueLambda("L1602", -30e-3);
 
 		// 11
 		setAutoDACNegative(channelMask, -10.0);
 		bu3100_sleep(50);
 
 		// 12
-		errorDetected |= checkValueLambda("L1601", 30e-3);
+		channelsErrorsMask |= checkValueLambda("L1601", 30e-3);
 
 		// 13
 		setAutoDACPositive(channelMask, 0.0);
 		setAutoDACNegative(channelMask, 0.0);
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
 	}
-	bu3100_sleep(250);
-	return errorDetected == 0;
+	return channelsErrorsMask == 0;
 }
 
 AutobalanceDACTest::AutobalanceDACTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AutoBalance DAC", connection) {}

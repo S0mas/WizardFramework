@@ -1,5 +1,8 @@
 #include "..\include\AbstractTest.h"
 #include <QThread>
+#include <thread>
+#include <chrono>
+
 AbstractTest::AbstractTest(const QString& name) : name(name) {}
 
 const QString& AbstractTest::getName() const noexcept {
@@ -7,9 +10,10 @@ const QString& AbstractTest::getName() const noexcept {
 }
 
 void AbstractTest::run() const {
-	log(QString("%1 -----------> STARTED\n").arg(name));
+	log(QString("%1 -----------> STARTED").arg(name));
 	try {
 		wasRunned = true;
+		problemReportedByUser = false;
 		preTestSetUp();
 		result = test();
 		postTestCleanUp();
@@ -19,10 +23,10 @@ void AbstractTest::run() const {
 		log(QString(exc.what()));
 	}
 	catch (...) {
-		log("Exception thrown...\n");
+		log("Exception thrown...");
 	}
-	log(QString("%1 -----------> %2\n").arg(name).arg(result ? "PASSED" : "FAILED"));
-	log(QString("\n****** ***** ***** ***** ***** *****\n\n"));
+	log(QString("%1 -----------> %2").arg(name).arg(result ? "PASSED" : "FAILED"));
+	log(QString("****** ***** ***** ***** ***** *****"));
 }
 
 bool AbstractTest::getShouldBeRun() const noexcept {
@@ -52,10 +56,14 @@ bool AbstractTest::getStoreCalibrationDataToEeprom() noexcept {
 
 void AbstractTest::waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept {
 	emit askUserAction(msg, static_cast<int>(actionType));
-	while (!continueTestClicked) {}
+	while (!continueTestClicked) { std::this_thread::sleep_for(std::chrono::milliseconds(1000));}
 	continueTestClicked = false;
 }
 
-void AbstractTest::continueTest() const {
+void AbstractTest::continueTest() {
 	continueTestClicked = true;
+}
+
+void AbstractTest::reportProblem() {
+	problemReportedByUser = true;
 }

@@ -15,7 +15,7 @@ MyPage {
         DataBaseField {
 			id: subtypeLabelId
             label.text: "Subtype:"
-            onSave: dataInterface.setSubtype(textField.text)
+            onSave: dataInterface.setSubtype(textInput.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
 			textInput.inputMask: ">AA;_"
 			textInput.text: "XX"
@@ -24,7 +24,7 @@ MyPage {
         DataBaseField {
 			id: snLabelId
             label.text: "Serial number"
-            onSave: dataInterface.setSerialNumber(textField.text)
+            onSave: dataInterface.setSerialNumber(textInput.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
 			textInput.inputMask: "D9999999;_"
 			textInput.text: "10000000"
@@ -33,7 +33,7 @@ MyPage {
 		DataBaseField {
 			id: firmwareLabelId
             label.text: "Firmware revision"
-            onSave: dataInterface.setFirmwareRevision(textField.text)
+            onSave: dataInterface.setFirmwareRevision(textInput.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
 			textInput.inputMask: "n.nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
 			textInput.text: "0.00"
@@ -49,10 +49,13 @@ MyPage {
 
 		Connections {
 			target: dataInterface
-			onSubtype: subtypeLabelId.textField.text = value
-			onSerialNumber: snLabelId.textField.text = value
-			onFirmwareRevision: firmwareLabelId.textField.text = value
-			onDriverRevision: driverLabelId.textField.text = value
+			onSubtype: {
+			console.log(value)
+			subtypeLabelId.textInput.text = value}
+
+			onSerialNumber: snLabelId.textInput.text = value
+			onFirmwareRevision: firmwareLabelId.textInput.text = value
+			onDriverRevision: driverLabelId.textInput.text = value
 		}
     }
 }

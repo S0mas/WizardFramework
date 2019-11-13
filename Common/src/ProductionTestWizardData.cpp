@@ -20,6 +20,7 @@ void ProductionTestWizardData::addTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
 	connect(test.get(), &AbstractTest::askUserAction, this, &ProductionTestWizardData::askUserAction);
 	connect(this, &ProductionTestWizardData::continueAction, test.get(), &AbstractTest::continueTest);
+	connect(this, &ProductionTestWizardData::reportProblem, test.get(), &AbstractTest::reportProblem);
 	testsListModel_->getTestsList().push_back(std::move(test));
 }
 

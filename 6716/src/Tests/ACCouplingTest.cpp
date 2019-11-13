@@ -2,7 +2,7 @@
 #include "../include/defines.h"
 
 bool ACCouplingTest::test() const {
-	int errorDetected = 0;
+	
 	const ViReal64 vref[2] = { 9.0, -9.0 };
 	ViReal64 vrefSet;
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
@@ -23,7 +23,7 @@ bool ACCouplingTest::test() const {
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
 		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		log(QString("CHANNEL %1\n").arg(i + 1));
+		log(QString("CHANNEL %1").arg(i + 1));
 
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
 #ifdef AUTO_DAC  // Seems it's not needed. Not described in the TP doc, Stephen also doesn't remember why it was added in 5716 prodtest code...
@@ -46,14 +46,14 @@ bool ACCouplingTest::test() const {
 				}
 				// Debug
 				//BU6716_CHECK_ERR(readPortExpander, connection->getVi6716(), i + 1, &data16);
-				//log("port expander: 0x%04hx\n", data16);
+				//log("port expander: 0x%04hx", data16);
 			}
 			bu3100_sleep(5000);  // Allow full discharge
 			BU3416_CHECK_ERR(readValue_oneChannel, env, bu3416_GAIN_1, i + 1, 0.1, &value, 5000, 100);
 			autoDAC[j] = -value / 0.00305 * bu6716_DAC_AUTO_GAIN;
 			BU6716_CHECK_ERR(bu6716_setCoupling, connection->getVi6716(), channelMask, bu6716_COUPLING_DC);
 		}
-		log(QString("autoDacpos = %1, autoDACneg = %2\n").arg(autoDAC[0]).arg(autoDAC[1]));
+		log(QString("autoDacpos = %1, autoDACneg = %2").arg(autoDAC[0]).arg(autoDAC[1]));
 #endif
 		for (int j = 0; j < 2; j++) {
 			// 3 & 4
@@ -62,7 +62,7 @@ bool ACCouplingTest::test() const {
 			bu3100_sleep(50);
 			// 5
 			auto value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1);
-			errorDetected |= checkValue_oneChannel(i + 1, value, "L2003", vrefSet, 0.01, 0.01, true);
+			channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2003", vrefSet, 0.01, 0.01, true);
 
 #ifdef AUTO_DAC
 			setAutoDAC(channelMask, AUTO_DAC_POSITIVE, autoDAC[j]);  // In 5716 test code just the positive was set...
@@ -78,9 +78,9 @@ bool ACCouplingTest::test() const {
 			// 8
 			value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1, 5000.0, 100);
 			if (j == 0)
-				errorDetected |= checkValue_oneChannel(i + 1, value, "L2001", 3.0, 1, 1, true);
+				channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2001", 3.0, 1, 1, true);
 			else
-				errorDetected |= checkValue_oneChannel(i + 1, value, "L2002", -3.0, 1, 1, true);
+				channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2002", -3.0, 1, 1, true);
 			connection->callAndThrowOnError6716(bu6716_setCoupling, "bu6716_setCoupling", channelMask, bu6716_COUPLING_DC);
 			bu3100_sleep(50);
 		}
@@ -91,13 +91,13 @@ bool ACCouplingTest::test() const {
 	//connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
 	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 		if (CHANNEL_MASK & (1 << i)) {
+			bu3100_sleep(20);
 			setAutoDACNegative(CHANNEL_MASK, autoDacNeg[n]);
 			setAutoDACPositive(CHANNEL_MASK, autoDacPos[n]);
 			n++;
 		}
 	}
-	bu3100_sleep(250);
-	return errorDetected == 0;
+	return channelsErrorsMask == 0;
 }
 
 ACCouplingTest::ACCouplingTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AC Coupling", connection) {}

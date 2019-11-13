@@ -38,7 +38,8 @@ public:
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::startTests, dataObject.get(), &ProductionTestWizardData_6716::startTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::stopTests, dataObject.get(), &ProductionTestWizardData_6716::stopTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::requestConnectionStatus, dataObject.get(), &ProductionTestWizardData_6716::checkConnectionStatus);
-		connect(this, &ProductionTestWizardData_6716_SignalInterface::continueAction, dataObject.get(), &ProductionTestWizardData_6716::continueAction);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::continueAction, dataObject.get(), &ProductionTestWizardData::continueAction);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::reportProblem, dataObject.get(), &ProductionTestWizardData::reportProblem);
 	}
 
 	//void initialize() override;
@@ -59,7 +60,7 @@ signals:
 	void version3416_6716(const QString& value) const;
 	void version3416_T028(const QString& value) const;
 	void connectionStatus(const bool status) const;
-	void askUserAction(const QString& str, const int actionType) const;
+	void askUserAction(const QString& msg, const int actionType) const;
 
 	//in
 	void connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) const;
@@ -78,4 +79,5 @@ signals:
 	void startTests() const;
 	void stopTests() const;
 	void continueAction() const;
+	void reportProblem() const;
 };

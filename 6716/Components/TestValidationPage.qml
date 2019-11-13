@@ -51,12 +51,17 @@ MyPage {
 			//saveFile("C:\\ksommerf\\WizardFramework", "text in file")
 		}
 		onAskUserAction: {
-			dialogTextId.text = str
-			if(actionType == 0)
+			if(actionType == 0) {
+				userConfirmationDialogId.text = msg
 				userConfirmationDialogId.open()
-			if(actionType == 1){
+			}
+			else if(actionType == 1) {
+				channelMaskDialogId.title = msg
 				channelMaskDialogId.open()
-				testsRunnerId.textAreaId.text += "Channels with faulty leds are:" + channelMaskDialogId + "\n"
+				if(channelMaskDialogId.channelMask != "0000000000000000") { // there was error reported by user 
+					dataInterface.reportProblem()
+					testsRunnerId.testLogs += "ERROR: Channels mask 16 -> 1, 1 = error, 0 = ok : " + channelMaskDialogId.channelMask + "\n"
+				}
 			}
 		}
 	}

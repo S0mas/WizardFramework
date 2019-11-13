@@ -21,9 +21,7 @@ bool LEDsTest::switchLED_inTestMode(unsigned char channel, LED_STATE state) cons
 bool LEDsTest::test() const {
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
-	log("Press enter to start the sequence...\n");
-	//getchar();
-	// Turn off all LEDs
+
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
 	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
@@ -34,12 +32,12 @@ bool LEDsTest::test() const {
 	for (int i = 0; i < 32; i++) {
 		if (!(CHANNEL_MASK & (1 << i % 16)))
 			continue;
-		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
+		log(QString("CHANNEL %1").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::RED);
 		else
 			switchLED_inTestMode(i % 16, LED_STATE::OFF);
-		bu3100_sleep(50);
+		bu3100_sleep(1000);
 	}
 	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
 
@@ -47,22 +45,16 @@ bool LEDsTest::test() const {
 	for (int i = 0; i < 32; i++) {
 		if (!(CHANNEL_MASK & (1 << i % 16)))
 			continue;
-		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
+		log(QString("CHANNEL %1").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::GREEN);
 		else
 			switchLED_inTestMode(i % 16, LED_STATE::OFF);
-		bu3100_sleep(50);
+		bu3100_sleep(1000);
 	}
 	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
-	// Bring back normal operation of LEDs
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0);
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0);
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
-	bu3100_sleep(250);
-	return true;
+
+	return !problemReportedByUser;
 }
 
 LEDsTest::LEDsTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("LEDs", connection) {}

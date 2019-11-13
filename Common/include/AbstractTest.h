@@ -9,11 +9,12 @@ class AbstractTest : public QObject {
 	Q_OBJECT
 	const QString name;
 	mutable bool result = false;
-	bool shouldBeRun = true;
 	mutable bool wasRunned = false;
+	bool shouldBeRun = true;
 	static inline bool storeCalibrationDataToEeprom = true;
 protected:
-	static inline std::atomic<bool> continueTestClicked = { false };
+	mutable std::atomic<bool> continueTestClicked = { false };
+	mutable bool problemReportedByUser = false;
 	virtual bool test() const = 0;
 	virtual void preTestSetUp() const {}
 	virtual void postTestCleanUp() const {}
@@ -31,9 +32,10 @@ public:
 signals:
 	void shouldBeRunChanged(bool) const;
 	void log(QString) const;
-	void askUserAction(const QString& str, const int actionType) const;
+	void askUserAction(const QString& msg, const int actionType) const;
 public slots:
-	void continueTest() const;
+	void continueTest();
+	void reportProblem();
 };
 
 

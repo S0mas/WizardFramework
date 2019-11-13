@@ -20,6 +20,7 @@ class Abstract6716Test : public AbstractTest {
 	void setAutoDAC(const ViUInt16 channelMask, const ViReal64 voltage, const ViInt16 select) const;
 	std::vector<ViReal64> getAutoDAC(const ViUInt16 channelMask, const ViInt16 select) const;
 protected:
+	mutable unsigned short channelsErrorsMask = 0;
 	std::shared_ptr<Communication_6716> connection;
 	void preTestSetUp() const override;
 	void postTestCleanUp() const override;
@@ -42,6 +43,7 @@ public:
 	bool configureVoltageReferanceSwitches(const unsigned char newSegConfRegValue) const;
 	void closeAll();
 	inline static short unsigned CHANNEL_MASK = 0xFFFF;
+	void logSummary() const noexcept;
 public:
 	Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection);
 };

@@ -64,6 +64,7 @@ signals:
 	void subtype(const QString& value) const;
 	void testsDone() const;
 	void connectionStatus(const bool status) const;
-	void askUserAction(const QString& str, const int actionType) const;
+	void askUserAction(const QString& msg, const int actionType) const;
 	void continueAction() const;
+	void reportProblem() const;
 };

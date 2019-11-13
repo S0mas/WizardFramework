@@ -4,7 +4,7 @@ import QtQuick.Layouts 1.11
 
 Dialog {
 	id: userConfirmationDialogId
-	property string text : dialogTextId.text
+	property alias text : dialogTextId.text
 	x: Math.round((parent.width - width) / 2)
 	y: Math.round((parent.height - height) / 2)
 	title: "Action required!"

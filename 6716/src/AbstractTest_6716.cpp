@@ -3,7 +3,7 @@
 
 bool Abstract6716Test::checkValue(const unsigned short expected, const unsigned short actual, const int form, const int width, const char fill) const noexcept {
 	const auto& status = expected == actual;
-	auto str = QString(" Expected: %1, Actual: %2\n").arg(QString::number(expected, form), width, fill).arg(QString::number(actual, form), width, fill);
+	auto str = QString(" Expected: %1, Actual: %2").arg(QString::number(expected, form), width, fill).arg(QString::number(actual, form), width, fill);
 	status ? str.prepend("Success:") : str.prepend("Error:");
 	log(str);
 	return status;
@@ -47,7 +47,7 @@ std::vector<ViReal64> Abstract6716Test::readValues(ViInt16 gain, const ViUInt16 
 			averageValues[j] /= scanCount;
 			n++;
 			if (max - min > warnMargin)
-				log(QString("WARNING: channel_%1: Difference between min and max exceeds margin\n\t(min=%2, max=%3, average=%4, max-min=%5, margin=%6)\n").arg(j + 1).arg(min).arg(max).arg(averageValues[j]).arg(max - min).arg(warnMargin));
+				log(QString("WARNING: channel_%1: Difference between min and max exceeds margin\n\t(min=%2, max=%3, average=%4, max-min=%5, margin=%6)").arg(j + 1).arg(min).arg(max).arg(averageValues[j]).arg(max - min).arg(warnMargin));
 		}
 	}
 	return averageValues;
@@ -74,10 +74,13 @@ std::vector<ViReal64> Abstract6716Test::getAutoDAC(ViUInt16 channelMask, ViInt16
 }
 
 void Abstract6716Test::preTestSetUp() const {
+	bu3100_sleep(1000);
+	channelsErrorsMask = 0;
 	connection->callAndThrowOnError6716(bu6716_reset, "bu6716_reset");
 }
 
 void Abstract6716Test::postTestCleanUp() const {
+	logSummary();
 	//connection->callAndThrowOnError6716(bu6716_reset, "bu6716_reset");
 }
 
@@ -112,16 +115,12 @@ ViUInt16 Abstract6716Test::checkValues(const ViUInt16 channelMask, const std::ve
 		if (!(channelMask & (1 << i)))
 			continue;
 		if (values[i] - expected > marginPos) {
-			if (errorMask == 0)
-				log("\n");
 			errorMask |= (1 << i);
-			log(QString("ERROR (%1): channel_%2: Value exceeds positive margin (expected=%3, measured=%4, marginPos=%5)\n").arg(limitName.c_str()).arg(i + 1).arg(expected).arg(values[i]).arg(marginPos));
+			log(QString("ERROR (%1): channel_%2: Value exceeds positive margin (expected=%3, measured=%4, marginPos=%5)").arg(limitName.c_str()).arg(i + 1).arg(expected).arg(values[i]).arg(marginPos));
 		}
 		if (expected - values[i] > marginNeg) {
-			if (errorMask == 0)
-				log("\n");
 			errorMask |= (1 << i);
-			log(QString("ERROR (%1): channel_%2: Value exceeds negative margin (expected=%3, measured=%4, marginNeg=%5)\n").arg(limitName.c_str()).arg(i + 1, expected).arg(values[i]).arg(marginNeg));
+			log(QString("ERROR (%1): channel_%2: Value exceeds negative margin (expected=%3, measured=%4, marginNeg=%5)").arg(limitName.c_str()).arg(i + 1, expected).arg(values[i]).arg(marginNeg));
 		}
 	}
 	if (verbose) {
@@ -130,9 +129,8 @@ ViUInt16 Abstract6716Test::checkValues(const ViUInt16 channelMask, const std::ve
 		for (int i = 0; i < bu3416_NUM_CHAN; i++) {
 			if (!(channelMask & (1 << i)))
 				continue;
-			log(QString("Channel_%1 =\t%2  %3\n").arg(i + 1).arg(values[i]).arg(errorMask & (1 << i) ? "[ERROR]" : ""));
+			log(QString("Channel_%1 =\t%2  %3").arg(i + 1).arg(values[i]).arg(errorMask & (1 << i) ? "[ERROR]" : ""));
 		}
-		log("\n");
 	}
 	return errorMask;
 }
@@ -147,7 +145,7 @@ ViUInt16 Abstract6716Test::checkValue_oneChannel(const ViUInt16 channel, const V
 bool Abstract6716Test::excitCalibration(ViInt16 channel, ViReal64* offsetPos, ViReal64* offsetNeg, ViReal64* gainPos, ViReal64* gainNeg, ViBoolean store) const {
 	const double CALIB_EXC_PV = 9.0;
 	const double CALIB_EXC_NV = -9.0;
-	int errorDetected = 0;
+	
 	ViReal64 excitationVoltagePos = 0;
 	ViReal64 excitationVoltageNeg = 0;
 	ViInt16 excMonitorMode = 0;
@@ -172,11 +170,11 @@ bool Abstract6716Test::excitCalibration(ViInt16 channel, ViReal64* offsetPos, Vi
 
 	bu3100_sleep(100);
 	auto readValOffPos = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-	errorDetected |= checkValue_oneChannel(channel, readValOffPos, "L1101", 0.0, 0.050, 0.050, false);
+	channelsErrorsMask |= checkValue_oneChannel(channel, readValOffPos, "L1101", 0.0, 0.050, 0.050, false);
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_NEGATIVE);
 	bu3100_sleep(100);
 	auto readValOffNeg = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-	errorDetected |= checkValue_oneChannel(channel, readValOffNeg, "L1101", 0.0, 0.050, 0.050, false);
+	channelsErrorsMask |= checkValue_oneChannel(channel, readValOffNeg, "L1101", 0.0, 0.050, 0.050, false);
 	// - gain
 	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, CALIB_EXC_PV);
 	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", channelMask, CALIB_EXC_NV);
@@ -184,36 +182,36 @@ bool Abstract6716Test::excitCalibration(ViInt16 channel, ViReal64* offsetPos, Vi
 	bu3100_sleep(100);
 	auto readValPos = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
 	readValPos -= readValOffPos;
-	errorDetected |= checkValue_oneChannel(channel, readValPos, "L1102", 9.0, 0.2, 0.2, false);
+	channelsErrorsMask |= checkValue_oneChannel(channel, readValPos, "L1102", 9.0, 0.2, 0.2, false);
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_NEGATIVE);
 	bu3100_sleep(100);
 	auto readValNeg = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
 	readValNeg -= readValOffNeg;
-	errorDetected |= checkValue_oneChannel(channel, readValNeg, "L1103", -9.0, 0.2, 0.2, false);
+	channelsErrorsMask |= checkValue_oneChannel(channel, readValNeg, "L1103", -9.0, 0.2, 0.2, false);
 	*offsetPos = -readValOffPos;
 	*offsetNeg = -readValOffNeg;
 	*gainPos = CALIB_EXC_PV / readValPos;
 	*gainNeg = CALIB_EXC_NV / readValNeg;
 	// Set calculated coefficients
 	connection->callAndThrowOnError6716(bu6716_setExcCalibCoeff, "bu6716_setExcCalibCoeff", channelMask, *offsetPos, *offsetNeg, *gainPos, *gainNeg);
-	if (store && errorDetected == 0) {
+	if (store && channelsErrorsMask == 0) {
 		connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, 0.0);
 		connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", channelMask, 0.0);
 		connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_POSITIVE);
 		bu3100_sleep(100);
 		auto value = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-		errorDetected |= checkValue_oneChannel(channel, value, "L2201", 0.0, 0.001, 0.001, false);
+		channelsErrorsMask |= checkValue_oneChannel(channel, value, "L2201", 0.0, 0.001, 0.001, false);
 		connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, 9.99);
 		connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_POSITIVE);
 		bu3100_sleep(100);
 		value = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-		errorDetected |= checkValue_oneChannel(channel, value, "L2202", 9.99, 0.003, 0.003, false);
+		channelsErrorsMask |= checkValue_oneChannel(channel, value, "L2202", 9.99, 0.003, 0.003, false);
 		connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", channelMask, -9.99);
 		connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_NEGATIVE);
 		bu3100_sleep(100);
 		value = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-		errorDetected |= checkValue_oneChannel(channel, value, "L2203", -9.99, 0.003, 0.003, false);
-		if (errorDetected == 0) {
+		channelsErrorsMask |= checkValue_oneChannel(channel, value, "L2203", -9.99, 0.003, 0.003, false);
+		if (channelsErrorsMask == 0) {
 			connection->callAndThrowOnError6716(bu6716_storeExcCalibCoeff, "bu6716_storeExcCalibCoeff", channelMask);
 			connection->callAndThrowOnError6716(bu6716_resetExcCalibCoeff, "bu6716_resetExcCalibCoeff", channelMask, true);
 		}
@@ -223,7 +221,7 @@ bool Abstract6716Test::excitCalibration(ViInt16 channel, ViReal64* offsetPos, Vi
 	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", channelMask, excitationVoltageNeg);
 	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", excMonitorMode);
 	connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, mode);
-	return errorDetected == 0;
+	return channelsErrorsMask == 0;
 }
 
 bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
@@ -259,15 +257,15 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 			limit = "L1401";
 		else
 			limit = "L1501";
-		auto errorDetected = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, positivePolarization ? excitationPos : excitationNeg, margin, margin);
+		auto channelsErrorsMask = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, positivePolarization ? excitationPos : excitationNeg, margin, margin);
 		// 5
 		ViInt16 excl_status[bu3416_NUM_CHAN];
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", CHANNEL_MASK, nullptr, excl_status);
 		for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 			if (CHANNEL_MASK & (1 << i)) {
 				if (excl_status[n] == bu6716_EXC_CURRENT_LIMIT_DETECTED) {
-					log(QString("CH_%1: Excitation current limit condition detected\n").arg(i + 1));
-					errorDetected |= 1 << i;
+					log(QString("CH_%1: Excitation current limit condition detected").arg(i + 1));
+					channelsErrorsMask |= 1 << i;
 				}
 				n++;
 			}
@@ -292,26 +290,25 @@ bool Abstract6716Test::excitationTest(const bool positivePolarization) const {
 			marinN = 1.2;
 			expected = -7.2;
 		}
-		errorDetected |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, expected, marinP, marinN);
+		channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), limit, expected, marinP, marinN);
 		// 8
 		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", CHANNEL_MASK, nullptr, excl_status);
 		for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
 			if (CHANNEL_MASK & (1 << i)) {
 				if (excl_status[n] != bu6716_EXC_CURRENT_LIMIT_DETECTED) {
-					log(QString("CH_%1: Excitation current limit condition IS NOT detected, but should be\n").arg(i + 1));
-					errorDetected |= (1 << i);
+					log(QString("CH_%1: Excitation current limit condition IS NOT detected, but should be").arg(i + 1));
+					channelsErrorsMask |= (1 << i);
 				}
 				n++;
 			}
 		}
 		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
-		bu3100_sleep(250);
-		return errorDetected == 0;
+		return channelsErrorsMask == 0;
 	
 }
 
 bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4], ViReal64 gainCoeffs[4], ViBoolean store) const {
-	int errorDetected = 0;
+	
 	ViReal64 excitationVoltagePos;
 	ViReal64 excitationVoltageNeg;
 	ViInt16 excMonitorMode;
@@ -347,53 +344,53 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	for (int g = 0; g < 4; g++) {
 		const ViInt16 gain[4] = { 1, 10, 100, 1000 };
 		ViReal64 vrefVal = 9.0 / gain[g];
-		auto const& readAndCheckValue = [this, channel, g](int& errorDetected, const double expected) {
+		auto const& readAndCheckValue = [this, channel, g](unsigned short& channelsErrorsMask, const double expected) {
 			const ViReal64 limit[4] = { 0.01, 0.01, 0.05, 0.25 };
 			auto readValOff = readValue_oneChannel(bu3416_GAIN_1, channel, 0.1);
-			errorDetected |= checkValue_oneChannel(channel, readValOff, "L23xx", expected, limit[g], limit[g], false);
+			channelsErrorsMask |= checkValue_oneChannel(channel, readValOff, "L23xx", expected, limit[g], limit[g], false);
 			return readValOff;
 		};
 
-		log(QString("  GAIN = %1\n").arg(gain[g]));
+		log(QString("  GAIN = %1").arg(gain[g]));
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", channel, bu6716_INP_SRC_VREF);
 		connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, gain[g]);
 
 		//4
 		auto vrefOutput = setVrefVoltage(0);
-		log(QString("VRef ouput:%1, should be 0\n").arg(vrefOutput));
+		log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
 
 		// 5
-		auto readValOff = readAndCheckValue(errorDetected, 0);
-		if (errorDetected == 0)
+		auto readValOff = readAndCheckValue(channelsErrorsMask, 0);
+		if (channelsErrorsMask == 0)
 			connection->callAndThrowOnError6716(bu6716_setSignalPathCalibCoeff, "bu6716_setSignalPathCalibCoeff", channelMask, gain[g], -readValOff, 1.0);
 		// 6
 		realPosVoltageValue = setVrefVoltage(vrefVal);
-		log(QString("VRef ouput:%1, should be %2\n").arg(realPosVoltageValue).arg(vrefVal));
+		log(QString("VRef ouput:%1, should be %2").arg(realPosVoltageValue).arg(vrefVal));
 
 		// 7
-		auto readValPos = readAndCheckValue(errorDetected, realPosVoltageValue * gain[g]);
+		auto readValPos = readAndCheckValue(channelsErrorsMask, realPosVoltageValue * gain[g]);
 
 		// 8
 		realNegVoltageValue = setVrefVoltage(-vrefVal);
-		log(QString("VRef ouput:%1, should be %2\n").arg(realNegVoltageValue).arg(-vrefVal));
+		log(QString("VRef ouput:%1, should be %2").arg(realNegVoltageValue).arg(-vrefVal));
 
 		// 9
-		auto readValNeg = readAndCheckValue(errorDetected, realNegVoltageValue * gain[g]);
+		auto readValNeg = readAndCheckValue(channelsErrorsMask, realNegVoltageValue * gain[g]);
 
 		// 10
 		offsets[g] = -readValOff / gain[g];
 		gainCoeffs[g] = (realPosVoltageValue - realNegVoltageValue) / (readValPos / gain[g] - readValNeg / gain[g]);
-		if (errorDetected == 0)
+		if (channelsErrorsMask == 0)
 			connection->callAndThrowOnError6716(bu6716_setSignalPathCalibCoeff, "bu6716_setSignalPathCalibCoeff", channelMask, gain[g], offsets[g], gainCoeffs[g]);
 		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", channel, bu6716_INP_SRC_FP);
 	}
-	if (store && errorDetected == 0) {
+	if (store && channelsErrorsMask == 0) {
 		connection->callAndThrowOnError6716(bu6716_storeSignalPathCalibCoeff, "bu6716_storeSignalPathCalibCoeff", channelMask);
 		connection->callAndThrowOnError6716(bu6716_resetSignalPathCalibCoeff, "bu6716_resetSignalPathCalibCoeff", channelMask, true);
 	}
 	// Restore settings
 	auto vrefOutput = setVrefVoltage(0);
-	log(QString("VRef ouput:%1, should be 0\n").arg(vrefOutput));
+	log(QString("VRef ouput:%1, should be 0").arg(vrefOutput));
 	bu3100_sleep(100);
 	connection->callAndThrowOnError6716(bu6716_setGain, "bu6716_setGain", channelMask, bu6716_GAIN_1);
 	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", channelMask, excitationVoltagePos);
@@ -402,7 +399,7 @@ bool Abstract6716Test::signalPathCalibration(ViInt16 channel, ViReal64 offsets[4
 	connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, mode);
 	setAutoDACNegative(channelMask, autoDacNeg[0]);
 	setAutoDACPositive(channelMask, autoDacPos[0]);
-	return errorDetected == 0;
+	return channelsErrorsMask == 0;
 }
 
 bool Abstract6716Test::configureVoltageReferanceSwitches(const unsigned char newSegConfRegValue) const {
@@ -419,5 +416,12 @@ void Abstract6716Test::closeAll()  {
 		t028_close(connection->getViT028());
 	if (connection->getViT028Master())
 		bu3416_close(connection->getViT028Master());
+}
+
+void Abstract6716Test::logSummary() const noexcept {
+	log(QString("Test result summary: %1").arg(getName()));
+	for (int i = 0; i < 16; i++)
+		log(QString("Channel %1 --- %2").arg(i + 1).arg(channelsErrorsMask & (1 << i) ? "FAILED" : "PASSED"));
+	log(QString("Result: %1").arg(getResult() ? "PASSED" : "FAILED"));
 }
 Abstract6716Test::Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection) : AbstractTest(name), connection(connection) {}

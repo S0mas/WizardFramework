@@ -23,9 +23,9 @@ bool HalfBridgeTest::test() const {
 	}
 
 	//Step 4)
-	auto errorDetected = 0;
+	auto channelsErrorsMask = 0;
 	{
-		errorDetected = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
+		channelsErrorsMask = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
 		bu3100_sleep(50);
 	}
 
@@ -34,7 +34,7 @@ bool HalfBridgeTest::test() const {
 
 	//6)
 	bu3100_sleep(50);
-	errorDetected |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1202", -2.5, 1.0, 1.0);
+	channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1202", -2.5, 1.0, 1.0);
 	//7)
 	connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", CHANNEL_MASK, bu6716_MODE_HALF_BRIDGE);
 	//8)
@@ -43,7 +43,7 @@ bool HalfBridgeTest::test() const {
 	//9)
 	bu3100_sleep(50);
 
-	errorDetected |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
+	channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
 	/* removed at the moment
 	//10)
 	T028_CHECK_ERR(t028_setRelay, T028_CHAN_ALL, T028_RELAY_1, T028_OFF);
@@ -52,15 +52,14 @@ bool HalfBridgeTest::test() const {
 	bu3100_sleep(50);
 	BU3416_CHECK_ERR(readValues, env, bu3416_GAIN_1000, CHANNEL_MASK, 0.1, values);
 
-	errorDetected |= checkValues(CHANNEL_MASK, values, "L1203", -2.5e-3, 1e-3, 1e-3);
+	channelsErrorsMask |= checkValues(CHANNEL_MASK, values, "L1203", -2.5e-3, 1e-3, 1e-3);
 	*/
 	//12)
 	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 0.0);
 	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
 	//13)
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
-	bu3100_sleep(250);
-	return errorDetected == 0;
+	return channelsErrorsMask == 0;
 }
 
 HalfBridgeTest::HalfBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Half Bridge", connection) {}

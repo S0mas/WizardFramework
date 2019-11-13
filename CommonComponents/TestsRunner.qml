@@ -4,6 +4,7 @@ import QtQuick.Controls 2.4
 Row {
 	signal runClicked()
 	property alias runEnabled : runTestsButtonId.enabled
+	property alias testLogs : textAreaId.text
 	function addFinishedTest(name, result) {
 		runnedTestsListId.model.append({name: name, result: result})
 	}

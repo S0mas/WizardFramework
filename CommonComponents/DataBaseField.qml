@@ -52,7 +52,7 @@ Row {
         id: buttonId
         text: "Update"
         enabled: checkboxId.checked
-        onClicked: save(textFieldId.text)
+        onClicked: save(textInputId.text)
     }
     Component.onCompleted: refresh()
 }

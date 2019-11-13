@@ -62,12 +62,12 @@ MyPage {
 
 	Connections {
 		target: dataInterface
-		onConnectionStatus: ready = true //status
+		onConnectionStatus: ready = status
 	}
 
 	Component.onCompleted: {
-		ip6100.textInput.text = appSettings.get("ip6100", "000.000.000.000")
-		ip6716.textInput.text = appSettings.get("ip6716", "000.000.000.000")
+		ip6100.textInput.text = appSettings.get("ip6100", "192.168.168.000")
+		ip6716.textInput.text = appSettings.get("ip6716", "192.168.168.000")
 		fc3416_6716.textInput.text = appSettings.get("fc3416_6716", "1")
 		fc3416_t028.textInput.text = appSettings.get("fc3416_t028", "1")
 	}
