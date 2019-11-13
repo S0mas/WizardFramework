@@ -21,6 +21,7 @@ public:
 		connect(dataObject.get(), &ProductionTestWizardData_6716::version3416_T028, this, &ProductionTestWizardData_6716_SignalInterface::version3416_T028);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::connectionStatus, this, &ProductionTestWizardData_6716_SignalInterface::connectionStatus);
 		connect(dataObject.get(), &ProductionTestWizardData_6716::askUserAction, this, &ProductionTestWizardData_6716_SignalInterface::askUserAction);
+		connect(dataObject.get(), &ProductionTestWizardData_6716::testSummary, this, &ProductionTestWizardData_6716_SignalInterface::testSummary);
 
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::connectDevices, dataObject.get(), &ProductionTestWizardData_6716::connectDevices);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::disconnectDevices, dataObject.get(), &ProductionTestWizardData_6716::disconnectDevices);
@@ -61,6 +62,7 @@ signals:
 	void version3416_T028(const QString& value) const;
 	void connectionStatus(const bool status) const;
 	void askUserAction(const QString& msg, const int actionType) const;
+	void testSummary(const QString& msg) const;
 
 	//in
 	void connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) const;

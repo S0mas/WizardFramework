@@ -33,6 +33,7 @@ signals:
 	void shouldBeRunChanged(bool) const;
 	void log(QString) const;
 	void askUserAction(const QString& msg, const int actionType) const;
+	void testSummary(const QString& msg) const;
 public slots:
 	void continueTest();
 	void reportProblem();

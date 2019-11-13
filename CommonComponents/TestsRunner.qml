@@ -12,6 +12,7 @@ Row {
 		runnedTestsListId.model.clear()
 	}
 	property string runningTest : "None"
+	property string summary : ""
 	width: parent.width
 	height: parent.height
 	Column {
@@ -44,16 +45,26 @@ Row {
 			height: 45
 			MyButton {
 				id: clearButtonId
-				width: parent.width/2
+				width: parent.width/3
 				height: parent.height
 				text: "Clear"
 				onClicked: textAreaId.text = ""
 			}
 			MyButton {
-				width: parent.width/2
+				width: parent.width/3
 				height: parent.height
 				text: "Copy"
 				onClicked: clipboard.setText(textAreaId.text)
+			}
+			MyButton {
+				width: parent.width/3
+				height: parent.height
+				text: "Summary"
+				onClicked: console.log(summary)
+				Connections {
+					target: dataInterface
+					onTestSummary: summary += msg
+				}
 			}
 		}
 		MyButton {

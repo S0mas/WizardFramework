@@ -419,9 +419,12 @@ void Abstract6716Test::closeAll()  {
 }
 
 void Abstract6716Test::logSummary() const noexcept {
-	log(QString("Test result summary: %1").arg(getName()));
+	QString summary;
+	summary += QString("Test result summary: %1\n").arg(getName());
 	for (int i = 0; i < 16; i++)
-		log(QString("Channel %1 --- %2").arg(i + 1).arg(channelsErrorsMask & (1 << i) ? "FAILED" : "PASSED"));
-	log(QString("Result: %1").arg(getResult() ? "PASSED" : "FAILED"));
+		summary += QString("Channel %1 --- %2\n").arg(i + 1).arg(channelsErrorsMask & (1 << i) ? "FAILED" : "PASSED");
+	summary += QString("Result: %1\n").arg(getResult() ? "PASSED" : "FAILED");
+	log(summary);
+	emit testSummary(summary);
 }
 Abstract6716Test::Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection) : AbstractTest(name), connection(connection) {}

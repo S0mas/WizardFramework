@@ -64,6 +64,7 @@ void ProductionTestWizardData_6716::testsInit() {
 	addPreTest(std::make_unique<I2CAccessTo1WireControllersTest>(connection));
 
 	//user input/action needed
+	addTest(std::make_unique<MockTest>(false));
 	addTest(std::make_unique<LEDsTest>(connection));
 	addTest(std::make_unique<TedsClass2Test>(connection));
 

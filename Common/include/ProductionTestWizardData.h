@@ -67,4 +67,5 @@ signals:
 	void askUserAction(const QString& msg, const int actionType) const;
 	void continueAction() const;
 	void reportProblem() const;
+	void testSummary(const QString& msg) const;
 };
