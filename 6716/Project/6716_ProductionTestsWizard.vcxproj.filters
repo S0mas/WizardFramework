@@ -177,6 +177,9 @@
     <QtMoc Include="..\include\AbstractTest_6716.h">
       <Filter>Header Files\6716</Filter>
     </QtMoc>
+    <QtMoc Include="..\..\Common\include\AppicationSettings.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="debug\moc_predefs.h.cbt">
@@ -303,6 +306,9 @@
     <ClInclude Include="..\include\Tests\TedsClass2Test.h">
       <Filter>Header Files\6716\Tests</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Common\include\UserActionTypes.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\..\Common\include\ProductionTestWizardData.h">
@@ -341,6 +347,9 @@
       <Filter>Resource Files\Common</Filter>
     </None>
     <None Include="..\..\CommonComponents\ChannelsSelectionDialog.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ConfirmationDialog.qml">
       <Filter>Resource Files\Common</Filter>
     </None>
   </ItemGroup>

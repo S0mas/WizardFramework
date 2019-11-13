@@ -14,7 +14,7 @@ Row {
 	width: parent.width
 	height: parent.height
 	Column {
-		width: parent.width / 2
+		width: parent.width * (5/8)
 		height: parent.height
 		ScrollView {
 			id: scrollViewId
@@ -31,7 +31,7 @@ Row {
 				text: "Logs will be put here..."
 				readOnly: true
 				font.family: "Helvetica"
-				font.pointSize: 12
+				font.pointSize: 10
 				Connections {
 					target: dataInterface
 					onLogMsg: textAreaId.append(msg)
@@ -67,11 +67,25 @@ Row {
 		}
 	}
 	Column {
-		width: parent.width / 2
+		width: parent.width  * (3/8)
 		height: parent.height
+		Label {
+			height: 30
+			width: parent.width
+			text: "Already finished tests will be put here"
+			font.family: "Helvetica"
+			font.pointSize: 12
+			horizontalAlignment: Text.AlignHCenter
+			verticalAlignment: Text.AlignVCenter
+			background: Rectangle {
+				border.width: 2
+				border.color: "#000000"
+				color: "#c3c3c3"
+			}
+		}
 		ScrollList {
 			id: runnedTestsListId
-			height: parent.height - 30
+			height: parent.height - 60
 			model: ListModel{}
 			delegate: Row {
 				height: 25
@@ -98,6 +112,7 @@ Row {
 			horizontalAlignment: Text.AlignHCenter
 			font.family: "Helvetica"
 			font.pointSize: 12
+			color: "blue"
 			background: Rectangle {
 				border.width: 2
 				border.color: "#000000"

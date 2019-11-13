@@ -17,6 +17,8 @@ MyPage {
             label.text: "Subtype:"
             onSave: dataInterface.setSubtype(textField.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
+			textInput.inputMask: ">AA;_"
+			textInput.text: "XX"
         }
 
         DataBaseField {
@@ -24,6 +26,8 @@ MyPage {
             label.text: "Serial number"
             onSave: dataInterface.setSerialNumber(textField.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
+			textInput.inputMask: "D9999999;_"
+			textInput.text: "10000000"
         }
 
 		DataBaseField {
@@ -31,12 +35,16 @@ MyPage {
             label.text: "Firmware revision"
             onSave: dataInterface.setFirmwareRevision(textField.text)
             onRefresh: dataInterface.requestUnitUnderTestData()
+			textInput.inputMask: "n.nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+			textInput.text: "0.00"
         }
 
-		LabeledTextField {
+		LabeledTextInput {
 			id: driverLabelId
             label.text: "Driver revision"
-			textField.enabled: false
+			textInput.enabled: false
+			textInput.inputMask: "9.90;_"
+			textInput.text: "0.00"
         }
 
 		Connections {

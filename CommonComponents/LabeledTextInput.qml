@@ -19,7 +19,6 @@ Row {
 		height: parent.height
 		font.family: "Helvetica"
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
 		verticalAlignment: Text.AlignVCenter
     }
 
@@ -34,6 +33,6 @@ Row {
 		width: 300
 		font.family: "Helvetica"
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
+		verticalAlignment: TextInput.AlignVCenter
     }
 }

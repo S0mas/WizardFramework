@@ -63,9 +63,7 @@ bool TedsClass2Test::test() const {
 			if (!(CHANNEL_MASK & 1 << (ch - 1)))
 				continue;
 
-			emit askUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch));
-			while (!continueTestClicked) {}
-			continueTestClicked = false;
+			waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch), UserActionType::CONFIRMATION);
 
 			log(QString("CHANNEL %1\n").arg(ch));
 			// 2
@@ -121,9 +119,8 @@ bool TedsClass2Test::test() const {
 		unsigned char data_wr[32];
 		if (!(CHANNEL_MASK & (1 << i)))
 			continue;
-		emit askUserAction(QString("Please connect sensor to channel %1 and click ok").arg(i+1));
-		while (!continueTestClicked) {}
-		continueTestClicked = false;
+		waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(i+1), UserActionType::CONFIRMATION);
+
 		connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", i + 1, T028_MODE_TEDS2);
 		log(QString("CHANNEL %1:\n").arg(i + 1));
 		for (int j = 0; j < 32; j++)

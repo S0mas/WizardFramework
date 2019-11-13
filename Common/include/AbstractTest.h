@@ -3,6 +3,7 @@
 #include <QObject>
 #include <cstdio>
 #include "PrintInterface.h"
+#include "UserActionTypes.h"
 
 class AbstractTest : public QObject {
 	Q_OBJECT
@@ -26,14 +27,13 @@ public:
 	void setShouldBeRun(const bool value) noexcept;
 	static void setStoreCalibrationDataToEeprom(const bool) noexcept;
 	static bool getStoreCalibrationDataToEeprom() noexcept;
+	void waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept;
 signals:
 	void shouldBeRunChanged(bool) const;
 	void log(QString) const;
-	void askUserAction(const QString& str) const;
+	void askUserAction(const QString& str, const int actionType) const;
 public slots:
-	void continueTest() {
-		continueTestClicked = true;
-	}
+	void continueTest() const;
 };
 
 

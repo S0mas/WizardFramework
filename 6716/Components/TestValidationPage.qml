@@ -23,42 +23,41 @@ MyPage {
 		}
 	}
 
-	Dialog {
-		id: userActionDialog
-		x: Math.round((parent.width - width) / 2)
-		y: Math.round((parent.height - height) / 2)
-		title: "Action required!"
+	ConfirmationDialog {
+		id: userConfirmationDialogId
+		onAccepted: dataInterface.continueAction()
+	}
+
+	ChannelsSelectionDialog {
+		id: channelMaskDialogId
 		standardButtons: Dialog.Ok
-		contentItem: Rectangle {
-			implicitWidth: 400
-			implicitHeight: 100
-			Text {
-				id: dialogTextId
-				font.family: "Helvetica"
-				font.pointSize: 12
-				anchors.centerIn: parent
-			}
-		}
+		defaultState: false
 		onAccepted: dataInterface.continueAction()
 	}
 
 	Connections {
 		target: dataInterface
-		property var locale: Qt.locale()
-		property date currentDate: new Date()
-		property string dateString
+		///property var locale: Qt.locale()
+		//property date currentDate: new Date()
+		//property string dateString
 		onTestsDone: {
 			ready = true
 			isPossibleToGoBack = true
 			testsRunnerId.runEnabled = true
 			testsRunnerId.runningTest = "all tests finished"
-			dateString = currentDate.toLocaleDateString();
-			console.log(Date.fromLocaleDateString(dateString));
+			//dateString = currentDate.toLocaleDateString();
+			//console.log(Date.fromLocaleDateString(dateString));
 			//saveFile("logs_Last.txt", testsRunnerId.text)
+			//saveFile("C:\\ksommerf\\WizardFramework", "text in file")
 		}
 		onAskUserAction: {
 			dialogTextId.text = str
-			userActionDialog.open()
+			if(actionType == 0)
+				userConfirmationDialogId.open()
+			if(actionType == 1){
+				channelMaskDialogId.open()
+				testsRunnerId.textAreaId.text += "Channels with faulty leds are:" + channelMaskDialogId + "\n"
+			}
 		}
 	}
 

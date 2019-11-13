@@ -102,7 +102,6 @@ Page {
 	Connections {
 		target: dataInterface
 		onConnectionStatus: connectionStatusIndicatorId.active = status
-
 	}
 
 	Component.onCompleted: dataInterface.requestConnectionStatus()

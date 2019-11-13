@@ -59,7 +59,7 @@ signals:
 	void version3416_6716(const QString& value) const;
 	void version3416_T028(const QString& value) const;
 	void connectionStatus(const bool status) const;
-	void askUserAction(const QString& str) const;
+	void askUserAction(const QString& str, const int actionType) const;
 
 	//in
 	void connectDevices(const QString& ip6100, const QString& ip6716, const QString& fc3416_6716, const QString& fc3416_t028) const;

@@ -25,14 +25,15 @@ bool LEDsTest::test() const {
 	//getchar();
 	// Turn off all LEDs
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, (2 << 2) | (2 << 0));
+	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, (2 << 2) | (2 << 0));
-	log("All LEDs should be off now!\n");
-	bu3100_sleep(2000);
-	// Test the LEDs
-	log("Testing red LEDs...\n");
+	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
+	waitForUserAction("All LEDs should be off now!", UserActionType::CONFIRMATION);
+
+	waitForUserAction("Now, every selected channel led will lights up RED in order and then will turn off in same order. Please, watch carefully.", UserActionType::CONFIRMATION);
 	for (int i = 0; i < 32; i++) {
+		if (!(CHANNEL_MASK & (1 << i % 16)))
+			continue;
 		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::RED);
@@ -40,8 +41,12 @@ bool LEDsTest::test() const {
 			switchLED_inTestMode(i % 16, LED_STATE::OFF);
 		bu3100_sleep(50);
 	}
-	log("Testing green LEDs...\n");
+	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
+
+	waitForUserAction("Now, every selected channel led will lights up GREEN in order and then will turn off in same order. Please, watch carefully.", UserActionType::CONFIRMATION);
 	for (int i = 0; i < 32; i++) {
+		if (!(CHANNEL_MASK & (1 << i % 16)))
+			continue;
 		log(QString("CHANNEL %1\n").arg((i % 16) + 1));
 		if (i < 16)
 			switchLED_inTestMode(i % 16, LED_STATE::GREEN);
@@ -49,6 +54,7 @@ bool LEDsTest::test() const {
 			switchLED_inTestMode(i % 16, LED_STATE::OFF);
 		bu3100_sleep(50);
 	}
+	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
 	// Bring back normal operation of LEDs
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
 	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0);

@@ -10,6 +10,7 @@
         <file>../CommonComponents/PlaceHolder.qml</file>
 		<file>../CommonComponents/LabeledTextInput.qml</file>
 		<file>../CommonComponents/ChannelsSelectionDialog.qml</file>
+		<file>../CommonComponents/ConfirmationDialog.qml</file>
         <file>../6716/Components/main.qml</file>
         <file>../6716/Components/MdaTestConfirmationPage.qml</file>
         <file>../6716/Components/TestCompletitionPage.qml</file>

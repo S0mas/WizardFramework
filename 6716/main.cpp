@@ -5,6 +5,7 @@
 #include "../6716/include/ProductionTestWizardData_6716_SignalInterface.h"
 #include <QThread>
 #include "../Common/include/Clipboard.h"
+#include "../Common/include/AppicationSettings.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +13,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 	QmlClipboardAdapter clipboard;
+	ApplicationSettings appSettings("ProductionTest_6716");
+
 	std::unique_ptr<ProductionTestWizardData_6716> data = std::make_unique<ProductionTestWizardData_6716>();
 	data->initialize();
 
@@ -22,6 +25,7 @@ int main(int argc, char *argv[])
 	engine.rootContext()->setContextProperty("preTestsModel", data->preTestsModel());
     engine.rootContext()->setContextProperty("usersNamesModel", data->userListModel());
 	engine.rootContext()->setContextProperty("clipboard", &clipboard);
+	engine.rootContext()->setContextProperty("appSettings", &appSettings);
 
     const QUrl url(QStringLiteral("qrc:/6716/Components/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

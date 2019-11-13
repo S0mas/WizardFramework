@@ -3,7 +3,7 @@ import QtQuick.Controls 2.4
 
 Row {
     property alias label : labelId
-    property alias textField : textFieldId
+    property alias textInput : textInputId
 	property int holderWidth : 200
 	property int holderWidth2 : 150
     signal save(string str)
@@ -21,7 +21,6 @@ Row {
 		height: parent.height
 		font.family: "Helvetica"
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
 		verticalAlignment: Text.AlignVCenter
     }
 
@@ -30,13 +29,14 @@ Row {
 		width: labelId.width > holderWidth ? 0 : holderWidth - labelId.width
 	}
 
-    TextField {
-        id: textFieldId
+    TextInput {
+        id: textInputId
 		height: parent.height
+		width: 200
         enabled: checkboxId.checked
 		font.family: "Helvetica"
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
+		verticalAlignment: TextInput.AlignVCenter
     }
 
     CheckBox {
@@ -46,7 +46,6 @@ Row {
         onCheckedChanged: refresh()
 		font.family: "Helvetica"
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
     }
 
     MyButton {
@@ -54,7 +53,6 @@ Row {
         text: "Update"
         enabled: checkboxId.checked
         onClicked: save(textFieldId.text)
-		anchors.verticalCenter: parent.verticalCenter
     }
     Component.onCompleted: refresh()
 }

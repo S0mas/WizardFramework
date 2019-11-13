@@ -14,16 +14,14 @@ MyPage {
         LabeledTextInput {
 			id: ip6100
             label.text: "6100 IP:"
-			textInput.text: "192.168.168.126"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})(\.0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})){3}$/ }
 			textInput.inputMask: "000.000.000.000;_"
         }
 
-		LabeledTextInput {
+        LabeledTextInput {
 			id: ip6716
             label.text: "6716 IP:"
-			textInput.text: "192.168.168.147"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})(\.0*(2(5[0-5]|[0-4]\d)|1?\d{1,2})){3}$/ }
 			textInput.inputMask: "000.000.000.000;_"
@@ -32,7 +30,6 @@ MyPage {
 		LabeledTextInput {
 			id: fc3416_6716
             label.text: "3416 connected to the 6716 fc no:"
-			textInput.text: "2"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /[1-4]{1}$/ }
 			textInput.inputMask: "0;_"
@@ -41,7 +38,6 @@ MyPage {
 		LabeledTextInput {
 			id: fc3416_t028
             label.text: "3416 connected to the t028 fc no:"
-			textInput.text: "4"
 			holderWidth : 400
 			textInput.validator: RegExpValidator { regExp: /[1-4]{1}$/ }
 			textInput.inputMask: "0;_"
@@ -66,6 +62,20 @@ MyPage {
 
 	Connections {
 		target: dataInterface
-		onConnectionStatus: ready = status
+		onConnectionStatus: ready = true //status
+	}
+
+	Component.onCompleted: {
+		ip6100.textInput.text = appSettings.get("ip6100", "000.000.000.000")
+		ip6716.textInput.text = appSettings.get("ip6716", "000.000.000.000")
+		fc3416_6716.textInput.text = appSettings.get("fc3416_6716", "1")
+		fc3416_t028.textInput.text = appSettings.get("fc3416_t028", "1")
+	}
+
+	Component.onDestruction: {
+		appSettings.set("ip6100", ip6100.textInput.text)
+		appSettings.set("ip6716", ip6716.textInput.text)
+		appSettings.set("fc3416_6716", fc3416_6716.textInput.text);
+		appSettings.set("fc3416_t028", fc3416_t028.textInput.text);
 	}
 }

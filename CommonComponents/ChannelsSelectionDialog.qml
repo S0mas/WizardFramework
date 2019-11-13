@@ -10,7 +10,8 @@ Dialog {
 	focus: true
 	title: "Select the channels that will be tested"
 	standardButtons: Dialog.Ok | Dialog.Cancel
-	property string channelMask : "1111111111111111"
+	property bool defaultState: true
+	property string channelMask
 	Column {
 		GridLayout {
 			columns: 4
@@ -22,7 +23,7 @@ Dialog {
 					Layout.fillWidth: true
 					Layout.fillHeight: true
 					text: "Channel " + (index + 1)
-					checked: true
+					checked: defaultState
 					onCheckedChanged: checked ? channelMaskDialogId.toggleChannel(15-index, 1) : channelMaskDialogId.toggleChannel(15-index, 0)
 					Connections {
 						target: selectChannelsButtonId
@@ -56,4 +57,6 @@ Dialog {
 	function toggleChannel(index, chr) {
 		channelMask = channelMask.substr(0, index) + chr + channelMask.substr(index+1);
 	}
+
+	Component.onCompleted: defaultState ? channelMask = "1111111111111111" : channelMask = "0000000000000000"
 }

@@ -49,3 +49,13 @@ void AbstractTest::setStoreCalibrationDataToEeprom(const bool value) noexcept {
 bool AbstractTest::getStoreCalibrationDataToEeprom() noexcept {
 	return storeCalibrationDataToEeprom;
 }
+
+void AbstractTest::waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept {
+	emit askUserAction(msg, static_cast<int>(actionType));
+	while (!continueTestClicked) {}
+	continueTestClicked = false;
+}
+
+void AbstractTest::continueTest() const {
+	continueTestClicked = true;
+}
