@@ -6,7 +6,7 @@ import "../../CommonComponents"
 MyPage {
     id: userIdentificationPageId
     title: qsTr("User Identification")
-    nextPageComponent: "MdaTestConfirmationPage.qml"
+    nextPageComponent: "AddressesIdentificationPage.qml"
     previousPageComponent: ""
     ready: userNameComboboxId.combobox.currentIndex != -1
 	description: "Please, choose user name or add new one."
