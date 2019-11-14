@@ -57,4 +57,4 @@ bool LEDsTest::test() const {
 	return !problemReportedByUser;
 }
 
-LEDsTest::LEDsTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("LEDs", connection) {}
+LEDsTest::LEDsTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("LEDs", connection, true) {}

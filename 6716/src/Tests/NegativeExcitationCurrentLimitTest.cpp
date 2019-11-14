@@ -6,4 +6,4 @@ bool NegativeExcitationCurrentLimitTest::test() const {
 	return excitationTest(false);
 }
 
-NegativeExcitationCurrentLimitTest::NegativeExcitationCurrentLimitTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Negative Excitation Current Limit", connection) {}
+NegativeExcitationCurrentLimitTest::NegativeExcitationCurrentLimitTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Negative Excitation Current Limit", connection, true) {}

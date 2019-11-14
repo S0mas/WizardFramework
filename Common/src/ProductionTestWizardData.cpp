@@ -21,7 +21,8 @@ void ProductionTestWizardData::addTest(std::unique_ptr<AbstractTest>&& test) {
 	connect(test.get(), &AbstractTest::askUserAction, this, &ProductionTestWizardData::askUserAction);
 	connect(test.get(), &AbstractTest::testSummary, this, &ProductionTestWizardData::testSummary);
 	connect(this, &ProductionTestWizardData::continueAction, test.get(), &AbstractTest::continueTest);
-	connect(this, &ProductionTestWizardData::reportProblem, test.get(), &AbstractTest::reportProblem);
+	connect(this, &ProductionTestWizardData::reportError, test.get(), &AbstractTest::reportError);
+	connect(this, &ProductionTestWizardData::inputUserDecision, test.get(), &AbstractTest::inputUserDecision);
 	testsListModel_->getTestsList().push_back(std::move(test));
 }
 
@@ -29,7 +30,7 @@ void ProductionTestWizardData::addPreTest(std::unique_ptr<AbstractTest>&& test) 
 	connect(test.get(), &AbstractTest::log, printer.get(), &PrintInterface::addLog);
 	connect(test.get(), &AbstractTest::askUserAction, this, &ProductionTestWizardData::askUserAction);
 	connect(this, &ProductionTestWizardData::continueAction, test.get(), &AbstractTest::continueTest);
-	connect(this, &ProductionTestWizardData::reportProblem, test.get(), &AbstractTest::reportProblem);
+	connect(this, &ProductionTestWizardData::reportError, test.get(), &AbstractTest::reportError);
 	preTestsListModel_->getTestsList().push_back(std::move(test));
 }
 ProductionTestWizardData::ProductionTestWizardData() {

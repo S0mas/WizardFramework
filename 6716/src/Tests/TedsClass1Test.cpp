@@ -169,4 +169,4 @@ bool TedsClass1Test::test() const {
 	return channelsErrorsMask == 0;
 }
 
-TedsClass1Test::TedsClass1Test(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Teds Class 1", connection) {}
+TedsClass1Test::TedsClass1Test(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Teds Class 1", connection, true) {}

@@ -4,14 +4,17 @@
 #include <cstdio>
 #include "PrintInterface.h"
 #include "UserActionTypes.h"
+#include "UserErrorTypes.h"
 
 class AbstractTest : public QObject {
 	Q_OBJECT
 	const QString name;
 	mutable bool result = false;
 	mutable bool wasRunned = false;
+	mutable bool isRunning = false;
 	bool shouldBeRun = true;
 	static inline bool storeCalibrationDataToEeprom = true;
+	bool summaryOn = false;
 protected:
 	mutable std::atomic<bool> continueTestClicked = { false };
 	mutable bool problemReportedByUser = false;
@@ -19,7 +22,10 @@ protected:
 	virtual void preTestSetUp() const {}
 	virtual void postTestCleanUp() const {}
 public:
-	AbstractTest(const QString& name);
+	mutable std::atomic<bool> userDecision = { false };
+	inline static short unsigned CHANNEL_MASK = 0xFFFF;
+	mutable unsigned short channelsErrorsMask = 0;
+	AbstractTest(const QString& name, const bool summaryOn = false);
 	const QString& getName() const noexcept;
 	void run() const;
 	bool getShouldBeRun() const noexcept;
@@ -29,6 +35,7 @@ public:
 	static void setStoreCalibrationDataToEeprom(const bool) noexcept;
 	static bool getStoreCalibrationDataToEeprom() noexcept;
 	void waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept;
+	void logSummary() const noexcept;
 signals:
 	void shouldBeRunChanged(bool) const;
 	void log(QString) const;
@@ -36,7 +43,8 @@ signals:
 	void testSummary(const QString& msg) const;
 public slots:
 	void continueTest();
-	void reportProblem();
+	void reportError(const QString& errorData, const int errorType);
+	void inputUserDecision(const bool decision);
 };
 
 

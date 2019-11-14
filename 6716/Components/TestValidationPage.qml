@@ -14,6 +14,7 @@ MyPage {
 	TestsRunner {
 		id: testsRunnerId
 		runningTest: "None"
+		summaryButtonVisible: true
 		onRunClicked: {
 			runningTest = "None"
 			runEnabled = false
@@ -25,13 +26,32 @@ MyPage {
 
 	ConfirmationDialog {
 		id: userConfirmationDialogId
+		height: 100
+		width: 400
+		onRejected: dataInterface.continueAction()
 		onAccepted: dataInterface.continueAction()
+	}
+
+	ConfirmationDialog {
+		id: userConfirmationOrDeclineDialogId
+		height: 100
+		width: 400
+		standardButtons: Dialog.Ok | Dialog.Cancel
+		onRejected:  {
+			dataInterface.inputUserDecision(false)
+			dataInterface.continueAction()
+		}
+		onAccepted: {
+			dataInterface.inputUserDecision(true)
+			dataInterface.continueAction()
+		}
 	}
 
 	ChannelsSelectionDialog {
 		id: channelMaskDialogId
 		standardButtons: Dialog.Ok
 		defaultState: false
+		onRejected: dataInterface.continueAction()
 		onAccepted: dataInterface.continueAction()
 	}
 
@@ -53,15 +73,19 @@ MyPage {
 		onAskUserAction: {
 			if(actionType == 0) {
 				userConfirmationDialogId.text = msg
+				userConfirmationDialogId.title = msg
 				userConfirmationDialogId.open()
 			}
 			else if(actionType == 1) {
 				channelMaskDialogId.title = msg
 				channelMaskDialogId.open()
-				if(channelMaskDialogId.channelMask != "0000000000000000") { // there was error reported by user 
-					dataInterface.reportProblem()
-					testsRunnerId.testLogs += "ERROR: Channels mask 16 -> 1, 1 = error, 0 = ok : " + channelMaskDialogId.channelMask + "\n"
-				}
+				if(channelMaskDialogId.channelMask != "0000000000000000") // there was error reported by user 
+					dataInterface.reportError(channelMaskDialogId.channelMask, 1)
+			}
+			else if(actionType == 2) {
+				userConfirmationOrDeclineDialogId.text = msg
+				userConfirmationOrDeclineDialogId.title = msg
+				userConfirmationOrDeclineDialogId.open()
 			}
 		}
 	}

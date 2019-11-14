@@ -62,7 +62,7 @@ MyPage {
 
 	Connections {
 		target: dataInterface
-		onConnectionStatus: ready = true;//status
+		onConnectionStatus: ready = status
 	}
 
 	Component.onCompleted: {

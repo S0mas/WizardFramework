@@ -83,4 +83,4 @@ bool IEPETest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-IEPETest::IEPETest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("IEPE", connection) {}
+IEPETest::IEPETest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("IEPE", connection, true) {}

@@ -41,4 +41,4 @@ bool SignalPathTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-SignalPathTest::SignalPathTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Signal Path", connection) {}
+SignalPathTest::SignalPathTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Signal Path", connection, true) {}

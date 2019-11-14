@@ -64,4 +64,4 @@ bool ChannelGainTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-ChannelGainTest::ChannelGainTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Channel Gain", connection) {}
+ChannelGainTest::ChannelGainTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Channel Gain", connection, true) {}

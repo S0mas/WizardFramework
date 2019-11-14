@@ -58,4 +58,4 @@ bool ShuntTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-ShuntTest::ShuntTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Shunt", connection) {}
+ShuntTest::ShuntTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Shunt", connection, true) {}

@@ -181,7 +181,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\ksommerf\bu6100\include;C:\ksommerf\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -201,7 +201,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>visa64.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bu6100.lib;visa64.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\win64\Release;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -560,6 +560,7 @@
     <QtMoc Include="..\..\Common\include\AppicationSettings.h" />
     <ClInclude Include="..\..\Common\include\MockTest.h" />
     <ClInclude Include="..\..\Common\include\UserActionTypes.h" />
+    <ClInclude Include="..\..\Common\include\UserErrorTypes.h" />
     <ClInclude Include="..\include\defines.h" />
     <QtMoc Include="..\include\ProductionTestWizardData_6716_SignalInterface.h" />
     <ClInclude Include="..\include\Tests\ACCouplingTest.h" />

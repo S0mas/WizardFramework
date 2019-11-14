@@ -2,9 +2,12 @@ import QtQuick 2.4
 import QtQuick.Controls 2.4
 
 Row {
+	width: parent.width
+	height: parent.height
 	signal runClicked()
 	property alias runEnabled : runTestsButtonId.enabled
 	property alias testLogs : textAreaId.text
+	property bool summaryButtonVisible : false
 	function addFinishedTest(name, result) {
 		runnedTestsListId.model.append({name: name, result: result})
 	}
@@ -13,8 +16,6 @@ Row {
 	}
 	property string runningTest : "None"
 	property string summary : ""
-	width: parent.width
-	height: parent.height
 	Column {
 		width: parent.width * (5/8)
 		height: parent.height
@@ -45,22 +46,23 @@ Row {
 			height: 45
 			MyButton {
 				id: clearButtonId
-				width: parent.width/3
 				height: parent.height
+				width: summaryButtonVisible ? parent.width/3 : parent.width/2
 				text: "Clear"
 				onClicked: textAreaId.text = ""
 			}
 			MyButton {
-				width: parent.width/3
 				height: parent.height
+				width: summaryButtonVisible ? parent.width/3 : parent.width/2
 				text: "Copy"
 				onClicked: clipboard.setText(textAreaId.text)
 			}
 			MyButton {
-				width: parent.width/3
 				height: parent.height
+				width: summaryButtonVisible ? parent.width/3 : parent.width/2
 				text: "Summary"
-				onClicked: console.log(summary)
+				onClicked: summaryDialogId.open()
+				visible: summaryButtonVisible
 				Connections {
 					target: dataInterface
 					onTestSummary: summary += msg
@@ -77,6 +79,13 @@ Row {
 				runClicked()
 			}
 		}
+	}
+	ConfirmationDialog {
+		id: summaryDialogId
+		text: summary
+		height: 600
+		width: 200
+		title: "Tests summary"
 	}
 	Column {
 		width: parent.width  * (3/8)

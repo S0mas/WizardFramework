@@ -60,4 +60,4 @@ bool AutobalanceDACTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-AutobalanceDACTest::AutobalanceDACTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AutoBalance DAC", connection) {}
+AutobalanceDACTest::AutobalanceDACTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AutoBalance DAC", connection, true) {}

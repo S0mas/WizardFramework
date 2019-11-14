@@ -4,19 +4,22 @@ import QtQuick.Layouts 1.11
 
 Dialog {
 	id: userConfirmationDialogId
-	property alias text : dialogTextId.text
+	property alias text : textAreaId.text
 	x: Math.round((parent.width - width) / 2)
 	y: Math.round((parent.height - height) / 2)
 	title: "Action required!"
 	standardButtons: Dialog.Ok
 	contentItem: Rectangle {
-		implicitWidth: 400
-		implicitHeight: 100
-			Text {
-			id: dialogTextId
-			font.family: "Helvetica"
-			font.pointSize: 12
-			anchors.centerIn: parent
+		ScrollView {
+			id: scrollViewId
+			anchors.fill: parent
+			TextArea {
+				id: textAreaId
+				anchors.fill: parent
+				readOnly: true
+				font.family: "Helvetica"
+				font.pointSize: 10
+			}
 		}
 	}
 }

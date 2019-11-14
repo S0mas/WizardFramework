@@ -49,10 +49,7 @@ MyPage {
 
 		Connections {
 			target: dataInterface
-			onSubtype: {
-			console.log(value)
-			subtypeLabelId.textInput.text = value}
-
+			onSubtype: subtypeLabelId.textInput.text = value
 			onSerialNumber: snLabelId.textInput.text = value
 			onFirmwareRevision: firmwareLabelId.textInput.text = value
 			onDriverRevision: driverLabelId.textInput.text = value

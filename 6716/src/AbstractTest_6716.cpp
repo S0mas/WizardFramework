@@ -80,7 +80,6 @@ void Abstract6716Test::preTestSetUp() const {
 }
 
 void Abstract6716Test::postTestCleanUp() const {
-	logSummary();
 	//connection->callAndThrowOnError6716(bu6716_reset, "bu6716_reset");
 }
 
@@ -418,13 +417,4 @@ void Abstract6716Test::closeAll()  {
 		bu3416_close(connection->getViT028Master());
 }
 
-void Abstract6716Test::logSummary() const noexcept {
-	QString summary;
-	summary += QString("Test result summary: %1\n").arg(getName());
-	for (int i = 0; i < 16; i++)
-		summary += QString("Channel %1 --- %2\n").arg(i + 1).arg(channelsErrorsMask & (1 << i) ? "FAILED" : "PASSED");
-	summary += QString("Result: %1\n").arg(getResult() ? "PASSED" : "FAILED");
-	log(summary);
-	emit testSummary(summary);
-}
-Abstract6716Test::Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection) : AbstractTest(name), connection(connection) {}
+Abstract6716Test::Abstract6716Test(const QString&& name, const std::shared_ptr<Communication_6716>& connection, const bool summaryOn) : AbstractTest(name, summaryOn), connection(connection) {}

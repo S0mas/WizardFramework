@@ -83,4 +83,4 @@ bool SCUErrorTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-SCUErrorTest::SCUErrorTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("SCU Error", connection) {}
+SCUErrorTest::SCUErrorTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("SCU Error", connection, true) {}

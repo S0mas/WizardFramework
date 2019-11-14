@@ -40,7 +40,8 @@ public:
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::stopTests, dataObject.get(), &ProductionTestWizardData_6716::stopTests);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::requestConnectionStatus, dataObject.get(), &ProductionTestWizardData_6716::checkConnectionStatus);
 		connect(this, &ProductionTestWizardData_6716_SignalInterface::continueAction, dataObject.get(), &ProductionTestWizardData::continueAction);
-		connect(this, &ProductionTestWizardData_6716_SignalInterface::reportProblem, dataObject.get(), &ProductionTestWizardData::reportProblem);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::reportError, dataObject.get(), &ProductionTestWizardData::reportError);
+		connect(this, &ProductionTestWizardData_6716_SignalInterface::inputUserDecision, dataObject.get(), &ProductionTestWizardData::inputUserDecision);
 	}
 
 	//void initialize() override;
@@ -81,5 +82,6 @@ signals:
 	void startTests() const;
 	void stopTests() const;
 	void continueAction() const;
-	void reportProblem() const;
+	void reportError(const QString& errorData, const int errorType) const;
+	void inputUserDecision(const bool decision);
 };

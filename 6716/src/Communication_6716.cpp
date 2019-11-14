@@ -35,6 +35,7 @@ bool Communication_6716::writeTeds2(const unsigned char data) const {
 	ViReal64 startTime = bu3100_getStartTime();
 	unsigned char statusByte;
 	writeI2C(0x19, bu6716_TEDS_CMD_1WWB, data);
+	bu3100_sleep(50);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
 			log(QString("%1: Timeout").arg(__FUNCTION__));
@@ -42,6 +43,7 @@ bool Communication_6716::writeTeds2(const unsigned char data) const {
 		}
 		statusByte = readI2C_no_addr(0x19);
 	} while (statusByte & bu6716_TEDS_STATUS_1WB);
+	bu3100_sleep(50);
 	return true;
 }
 
@@ -49,6 +51,7 @@ unsigned char Communication_6716::readTeds2() const {
 	ViReal64 startTime = bu3100_getStartTime();
 	unsigned char statusByte;
 	writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRB);
+	bu3100_sleep(50);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
 			log(QString("%1: Timeout").arg(__FUNCTION__));
@@ -56,7 +59,9 @@ unsigned char Communication_6716::readTeds2() const {
 		}
 		statusByte = readI2C_no_addr(0x19);
 	} while (statusByte & bu6716_TEDS_STATUS_1WB);
+	bu3100_sleep(50);
 	writeI2C(0x19, bu6716_TEDS_CMD_SRP, bu6716_TEDS_REG_DATA);
+	bu3100_sleep(50);
 	return readI2C_no_addr(0x19);
 }
 

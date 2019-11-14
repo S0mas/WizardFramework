@@ -100,4 +100,4 @@ bool ACCouplingTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-ACCouplingTest::ACCouplingTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AC Coupling", connection) {}
+ACCouplingTest::ACCouplingTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AC Coupling", connection, true) {}

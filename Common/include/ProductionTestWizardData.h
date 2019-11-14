@@ -17,10 +17,10 @@ class ProductionTestWizardData : public QObject {
 	void loadUsersFromDataBase() noexcept;
 protected:
 	QThread dataThread;
-	QString subtype_ = "error while reading data from device";
-	QString serialNumber_ = "error while reading data from device";
+	QString subtype_ = "error while reading";
+	QString serialNumber_ = "error while reading";
 	QString driverRevision_ = "empty";
-	QString firmwareRevision_ = "error while reading data from device";
+	QString firmwareRevision_ = "error while reading";
 	QString activeUser_ = "none";
 	bool mdaTestPassed_ = true;
 	std::unique_ptr<DataBaseConnectorInterface> dbConnection;
@@ -66,6 +66,7 @@ signals:
 	void connectionStatus(const bool status) const;
 	void askUserAction(const QString& msg, const int actionType) const;
 	void continueAction() const;
-	void reportProblem() const;
+	void reportError(const QString& errorData, const int errorType) const;
 	void testSummary(const QString& msg) const;
+	void inputUserDecision(const bool decision);
 };

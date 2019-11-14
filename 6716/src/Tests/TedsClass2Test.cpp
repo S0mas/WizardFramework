@@ -11,11 +11,13 @@ bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 	unsigned char statusByte;
 	ViReal64 startTime = bu3100_getStartTime();
 	connection->writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRS);
+	bu3100_sleep(50);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
 			log(QString("- ERROR! Cannot reset TEDS2, not ready (channel: %1, step %2)").arg(channel).arg(step));
 			return false;
 		}
+		bu3100_sleep(50);
 		statusByte = connection->readI2C_no_addr(0x19);
 	} while (statusByte & bu6716_TEDS_STATUS_1WB);
 
@@ -38,6 +40,12 @@ bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 	return true;
 }
 
+static void retry(int& retries, int& currentlyTestedChannel, unsigned short& channelMask, const int& seg) {
+	channelMask &= ~(1 << (currentlyTestedChannel - 1 + seg*8));
+	currentlyTestedChannel--;
+	++retries;
+}
+
 bool TedsClass2Test::test() const {
 	
 	unsigned char write_data[2];
@@ -45,7 +53,8 @@ bool TedsClass2Test::test() const {
 	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
 	configureVoltageReferanceSwitches(0x60);
-
+	auto retries = 0;
+	auto maxRetries = 3;
 	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
 	for (int s = 0; s < 2; s++) {
 		if (s == 0)
@@ -57,13 +66,13 @@ bool TedsClass2Test::test() const {
 		bu3100_sleep(100);
 		if (!_initTeds2())
 			channelsErrorsMask |= 0xffff;
-		for (int c = 0; c < 8; c++) {
+		for (int currentlyTestedChannel = 1; currentlyTestedChannel <= 8; currentlyTestedChannel++) {
 			unsigned short portExp;
-			unsigned char ch = c + 1 + s * 8;
+			unsigned char ch = currentlyTestedChannel + s * 8;
 			if (!(CHANNEL_MASK & 1 << (ch - 1)))
 				continue;
-
-			waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch), UserActionType::CONFIRMATION);
+			if(retries == 0)
+				waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch), UserActionType::CONFIRMATION);
 
 			log(QString("CHANNEL %1").arg(ch));
 			// 2
@@ -72,7 +81,7 @@ bool TedsClass2Test::test() const {
 			connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", ch, T028_MODE_TEDS2);
 			bu3100_sleep(100);
 			// 4
-			_resetTeds2(c+1, 4);
+			_resetTeds2(ch, 4);
 			// 5
 			write_data[0] = (ViUInt8)ch;
 			write_data[1] = (ViUInt8)(~ch);
@@ -84,7 +93,7 @@ bool TedsClass2Test::test() const {
 			for (int i = 0; i < 2; i++)
 				connection->writeTeds2(write_data[i]);
 			// 6
-			_resetTeds2(c+1, 6);
+			_resetTeds2(ch, 6);
 			// 7
 			connection->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
 			connection->writeTeds2(bu6716_1W_CMD_READ_SPD);
@@ -93,18 +102,31 @@ bool TedsClass2Test::test() const {
 				read_data[i] = connection->readTeds2();
 			for (int i = 0; i < 2; i++) {
 				if (read_data[i] != write_data[i]) {
-					log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)").arg(read_data[i]).arg(write_data[i]).arg(c+1));
+					log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)").arg(read_data[i]).arg(write_data[i]).arg(ch));
 					channelsErrorsMask |= (1 << (ch - 1));
 				}
 			}
 			// 8
-			_resetTeds2(c+1, 8);
+			_resetTeds2(ch, 8);
 			// 9
 			connection->writePortExpander(ch, portExp);
 			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);
-			_resetTeds2(c+1, 9);
-			if (!(channelsErrorsMask & (1 << (ch - 1))))
-				log("  OK");
+			_resetTeds2(ch, 9);
+			if (!(channelsErrorsMask & (1 << (ch - 1)))) {
+				log(QString("OK, number of retries: %1)").arg(retries));
+				retries = 0;
+			}
+			else if (retries % maxRetries == 0 && retries != 0) {
+				waitForUserAction(QString("There was an error on channel %1. Retry? Press Cancel to skip to the next channel").arg(ch), UserActionType::CONFIRMATION_OR_DECLINE);
+				if (userDecision)
+					retry(retries, currentlyTestedChannel, channelsErrorsMask, s);
+				else {
+					log(QString("Channel %1 skipped)").arg(ch));
+					retries = 0;
+				}
+			}
+			else 
+				retry(retries, currentlyTestedChannel, channelsErrorsMask, s);
 		}
 	}
 	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
@@ -189,4 +211,4 @@ bool TedsClass2Test::test() const {
 	return channelsErrorsMask == 0;
 }
 #undef CALL
-TedsClass2Test::TedsClass2Test(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Teds Class 2", connection) {}
+TedsClass2Test::TedsClass2Test(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Teds Class 2", connection, true) {}

@@ -62,4 +62,4 @@ bool HalfBridgeTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-HalfBridgeTest::HalfBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Half Bridge", connection) {}
+HalfBridgeTest::HalfBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Half Bridge", connection, true) {}

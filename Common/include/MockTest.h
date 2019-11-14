@@ -8,7 +8,7 @@ class MockTest : public AbstractTest {
 protected:
 	bool test() const override {	
 		for (int i = 0; i < 10; ++i) {
-			waitForUserAction("Test msg", UserActionType::CHANNELS_SELECTION);
+			waitForUserAction("Test msg", UserActionType::CONFIRMATION);
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			log(QString("step_%1...").arg(i));
 		}
@@ -23,5 +23,5 @@ protected:
 		log("POSTCONDITIONS..");
 	}
 public:
-	MockTest(const bool mockResult) : AbstractTest(QString("Mock Test TEST TEST TEST TEST TEST TEST TEST %1").arg(id++)), mockResult(mockResult) {}
+	MockTest(const bool mockResult) : AbstractTest(QString("Mock Test TEST %1").arg(id++), true), mockResult(mockResult) {}
 };

@@ -31,4 +31,4 @@ bool QuarterBridgeTest::test() const {
 	return channelsErrorsMask == 0;
 }
 
-QuarterBridgeTest::QuarterBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Quarter Bridge", connection) {}
+QuarterBridgeTest::QuarterBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Quarter Bridge", connection, true) {}
