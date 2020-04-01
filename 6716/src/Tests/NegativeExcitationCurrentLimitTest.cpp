@@ -1,9 +1,8 @@
 #include "../include/Tests/NegativeExcitationCurrentLimitTest.h"
-#include "../include/defines.h"
 
-bool NegativeExcitationCurrentLimitTest::test() const {
-	configureVoltageReferanceSwitches(0x60);
-	return excitationTest(false);
+Result NegativeExcitationCurrentLimitTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x60);
+	return excitationTest(limit1501, limit1502, false);
 }
 
-NegativeExcitationCurrentLimitTest::NegativeExcitationCurrentLimitTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Negative Excitation Current Limit", connection, true) {}
+NegativeExcitationCurrentLimitTest::NegativeExcitationCurrentLimitTest() : AbstractTest6716("Negative Excitation Current Limit") {}

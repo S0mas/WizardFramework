@@ -3,22 +3,75 @@
 #include <QClipboard>
 #include <QObject>
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	QmlClipboardAdapter
+///
+/// @brief	A qml clipboard adapter. Handles the clipboard data.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	03.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class QmlClipboardAdapter : public QObject {
 	Q_OBJECT
+	QClipboard* clipboard;
 public:
-	explicit QmlClipboardAdapter(QObject* parent = 0) : QObject(parent) {
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	explicit QmlClipboardAdapter::QmlClipboardAdapter(QObject* parent = nullptr)
+	///
+	/// @brief	Constructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	03.02.2020
+	///
+	/// @param [in]	parent	(Optional) If not null - will be set as constructed object parent. In the
+	/// 					QObject tree.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	explicit QmlClipboardAdapter(QObject* parent = nullptr) : QObject(parent) {
 		clipboard = QGuiApplication::clipboard();
 	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	QmlClipboardAdapter::~QmlClipboardAdapter() override = default;
+	///
+	/// @brief	Default destructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	03.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	~QmlClipboardAdapter() override = default;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Q_INVOKABLE void QmlClipboardAdapter::setText(const QString& text) const
+	///
+	/// @brief	Sets the text in the clipboard.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	03.02.2020
+	///
+	/// @param 	text	The text.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	Q_INVOKABLE void setText(const QString& text) const {
 		clipboard->setText(text, QClipboard::Clipboard);
 		clipboard->setText(text, QClipboard::Selection);
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Q_INVOKABLE QString QmlClipboardAdapter::getText() const
+	///
+	/// @brief	Gets the text from the clipboard.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	03.02.2020
+	///
+	/// @returns	The text.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	Q_INVOKABLE QString getText() const {
 		return clipboard->text();
 	}
-
-private:
-	QClipboard* clipboard;
 };

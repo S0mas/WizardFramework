@@ -1,39 +1,22 @@
-import QtQuick 2.4
-import QtQuick.Controls 2.4
+import QtQuick 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Layouts 1.12
 
-Row {
-    property alias label : labelId
+GroupBox {
     property alias textField : textFieldId
-	property int holderWidth : 200
-	property int holderWidth2 : 150
-	width: parent.width
-	height: 45
-
-	PlaceHolder {
-		height: parent.height
-		width: holderWidth2
-	}
-
-    Label {
-		id: labelId
-		height: parent.height
-		font.family: "Helvetica"
+	label: Label {
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
-		verticalAlignment: Text.AlignVCenter
-    }
-
-	PlaceHolder {
-		height: parent.height
-		width: labelId.width > holderWidth ? 0 : holderWidth - labelId.width
+		text: title
 	}
-
-    TextField {
-		id: textFieldId
-		height: parent.height
-		width: 300
-		font.family: "Helvetica"
-		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
-    }
+	RowLayout {
+		anchors.horizontalCenter: parent.horizontalCenter
+		TextField {
+			id: textFieldId
+			Layout.fillHeight: true
+			Layout.minimumWidth: 300
+			font.pointSize: 14
+			verticalAlignment: TextInput.AlignVCenter
+			horizontalAlignment: TextInput.AlignHCenter
+		}
+	}
 }

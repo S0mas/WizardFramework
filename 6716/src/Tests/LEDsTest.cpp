@@ -1,60 +1,87 @@
 #include "../include/Tests/LEDsTest.h"
-#include "../include/defines.h"
 
-bool LEDsTest::switchLED_inTestMode(unsigned char channel, LED_STATE state) const {
+bool LEDsTest::switchLED_inTestMode(const unsigned char channel, const LED_STATE state) const {
 	unsigned char color = (state == LED_STATE::RED) ? (2 << 2) | (3 << 0) : (3 << 2) | (2 << 0);
-	auto segsw = connection->readFPGAreg(bu6716_FPGA_SEGSW);
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, channel >= 8 ? 0 : 1);
-	auto led = connection->readFPGAreg(bu6716_FPGA_TEST_RW);
+	auto segsw = device6716->readFPGAreg(bu6716_FPGA_SEGSW);
+	device6716->writeFPGAreg(bu6716_FPGA_SEGSW, channel >= 8 ? 0 : 1);
+	auto led = device6716->readFPGAreg(bu6716_FPGA_TEST_RW);
 	if (state == LED_STATE::OFF)
 		led &= ~(1 << (channel % 8));
 	else
 		led |= (1 << (channel % 8));
-	connection->writeFPGAreg(bu6716_FPGA_TEST_RW, led);
+	device6716->writeFPGAreg(bu6716_FPGA_TEST_RW, led);
 	if (state != LED_STATE::OFF)
-		connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, color);
+		device6716->writeFPGAreg(bu6716_FPGA_TEST_LEDS, color);
 
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw);
+	device6716->writeFPGAreg(bu6716_FPGA_SEGSW, segsw);
 	return true;
 }
 
-bool LEDsTest::test() const {
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
-	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
-
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
-	connection->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
-	waitForUserAction("All LEDs should be off now!", UserActionType::CONFIRMATION);
-
-	waitForUserAction("Now, every selected channel led will lights up RED in order and then will turn off in same order. Please, watch carefully.", UserActionType::CONFIRMATION);
-	for (int i = 0; i < 32; i++) {
-		if (!(CHANNEL_MASK & (1 << i % 16)))
+void LEDsTest::testLED(const LED_STATE state) const {
+	QString stateString = state == LED_STATE::GREEN ? "GREEN" : state == LED_STATE::RED ? "RED" : "OFF";
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
 			continue;
-		log(QString("CHANNEL %1").arg((i % 16) + 1));
-		if (i < 16)
-			switchLED_inTestMode(i % 16, LED_STATE::RED);
-		else
-			switchLED_inTestMode(i % 16, LED_STATE::OFF);
-		bu3100_sleep(1000);
+		log(QString("CHANNEL %1 --> %2").arg(channel.index()).arg(stateString));
+		switchLED_inTestMode(channel.index() - 1, state);
+		bu3100_sleep(500);
 	}
-	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
-
-	waitForUserAction("Now, every selected channel led will lights up GREEN in order and then will turn off in same order. Please, watch carefully.", UserActionType::CONFIRMATION);
-	for (int i = 0; i < 32; i++) {
-		if (!(CHANNEL_MASK & (1 << i % 16)))
-			continue;
-		log(QString("CHANNEL %1").arg((i % 16) + 1));
-		if (i < 16)
-			switchLED_inTestMode(i % 16, LED_STATE::GREEN);
-		else
-			switchLED_inTestMode(i % 16, LED_STATE::OFF);
-		bu3100_sleep(1000);
-	}
-	waitForUserAction("Please, select all channels with faulty leds and click Ok", UserActionType::CHANNELS_SELECTION);
-
-	return !problemReportedByUser;
 }
 
-LEDsTest::LEDsTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("LEDs", connection, true) {}
+void LEDsTest::logAboutMarkedFailedChannels(const std::vector<bool>& channels) const noexcept {
+	bool errorReported = false;
+	for (int index = 0; index < channels.size(); ++index)
+		if (channels[index]) {
+			errorReported = true;
+			log(QString("User reported error for channel %1").arg(index + 1));
+		}
+	if (!errorReported)
+		log("No errors reported by user.");
+}
+
+Result LEDsTest::test() const {
+	// 1
+	device6716->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
+
+	// 2
+	device6716->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
+	
+	// 3
+	device6716->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
+
+	// 4
+	device6716->writeFPGAreg(bu6716_FPGA_TEST_LEDS, 0x0A);
+
+	for (auto& channel : device6716->channels())
+		if (channel.enabled())
+			channelsResults.at(channel.index()) = Result::VALUE::PASSED;
+
+	// 5
+	sender_->waitForConfirmation("All LEDs should be off now!");
+
+	// 6 & 7 & 8 & 9 & 10 & 11
+	sender_->waitForConfirmation("The selected channels LEDs will lights up RED and then turn off in order.");
+	testLED(LED_STATE::RED);
+
+	// 13 & 14 & 15
+	testLED(LED_STATE::OFF);
+
+	// 12
+	auto selectedChanels = sender_->waitForChannelsSelection("Please, select all channels with faulty leds and click Ok", device6716->channelsStates());
+	for (int i = 0; i < selectedChanels.size(); ++i)
+		channelsResults.at(i + 1) = Result::VALUE::FAILED;
+	logAboutMarkedFailedChannels(selectedChanels);
+
+	//16
+	sender_->waitForConfirmation("The selected channels LEDs will lights up GREEN and then turn off in order.");
+	testLED(LED_STATE::GREEN);
+	testLED(LED_STATE::OFF);
+	selectedChanels = sender_->waitForChannelsSelection("Please, select all channels with faulty leds and click Ok", device6716->channelsStates());
+	for (int i = 0; i < selectedChanels.size(); ++i)
+		channelsResults.at(i + 1) = Result::VALUE::FAILED;
+	logAboutMarkedFailedChannels(selectedChanels);
+
+	return channelsResult();
+}
+
+LEDsTest::LEDsTest() : AbstractTest6716("LEDs") {}

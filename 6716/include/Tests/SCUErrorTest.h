@@ -8,11 +8,11 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class SCUErrorTest : public Abstract6716Test {
+class SCUErrorTest : public AbstractTest6716 {
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	SCUErrorTest(const std::shared_ptr<Communication_6716>& connection);
+	SCUErrorTest();
 };

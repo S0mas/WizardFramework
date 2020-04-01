@@ -1,58 +1,47 @@
-import QtQuick 2.4
-import QtQuick.Controls 2.4
+import QtQuick 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Layouts 1.12
 
-Row {
-    property alias label : labelId
+GroupBox {
     property alias textInput : textInputId
-	property int holderWidth : 200
-	property int holderWidth2 : 150
     signal save(string str)
     signal refresh()
-	width: parent.width
-	height: 45
-
-	PlaceHolder {
-		height: parent.height
-		width: holderWidth2
+	label: Label {
+		font.pointSize: 12
+		text: title
 	}
+	RowLayout {
+		anchors.horizontalCenter: parent.horizontalCenter
+		spacing: 10
+		TextInput {
+			id: textInputId
+			Layout.fillHeight: true
+			Layout.minimumWidth: 300
+			enabled: checkboxId.checked
+			font.pointSize: 14
+			verticalAlignment: TextInput.AlignVCenter
+			horizontalAlignment: TextInput.AlignHCenter
+		}
 
-    Label {
-        id: labelId
-		height: parent.height
-		font.family: "Helvetica"
-		font.pointSize: 12
-		verticalAlignment: Text.AlignVCenter
-    }
+		CheckBox {
+			id: checkboxId
+			Layout.fillHeight: true
+			Layout.minimumWidth: 30
+			Layout.maximumWidth: 30
+			text: "Enable update procedure"
+			onCheckedChanged: refresh()
+			font.pointSize: 14
+		}
 
-	PlaceHolder {
-		height: parent.height
-		width: labelId.width > holderWidth ? 0 : holderWidth - labelId.width
+		MyButton {
+			id: updateButtonId
+			text: "Update"
+			Layout.fillHeight: true
+			Layout.minimumWidth: implicitWidth
+			Layout.maximumWidth: implicitWidth
+			enabled: checkboxId.checked
+			onClicked: save(textInputId.text)
+		}
+		Component.onCompleted: refresh()
 	}
-
-    TextInput {
-        id: textInputId
-		height: parent.height
-		width: 200
-        enabled: checkboxId.checked
-		font.family: "Helvetica"
-		font.pointSize: 12
-		verticalAlignment: TextInput.AlignVCenter
-    }
-
-    CheckBox {
-        id: checkboxId
-		height: parent.height
-        text: "Enable update procedure"
-        onCheckedChanged: refresh()
-		font.family: "Helvetica"
-		font.pointSize: 12
-    }
-
-    MyButton {
-        id: buttonId
-        text: "Update"
-        enabled: checkboxId.checked
-        onClicked: save(textInputId.text)
-    }
-    Component.onCompleted: refresh()
 }

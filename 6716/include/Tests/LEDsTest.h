@@ -8,13 +8,15 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class LEDsTest : public Abstract6716Test {
+class LEDsTest : public AbstractTest6716 {
 	enum class LED_STATE { OFF, RED, GREEN };
-	bool switchLED_inTestMode(unsigned char channel, LED_STATE state) const;
+	bool switchLED_inTestMode(const unsigned char channel, const LED_STATE state) const;
+	void logAboutMarkedFailedChannels(const std::vector<bool>& mask) const noexcept;
+	void testLED(const LED_STATE state) const;
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	LEDsTest(const std::shared_ptr<Communication_6716>& connection);
+	LEDsTest();
 };

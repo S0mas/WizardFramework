@@ -1,0 +1,309 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{a01d2fb9-b6c9-4c4c-82b1-3451285c7964}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{4292afbd-c74c-4d99-a401-32f74455fb77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Common">
+      <UniqueIdentifier>{4350f2d1-b87f-4c97-ba11-52155ee2a22d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common\include">
+      <UniqueIdentifier>{d1214855-4690-4b4e-97e0-7bbbdce0ef7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common\src">
+      <UniqueIdentifier>{82b985da-953f-4e44-8608-649a36b9fceb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Common\Pages">
+      <UniqueIdentifier>{563092e1-8c18-4f73-90ec-a05da599f727}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mock">
+      <UniqueIdentifier>{4f9ee943-5661-4703-ac67-28992ff17a65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Common\Mock">
+      <UniqueIdentifier>{7bf3842c-9af3-4f31-becc-d5317d49d80c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Common\src\AbstractTest.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DataBasseConnector.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestsRunner.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestsSelectionModel.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\AbstractHardwareConnector.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\AbstractDevice.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DeviceIdentityResources.IF.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DevicesManager.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\DevicesManagerController.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\TestsRunnerController.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\HardwareConnectorMock.cpp">
+      <Filter>Source Files\Mock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\main.cpp">
+      <Filter>Source Files\Mock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\DeviceMock.cpp">
+      <Filter>Source Files\Mock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MockTest.cpp">
+      <Filter>Source Files\Mock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\UserActionRequestController.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\UserActionRequestSender.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ProductionTestWizardContentMock.cpp">
+      <Filter>Source Files\Mock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\AbstractProductionTestWizardContent.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Common\src\ChannelsIF.cpp">
+      <Filter>Source Files\Common\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\..\Common\include\PrintInterface.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\Clipboard.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractTest.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\TestsRunner.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\TestsSelectionModel.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AppicationSettings.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\ResourcesHandler.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractDataResource.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractDevice.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\DevicesManager.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\DevicesManagerController.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\TestsRunnerController.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\include\DeviceMock.h">
+      <Filter>Header Files\Common\Mock</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\UserActionRequestSender.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\UserActionRequestController.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\include\ProductionTestWizardContentMock.h">
+      <Filter>Header Files\Common\Mock</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\LoggingObject.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractProductionTestWizardContent.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\Promises.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\Common\include\AbstractHardwareConnector.h">
+      <Filter>Header Files\Common\include</Filter>
+    </QtMoc>
+    <QtMoc Include="..\include\MockTest.h">
+      <Filter>Header Files\Common\Mock</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="debug\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="release\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="..\..\Resources\qml.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+    <None Include="..\..\CommonComponents\DataBaseField.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledComboBox.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledTextField.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\MyPage.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Common\include\DataBasseConnector.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\Resource.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\ResourceManagementStrategies.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\ResourceContentValidationStrategies.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\DeviceIdentityResourcesIF.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\HardwareConnectorMock.h">
+      <Filter>Header Files\Common\Mock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\ErrorChecker.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\Exceptions.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\DatabaseHandler.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\RaportGenerator.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\UserCommunicationObject.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Common\include\ChannelsIF.h">
+      <Filter>Header Files\Common\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\CommonComponents\TestsRunner.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ScrollList.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\MyButton.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\PlaceHolder.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\TestsSelection.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\AddressesIdentificationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\CommunicationTestPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\MdaTestConfirmationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\TestCompletitionPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\TestEquipmentIdentificationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\TestSelectionPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\TestValidationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\UserIdentificationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\Pages\UutIdentificationPage.qml">
+      <Filter>Resource Files\Common\Pages</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\main.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LogsArea.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ChannelsSelectionDialog.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\ConfirmationDialog.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+    <None Include="..\..\CommonComponents\LabeledTextInput.qml">
+      <Filter>Resource Files\Common</Filter>
+    </None>
+  </ItemGroup>
+</Project>

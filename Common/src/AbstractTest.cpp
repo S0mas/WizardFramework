@@ -1,102 +1,89 @@
 #include "..\include\AbstractTest.h"
-#include <QThread>
+#include "..\include\Exceptions.h"
 #include <thread>
 #include <chrono>
+#include <QCoreApplication>
+#include <QThread>
 
-AbstractTest::AbstractTest(const QString& name, const bool summaryOn) : name(name), summaryOn(summaryOn) {}
+QString AbstractTest::summary() const noexcept {
+	QString summary;
+	summary += QString("Test result summary: %1\n").arg(name());
+	summary += QString("Result: %1\n").arg(result().toString());
+	return summary;
+}
 
-const QString& AbstractTest::getName() const noexcept {
-	return name;
+AbstractTest::AbstractTest(const QString& name, QObject* parent) noexcept : UserCommunicationObject(parent), name_(name) {}
+
+const QString& AbstractTest::name() const noexcept {
+	return name_;
 }
 
 void AbstractTest::run() const {
-	log(QString("%1 -----------> STARTED").arg(name));
-	isRunning = true;
-	wasRunned = true;
-	problemReportedByUser = false;
+	log(QString("%1 -----------> STARTED").arg(name_));
+	result_ = Result::VALUE::FAILED;
 	try {
 		preTestSetUp();
-		result = test();
+		result_ = test();
 		postTestCleanUp();
 	}
-	catch (const std::runtime_error & exc) {
-		result = false;
-		log(QString(exc.what()));
+	catch (const SkipTestException& exc) {
+		log(QString("User choose to skip the test after error occured. Error msg: %1").arg(exc.what()));
 	}
-	catch (...) {
-		result = false;
-		log("Exception thrown...");
-	}
-	isRunning = false;
-	log(QString("%1 -----------> %2").arg(name).arg(result ? "PASSED" : "FAILED"));
-	if(summaryOn)
-		logSummary();
-	log(QString("****** ***** ***** ***** ***** *****"));
+	auto const& sum = summary();
+	log(QString("%1 -----------> %2\n%3\n****** ***** ***** ***** ***** *****").arg(name_, result_.toString(), sum));
+	emit testSummary(sum);
 }
 
-bool AbstractTest::getShouldBeRun() const noexcept {
-	return shouldBeRun;
+bool AbstractTest::passed() const noexcept {
+	return result_ == Result::VALUE::PASSED;
 }
 
-bool AbstractTest::getResult() const noexcept {
-	return result;
-}
-
-bool AbstractTest::getRunned() const noexcept {
-	return wasRunned;
+bool AbstractTest::wasRunned() const noexcept {
+	return result_ != Result::VALUE::NOT_RUNNED;
 }
 
 void AbstractTest::setShouldBeRun(const bool value) noexcept {
-	shouldBeRun = value;
-	emit shouldBeRunChanged(shouldBeRun);
+	shouldBeRun_ = value;
+	emit shouldBeRunChanged(shouldBeRun_);
 }
 
-void AbstractTest::setStoreCalibrationDataToEeprom(const bool value) noexcept {
-	storeCalibrationDataToEeprom = value;
+void AbstractTest::reset() noexcept {
+	result_ = Result::VALUE::NOT_RUNNED;
+	additionalReset();
 }
 
-bool AbstractTest::getStoreCalibrationDataToEeprom() noexcept {
-	return storeCalibrationDataToEeprom;
+Result AbstractTest::result() const noexcept {
+	return result_;
 }
 
-void AbstractTest::waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept {
-	if (isRunning) {
-		emit askUserAction(msg, static_cast<int>(actionType));
-		while (!continueTestClicked) { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); }
-		continueTestClicked = false;
-	}
+bool AbstractTest::shouldBeRun() const noexcept {
+	return shouldBeRun_;
 }
 
-void AbstractTest::continueTest() {
-	if (isRunning) {
-		continueTestClicked = true;
-	}
+AbstractChannelsTest::AbstractChannelsTest(const QString& name, const int channelsCount, QObject* parent) noexcept : AbstractTest(name, parent) {
+	for(int i = 1; i <= channelsCount; ++i)
+		channelsResults[i] = Result::VALUE::NOT_RUNNED;
 }
 
-void AbstractTest::inputUserDecision(const bool decision) {
-	if (isRunning) {
-		userDecision = decision;
-	}
+Result AbstractChannelsTest::channelsResult() const noexcept {
+	if(std::find_if(channelsResults.begin(), channelsResults.end(), [](auto const& result) { return result.second == Result::VALUE::FAILED; }) != channelsResults.end())
+		return Result::VALUE::FAILED;
+	else if (std::find_if(channelsResults.begin(), channelsResults.end(), [](auto const& result) { return result.second == Result::VALUE::NOT_RUNNED; }) != channelsResults.end())
+		return Result::VALUE::PARTIALLY;
+	return Result::VALUE::PASSED;
 }
 
-
-void AbstractTest::reportError(const QString& errorData, const int errorType) {
-	if (isRunning) {
-		problemReportedByUser = true;
-		if (static_cast<UserErrorType>(errorType) == UserErrorType::CHANNELS_ERROR) {
-			auto channelMask = errorData.toInt(nullptr, 2);
-			channelsErrorsMask |= channelMask;
-			log(QString("Error reported by user with channels: %1").arg(channelMask));
-		}
-	}
+void AbstractChannelsTest::additionalReset() noexcept {
+	for (auto& result : channelsResults)
+		result.second = Result::VALUE::NOT_RUNNED;
 }
 
-void AbstractTest::logSummary() const noexcept {
+QString AbstractChannelsTest::summary() const noexcept {
 	QString summary;
-	summary += QString("Test result summary: %1\n").arg(getName());
-	for (int i = 0; i < 16; i++)
-		summary += QString("Channel %1 --- %2\n").arg(i + 1).arg(channelsErrorsMask & (1 << i) ? "FAILED" : "PASSED");
-	summary += QString("Result: %1\n").arg(getResult() ? "PASSED" : "FAILED");
-	log(summary);
-	emit testSummary(summary);
+	summary += QString("Test result summary: %1\n").arg(name());
+	int channelId = 1;
+	for (auto const& result : channelsResults)
+		summary += QString("Channel %1 --- %2\n").arg(channelId++).arg(result.second.toString());
+	summary += QString("Result: %1\n").arg(result().toString());
+	return summary;
 }

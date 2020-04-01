@@ -1,0 +1,46 @@
+#pragma once
+
+#include <stdexcept>
+#include <QString>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	ErrorControlException
+///
+/// @brief	Exception for signalling error control errors.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	03.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ErrorControlException : public std::runtime_error {
+public:
+	ErrorControlException(const QString& errorMsg) : std::runtime_error(errorMsg.toStdString()) {}
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	SkipTestException
+///
+/// @brief	Exception for signalling skip test errors.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	03.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class SkipTestException : public ErrorControlException {
+public:
+	SkipTestException(const QString& errorMsg) : ErrorControlException(errorMsg) {}
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	StopTestRunException
+///
+/// @brief	Exception for signalling stop test run errors.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	03.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class StopTestRunException : public ErrorControlException {
+public:
+	StopTestRunException(const QString& errorMsg) : ErrorControlException(errorMsg) {}
+};

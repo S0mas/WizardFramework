@@ -1,6 +1,5 @@
 #include "../include/DataBasseConnector.h"
 #include <QDebug>
-#include <QSqlQuery>
 #include <QSqlError>
 #include <QString>
 
@@ -24,7 +23,6 @@ void QMySqlDataBaseConnector::closeConnection() noexcept {
 QMySqlDataBaseConnector::QMySqlDataBaseConnector(const QString& mysqlHostName, const int mysqlPort, const QString& mysqlDbName, const QString& user, const QString& passwd) noexcept {
 	setDataBase(mysqlHostName, mysqlPort, mysqlDbName, user, passwd);
 	openConnection();
-	lastQuery = std::make_unique<QSqlQuery>();
 }
 
 QMySqlDataBaseConnector::~QMySqlDataBaseConnector() {
@@ -36,16 +34,16 @@ bool QMySqlDataBaseConnector::isConnectionOpen() const noexcept {
 }
 
 void QMySqlDataBaseConnector::executeSqlQuery(const QString& sqlQuery) noexcept {
-	lastQuery->clear();
-	lastQuery->exec(sqlQuery);
+	lastQuery.clear();
+	lastQuery.exec(sqlQuery);
 }
 
 bool QMySqlDataBaseConnector::wasLastQuerySuccesful() const noexcept {
-	return lastQuery->isActive();
+	return lastQuery.isActive();
 }
 
 QSqlQuery QMySqlDataBaseConnector::getLastQuery() const noexcept {
-	return *lastQuery;
+	return lastQuery;
 }
 
 QSqlError QMySqlDataBaseConnector::getLastError() const noexcept {

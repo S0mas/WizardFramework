@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class IEPETest : public Abstract6716Test {
+class IEPETest : public AbstractTest6716 {
+	Limit limit2101 = { "L2101", 0.04, 0.067 };
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	IEPETest(const std::shared_ptr<Communication_6716>& connection);
+	IEPETest();
 };

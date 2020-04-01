@@ -1,52 +1,484 @@
 #pragma once
-#include <QString>
-#include <QObject>
 #include <cstdio>
-#include "PrintInterface.h"
-#include "UserActionTypes.h"
-#include "UserErrorTypes.h"
+#include "UserCommunicationObject.h"
+#include "Limit.h"
+#include <map>
 
-class AbstractTest : public QObject {
-	Q_OBJECT
-	const QString name;
-	mutable bool result = false;
-	mutable bool wasRunned = false;
-	mutable bool isRunning = false;
-	bool shouldBeRun = true;
-	static inline bool storeCalibrationDataToEeprom = true;
-	bool summaryOn = false;
-protected:
-	mutable std::atomic<bool> continueTestClicked = { false };
-	mutable bool problemReportedByUser = false;
-	virtual bool test() const = 0;
-	virtual void preTestSetUp() const {}
-	virtual void postTestCleanUp() const {}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	Result
+///
+/// @brief	Is reponsible for handling the test result and converting it.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	04.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class Result {
 public:
-	mutable std::atomic<bool> userDecision = { false };
-	inline static short unsigned CHANNEL_MASK = 0xFFFF;
-	mutable unsigned short channelsErrorsMask = 0;
-	AbstractTest(const QString& name, const bool summaryOn = false);
-	const QString& getName() const noexcept;
-	void run() const;
-	bool getShouldBeRun() const noexcept;
-	bool getResult() const noexcept;
-	bool getRunned() const noexcept;
-	void setShouldBeRun(const bool value) noexcept;
-	static void setStoreCalibrationDataToEeprom(const bool) noexcept;
-	static bool getStoreCalibrationDataToEeprom() noexcept;
-	void waitForUserAction(const QString& msg, const UserActionType actionType) const noexcept;
-	void logSummary() const noexcept;
-signals:
-	void shouldBeRunChanged(bool) const;
-	void log(QString) const;
-	void askUserAction(const QString& msg, const int actionType) const;
-	void testSummary(const QString& msg) const;
-public slots:
-	void continueTest();
-	void reportError(const QString& errorData, const int errorType);
-	void inputUserDecision(const bool decision);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @enum	VALUE
+	///
+	/// @brief	Values that represent the result of the test.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	enum class VALUE {
+		PASSED,
+		FAILED,
+		PARTIALLY,
+		NOT_RUNNED,
+	};
+	VALUE result_;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Result::Result() noexcept : result_(VALUE::NOT_RUNNED)
+	///
+	/// @brief	Default constructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Result() noexcept : result_(VALUE::NOT_RUNNED) {}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Result::Result(const VALUE value) noexcept
+	///
+	/// @brief	Constructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	value	The value.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Result(const VALUE value) noexcept : result_(value) {}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	QString Result::toString() const noexcept
+	///
+	/// @brief	Convert this object into a string representation.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	A QString that represents this object.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	QString toString() const noexcept {
+		if (result_ == VALUE::PASSED)
+			return "PASSED";
+		if (result_ == VALUE::FAILED)
+			return "FAILED";
+		if (result_ == VALUE::PARTIALLY)
+			return "PARTIALLY";
+		return "NOT_RUNNED";
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	int Result::toInt() const noexcept
+	///
+	/// @brief	Converts this object to an int.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The int that represents this object.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	int toInt() const noexcept {
+		if (result_ == VALUE::PASSED)
+			return 0;
+		if (result_ == VALUE::FAILED)
+			return 1;
+		if (result_ == VALUE::PARTIALLY)
+			return 2;
+		return 3;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Result& Result::operator=(const VALUE& value) noexcept
+	///
+	/// @brief	Assignment operator
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	value	The value.
+	///
+	/// @returns	Assigned object.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Result& operator=(const VALUE& value) noexcept {
+		result_ = value;
+		return *this;
+	}
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @fn	inline bool operator==(const Result& lhs, const Result::VALUE rhs) noexcept
+///
+/// @brief	Equality operator for the Result class and its value - it simplifies the code.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	04.02.2020
+///
+/// @param 	lhs	The first instance to compare.
+/// @param 	rhs	The second instance to compare.
+///
+/// @returns	True if the parameters are considered equivalent.
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline bool operator==(const Result& lhs, const Result::VALUE rhs) noexcept {
+	return lhs.result_ == rhs;
+}
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @fn	inline bool operator!=(const Result& lhs, const Result::VALUE rhs) noexcept
+///
+/// @brief	Inequality operator for Result class and its value - it simplifies the code.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	04.02.2020
+///
+/// @param 	lhs	The first instance to compare.
+/// @param 	rhs	The second instance to compare.
+///
+/// @returns	True if the parameters are not considered equivalent.
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline bool operator!=(const Result& lhs, const Result::VALUE rhs) noexcept {
+	return !(lhs == rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	AbstractTest
+///
+/// @brief	An abstract test class. It handles the process of test run, controling its result and the communication with the test.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	04.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class AbstractTest : public UserCommunicationObject {
+	Q_OBJECT
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn virtual void AbstractTest::summary() const noexcept;
+	///
+	/// @brief	Creates the summary of the test.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The summary.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual QString summary() const noexcept;
+	const QString name_;
+	bool shouldBeRun_ = true;
+protected:
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	virtual Result AbstractTest::test() const = 0;
+	///
+	/// @brief	The test implementation. Must be implemented by concrete tests classes.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The result.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual Result test() const = 0;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	virtual void AbstractTest::preTestSetUp() const
+	///
+	/// @brief	This function will be invoked before the test. It should be implemented if the inheriting class test needs to do some stuff before the execution.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual void preTestSetUp() const {}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	virtual void AbstractTest::postTestCleanUp() const
+	///
+	/// @brief	This function will be invoked after the test. It should be implemented if the inheriting class test needs to do some stuff after the execution.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual void postTestCleanUp() const {}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	virtual void AbstractTest::additionalReset() noexcept
+	///
+	/// @brief	Additional reset actions, should be implemented if inheriting class have additional states.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual void additionalReset() noexcept {}
+	mutable Result result_;
+public:
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	AbstractTest::AbstractTest(const QString& name, QObject* parent = nullptr) noexcept;
+	///
+	/// @brief	Constructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 		   	name  	The name.
+	/// @param [in]	parent	(Optional) If not null - will be set as constructed object parent. In the
+	/// 					QObject tree.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	AbstractTest(const QString& name, QObject* parent = nullptr) noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	AbstractTest::~AbstractTest() override = default;
+	///
+	/// @brief	Default destructor.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	~AbstractTest() override = default;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	const QString& AbstractTest::name() const noexcept;
+	///
+	/// @brief	Gets the name.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The name.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	const QString& name() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractTest::run() const;
+	///
+	/// @brief	Runs the test.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void run() const;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	bool AbstractTest::passed() const noexcept;
+	///
+	/// @brief	Determines if the test has been passed.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	True if it has, false if it has not.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	bool passed() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	bool AbstractTest::wasRunned() const noexcept;
+	///
+	/// @brief	Determines if the test was runned.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	True if it was, false if it was not.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	bool wasRunned() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	bool AbstractTest::shouldBeRun() const noexcept;
+	///
+	/// @brief	Determines if the test should be run.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	True if it should, false if it shuldn't.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	bool shouldBeRun() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractTest::setShouldBeRun(const bool value) noexcept;
+	///
+	/// @brief	Sets the shouldBeRun member.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	value	The new value.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void setShouldBeRun(const bool value) noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractTest::reset() noexcept;
+	///
+	/// @brief	Resets the result to NOT_RUNNED and invokes additionalReset().
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void reset() noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Result AbstractTest::result() const noexcept;
+	///
+	/// @brief	Gets the result of the test.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The result.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Result result() const noexcept;
+signals:
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	signals: void AbstractTest::shouldBeRunChanged(const bool value) const;
+	///
+	/// @brief	Output signal. Indicates that the value of shouldBeRun member was changed.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	value	The new value.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void shouldBeRunChanged(const bool value) const;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractTest::log(const QString& msg) const;
+	///
+	/// @brief	Logs the given message.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	msg	The message.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void log(const QString& msg) const;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractTest::testSummary(const QString& msg) const;
+	///
+	/// @brief	Output signal. Sends the tests summary.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	msg	The summary.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void testSummary(const QString& msg) const;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @class	AbstractChannelsTest
+///
+/// @brief	An abstract test that is testing functionality of some group of ochannels.
+///
+/// @author	Krzysztof Sommerfeld
+/// @date	04.02.2020
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class AbstractChannelsTest : public AbstractTest {
+	Q_OBJECT
+protected:
+	mutable std::map<int, Result> channelsResults;
+public:
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	AbstractChannelsTest::AbstractChannelsTest(const QString& name, const int channelsCount = 1, QObject* parent = nullptr) noexcept;
+	///
+	/// @brief	Constructor
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 		   	name		 	The name.
+	/// @param 		   	channelsCount	(Optional) Number of channels.
+	/// @param [in]	parent	(Optional) If not null - will be set as constructed object parent. In the
+	/// 					QObject tree.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	AbstractChannelsTest(const QString& name, const int channelsCount = 1, QObject* parent = nullptr) noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	AbstractChannelsTest::~AbstractChannelsTest() override = default;
+	///
+	/// @brief	Default destructor.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	~AbstractChannelsTest() override = default;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractChannelsTest::setChannelsStates(const std::vector<bool>& states) noexcept;
+	///
+	/// @brief	Sets the channels states.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @param 	states	The states.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	virtual void AbstractChannelsTest::setChannelsStates(const std::vector<bool>& states) noexcept = 0;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	Result AbstractChannelsTest::channelsResult() const noexcept;
+	///
+	/// @brief	Gets channels result.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The Result.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Result channelsResult() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	void AbstractChannelsTest::additionalReset() noexcept override;
+	///
+	/// @brief	Sets the every single channel result to NOT_RUNNED.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void additionalReset() noexcept override;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	QString AbstractChannelsTest::summary() const noexcept override;
+	///
+	/// @brief	Creates the summary of the test.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	///
+	/// @returns	The summary.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	QString summary() const noexcept override;
+};

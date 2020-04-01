@@ -1,86 +1,76 @@
 #include "../include/Tests/IEPETest.h"
-#include "../include/defines.h"
 
-bool IEPETest::test() const {
+Result IEPETest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x60);
 	
-	ViInt16 iepeStatus[bu6716_NUM_CHAN];
-	ViUInt16 iepeStatus_mask;
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
 	// 1
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	configureVoltageReferanceSwitches(0x60);
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_DI, bu6716_GAIN_10, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
-	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
-		if (!(CHANNEL_MASK & (1 << i)))
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_EXCAL);
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
 			continue;
-		ViUInt16 channelMask = 1 << i;
-		// 2
-		log(QString("Channel %1").arg(i + 1));
-		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_4, T028_ON);
-		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_6, T028_ON);
-		connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_IEPE);
+		log(QString("CHANNEL %1").arg(channel.index()));
 
-		// Force DC coupling
-		connection->writePortExpander(i + 1, connection->readPortExpander(i + 1) & 0xfcff);
-		bu3100_sleep(50);
+		// 2
+		deviceT028->invokeFunction(t028_setRelay, "t028_setRelay", channel.index(), T028_RELAY_4, T028_ON);
+		deviceT028->invokeFunction(t028_setRelay, "t028_setRelay", channel.index(), T028_RELAY_6, T028_ON);
+
 		// 3
-		auto value = readValue_oneChannel(bu3416_GAIN_10, i + 1, 0.1);
-		channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2101", 0.535, 0.135, 0.135);
-		connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_IEPE);  // Sets AC-pos, DC-neg coupling 
-		bu3100_sleep(10);
-		// Check mode, just in case...
-		ViInt16 channelMode;
-		connection->callAndThrowOnError6716(bu6716_getMode, "bu6716_getMode", channelMask, &channelMode);
-		if (channelMode != bu6716_MODE_IEPE)
-			log("ERROR - server/driver - mode is not bu6716_MODE_IEPE !!!");
+		limit2101.checkValue(device3416_6716->measureChannel(channel.index(), bu3416_GAIN_10), bu3416_GAIN_10);
+		device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", channel.mask(), bu6716_MODE_IEPE);
+
 		// 4
-		log(QString("Channel %1 (IEPE connected)").arg(i + 1));
-		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
-		iepeStatus_mask = 0;
-		for (int j = 0; j < bu6716_NUM_CHAN; j++)
+		log(QString("IEPE connected"));
+		ViInt16 iepeStatus[bu6716_NUM_CHAN];
+		device6716->invokeFunction(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
+		ViUInt16 iepeStatus_mask = 0;
+		for (int j = 0; j < device6716->channels().size(); j++)
 			if (iepeStatus[j] == bu6716_IEPE_OK)
 				iepeStatus_mask |= (1 << j);
-		if (iepeStatus[i] == bu6716_IEPE_OK) {
-			log("- Detected valid IEPE current (OK)");
+		auto status = true;
+		if (iepeStatus[channel.index() - 1] == bu6716_IEPE_OK)
+			log("OK: Detected valid IEPE current on tested channel");
+		else if (iepeStatus[channel.index() - 1] == bu6716_IEPE_NO_CURRENT) {
+			log("ERROR: IEPE current not detected on tested channel");
+			status = false;
 		}
-		else if (iepeStatus[i] == bu6716_IEPE_NO_CURRENT) {
-			log(QString("- ERROR. Not valid IEPE current detected (channel: %1, icp_st: 0x%2 step 4)").arg(i + 1).arg(iepeStatus_mask));
-			channelsErrorsMask |= channelMask;
+		if (iepeStatus_mask & ~(channel.mask())) {
+			log(QString("ERROR: IEPE current detected on different channel/s (icp_st: 0x%1 step 4)").arg(iepeStatus_mask));
+			status = false;
 		}
-		else {
-			if (iepeStatus_mask & (~(1 << i))) {
-				log(QString("- ERROR. Valid IEPE current detected on others channels (channel: %1, icp_st: 0x%2 step 4)").arg(i + 1).arg(iepeStatus_mask));
-				channelsErrorsMask |= channelMask;
-			}
-		}
+
+		// 5
+		device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", channel.mask(), bu6716_MODE_IEPE);  // Sets AC-pos, DC-neg coupling
+
 		// 6
-		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_6, T028_OFF);
+		deviceT028->invokeFunction(t028_setRelay, "t028_setRelay", channel.index(), T028_RELAY_6, T028_OFF);
+
 		// 7
-		log(QString("Channel %1 (IEPE disconnected)").arg(i + 1));
-		connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
+		log(QString("IEPE disconnected"));
+		device6716->invokeFunction(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", 0xffff, iepeStatus, nullptr);
 		iepeStatus_mask = 0;
-		for (int j = 0; j < bu6716_NUM_CHAN; j++)
+		for (int j = 0; j < device6716->channels().size(); j++)
 			if (iepeStatus[j] == bu6716_IEPE_OK)
 				iepeStatus_mask |= (1 << j);
-		if (iepeStatus[i] == bu6716_IEPE_NO_CURRENT)
-			log("- IEPE current not detected (OK)");
-		else if (iepeStatus[i] == bu6716_IEPE_OK) {
-			log(QString("- ERROR. Valid IEPE current detected (channel: %1, icp_st: 0x2 step 7)").arg(i + 1).arg(iepeStatus_mask));
-			channelsErrorsMask |= channelMask;
+		if (iepeStatus[channel.index() - 1] == bu6716_IEPE_NO_CURRENT)
+			log("OK: IEPE current not detected on tested channel");
+		else if (iepeStatus[channel.index() - 1] == bu6716_IEPE_OK) {
+			log("ERROR: IEPE current detected on tested channel");
+			status = false;
 		}
-		else {
-			if (iepeStatus_mask & (~(1 << i))) {
-				log(QString("- ERROR. Valid IEPE current detected on others channels (channel: %1, icp_st: 0x2 step 7)").arg(i + 1).arg(iepeStatus_mask));
-				channelsErrorsMask |= channelMask;
-			}
+		if (iepeStatus_mask) {
+			log(QString("ERROR: IEPE current detected on different channels (icp_st: 0x1 step 7)").arg(iepeStatus_mask));
+			status = false;
 		}
-		connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", channelMask, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-		connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", i + 1, T028_RELAY_4, T028_OFF);
-		log("");
+		
+		device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", channel.mask(), bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+		deviceT028->invokeFunction(t028_setRelay, "t028_setRelay", channel.index(), T028_RELAY_4, T028_OFF);
+		log(QString("Channel %1, status: %2").arg(channel.index()).arg(status ? "OK" : "Error"));
+		channelsResults.at(channel.index()) = status ? Result::VALUE::PASSED : Result::VALUE::FAILED;
 	}
-	return channelsErrorsMask == 0;
+	return channelsResult();
 }
 
-IEPETest::IEPETest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("IEPE", connection, true) {}
+IEPETest::IEPETest() : AbstractTest6716("IEPE") {}

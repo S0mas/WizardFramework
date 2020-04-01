@@ -1,103 +1,59 @@
 #include "../include/Tests/ACCouplingTest.h"
-#include "../include/defines.h"
 
-bool ACCouplingTest::test() const {
-	
-	const ViReal64 vref[2] = { 9.0, -9.0 };
-	ViReal64 vrefSet;
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
+Result ACCouplingTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x64);
+
 	// 1
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_FULL_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_FULL_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
+
 	// 2
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 0.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
-	auto autoDacNeg = getAutoDACNegative(CHANNEL_MASK);
-	auto autoDacPos = getAutoDACPositive(CHANNEL_MASK);
-	setAutoDACNegative(CHANNEL_MASK, 0.0);
-	setAutoDACPositive(CHANNEL_MASK, 0.0);
-	bu3100_sleep(100);
-	// 3
-	configureVoltageReferanceSwitches(0x64);
-	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
-		if (!(CHANNEL_MASK & (1 << i)))
+	device6716->invokeFunction(bu6716_setPosExcitation, "bu6716_setPosExcitation", device6716->channelsStateAsMask(), 0.0);
+	device6716->invokeFunction(bu6716_setNegExcitation, "bu6716_setNegExcitation", device6716->channelsStateAsMask(), 0.0);
+	device6716->setAutoDACNegative(0.0);
+	device6716->setAutoDACPositive(0.0);
+
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
 			continue;
-		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		log(QString("CHANNEL %1").arg(i + 1));
+		log(QString("CHANNEL %1").arg(channel.index()));
+		// 3
+		device6716->invokeFunction(bu6716_setInputSrc, "bu6716_setInputSrc", channel.index(), bu6716_INP_SRC_VREF);
 
-		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
-#ifdef AUTO_DAC  // Seems it's not needed. Not described in the TP doc, Stephen also doesn't remember why it was added in 5716 prodtest code...
-		ViReal64 autoDAC[2] = { 0.0, 0.0 };
+		auto status = true;
+		for (auto const& couplingAC : { true, false }) {
+			// 4 & 10
+			setAndGetVrefVoltage(couplingAC ? 9 : -9);
 
-		for (int j = 0; j < 2; j++) {
-			// 3 & 4
-			BU6716_CHECK_ERR(bu6716_setVoltRefOutput, connection->getVi6716(), vref[j]);
-			BU6716_CHECK_ERR(bu6716_getVoltRefOutput, connection->getVi6716(), &vrefSet);
-			bu3100_sleep(50);
-			// 6 & 7
-			{
-				ViUInt16 data16;
-				BU6716_CHECK_ERR(readPortExpander, connection->getVi6716(), i + 1, &data16);
-				if (j == 0) {
-					BU6716_CHECK_ERR(writePortExpander(connection->getVi6716(), i + 1, , data16 & 0xfcff) | 0x0200);  // ACpos
-				}
-				else {
-					BU6716_CHECK_ERR(writePortExpander(connection->getVi6716(), i + 1, , data16 & 0xfcff) | 0x0100);  // ACneg
-				}
-				// Debug
-				//BU6716_CHECK_ERR(readPortExpander, connection->getVi6716(), i + 1, &data16);
-				//log("port expander: 0x%04hx", data16);
-			}
-			bu3100_sleep(5000);  // Allow full discharge
-			BU3416_CHECK_ERR(readValue_oneChannel, env, bu3416_GAIN_1, i + 1, 0.1, &value, 5000, 100);
-			autoDAC[j] = -value / 0.00305 * bu6716_DAC_AUTO_GAIN;
-			BU6716_CHECK_ERR(bu6716_setCoupling, connection->getVi6716(), channelMask, bu6716_COUPLING_DC);
-		}
-		log(QString("autoDacpos = %1, autoDACneg = %2").arg(autoDAC[0]).arg(autoDAC[1]));
-#endif
-		for (int j = 0; j < 2; j++) {
-			// 3 & 4
-			connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", vref[j]);
-			connection->callAndThrowOnError6100(bu6100_getVoltRefOutput, "bu6100_getVoltRefOutput", &vrefSet);
-			bu3100_sleep(50);
-			// 5
-			auto value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1);
-			channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2003", vrefSet, 0.01, 0.01, true);
+			// 5 & 11
+			status &= couplingAC ? limit2003.checkValue(device3416_6716->measureChannel(channel.index())) : limit2003.checkValueSigned(device3416_6716->measureChannel(channel.index()));
+			log(limit2003.lastStatusMsg());
 
-#ifdef AUTO_DAC
-			setAutoDAC(channelMask, AUTO_DAC_POSITIVE, autoDAC[j]);  // In 5716 test code just the positive was set...
-			bu3100_sleep(5000);
-#endif
-			// 6 & 7
-			{
-				ViUInt16 data16 = connection->readPortExpander(i + 1);
-				ViUInt16 acPolarization = (j == 0) ? 0x0200 : 0x0100;
-				connection->writePortExpander(i + 1, (data16 & 0xfcff) | acPolarization);  // ACpos
-			}
+			// 6 & 12
+			ViUInt16 registerBitState = couplingAC ? 0x0200 : 0x0100;
+			ViUInt16 registerState = device6716->readPortExpander(channel.index());
+			device6716->writePortExpander(channel.index(), (registerState & 0xfcff) | registerBitState);
+
+			// 7 & 13
 			bu3100_sleep(1500);  // Discharge time - must be 1.5 sec
-			// 8
-			value = readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1, 5000.0, 100);
-			if (j == 0)
-				channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2001", 3.0, 1, 1, true);
-			else
-				channelsErrorsMask |= checkValue_oneChannel(i + 1, value, "L2002", -3.0, 1, 1, true);
-			connection->callAndThrowOnError6716(bu6716_setCoupling, "bu6716_setCoupling", channelMask, bu6716_COUPLING_DC);
-			bu3100_sleep(50);
+
+			// 8 & 14
+			auto const limit = couplingAC ? limit2001 : limit2002;
+			status &= limit.checkValue(device3416_6716->measureChannel(channel.index()));
+			log(limit.lastStatusMsg());
+
+			// 9 & 15
+			device6716->invokeFunction(bu6716_setCoupling, "bu6716_setCoupling", channel.mask(), bu6716_COUPLING_DC);
+
+			// 16
+			device6100->invokeFunction(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
 		}
-		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
+		device6716->invokeFunction(bu6716_setInputSrc, "bu6716_setInputSrc", channel.index(), bu6716_INP_SRC_FP);
+		channelsResults.at(channel.index()) = status ? Result::VALUE::PASSED : Result::VALUE::FAILED;
+		log(QString("Channel %1, status: %2").arg(channel.index()).arg(status ? "OK" : "Error"));
 	}
-	// 16, Restore
-	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
-	//connection->callAndThrowOnError6716(bu6716_setVoltRefMode, "bu6716_setVoltRefMode", bu6716_VREF_MODE_EXT);
-	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
-		if (CHANNEL_MASK & (1 << i)) {
-			bu3100_sleep(20);
-			setAutoDACNegative(CHANNEL_MASK, autoDacNeg[n]);
-			setAutoDACPositive(CHANNEL_MASK, autoDacPos[n]);
-			n++;
-		}
-	}
-	return channelsErrorsMask == 0;
+
+	return channelsResult();
 }
 
-ACCouplingTest::ACCouplingTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AC Coupling", connection, true) {}
+ACCouplingTest::ACCouplingTest() : AbstractTest6716("AC Coupling") {}

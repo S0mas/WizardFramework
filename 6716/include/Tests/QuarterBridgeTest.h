@@ -8,11 +8,13 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class QuarterBridgeTest : public Abstract6716Test {
+class QuarterBridgeTest : public AbstractTest6716 {
+	Limit limit1301 = { "L1301", -0.05, 0.05 };
+	Limit limit1302 = { "L1302", -1.3, -1.15 };
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	QuarterBridgeTest(const std::shared_ptr<Communication_6716>& connection);
+	QuarterBridgeTest();
 };

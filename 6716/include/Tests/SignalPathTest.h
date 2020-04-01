@@ -9,11 +9,12 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class SignalPathTest : public Abstract6716Test {
+class SignalPathTest : public AbstractTest6716 {
+	Limit limit1801 = { "L1801", 8.99, 9.01 };
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	SignalPathTest(const std::shared_ptr<Communication_6716>& connection);
+	SignalPathTest();
 };

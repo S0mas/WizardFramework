@@ -8,11 +8,13 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class PositiveExcitationCurrentLimitTest : public Abstract6716Test {
+class PositiveExcitationCurrentLimitTest : public AbstractTest6716 {
+	Limit limit1401 = { "L1401", 5.99, 6.01 };
+	Limit limit1402 = { "L1402", 6, 7.2 };
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	PositiveExcitationCurrentLimitTest(const std::shared_ptr<Communication_6716>& connection);
+	PositiveExcitationCurrentLimitTest();
 };

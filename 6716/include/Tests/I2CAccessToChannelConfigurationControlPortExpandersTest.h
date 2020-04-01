@@ -8,12 +8,12 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class I2CAccessToChannelConfigurationControlPortExpandersTest : public Abstract6716Test {
+class I2CAccessToChannelConfigurationControlPortExpandersTest : public AbstractTest6716 {
 	bool checkPortExpander() const noexcept;
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	I2CAccessToChannelConfigurationControlPortExpandersTest(const std::shared_ptr<Communication_6716>& connection);
+	I2CAccessToChannelConfigurationControlPortExpandersTest();
 };

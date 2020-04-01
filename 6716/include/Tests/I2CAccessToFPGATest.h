@@ -8,12 +8,12 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class I2CAccessToFPGATest : public Abstract6716Test {
+class I2CAccessToFPGATest : public AbstractTest6716 {
 	bool testRWAndCheckId(const unsigned char expectedValue) const noexcept;
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	I2CAccessToFPGATest(const std::shared_ptr<Communication_6716>& connection);
+	I2CAccessToFPGATest();
 };

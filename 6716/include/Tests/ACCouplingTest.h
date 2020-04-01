@@ -9,11 +9,14 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class ACCouplingTest : public Abstract6716Test {
+class ACCouplingTest : public AbstractTest6716 {
+	Limit limit2001 = { "L2001", 2, 4 };
+	Limit limit2002 = { "L2002", -4, -2 };
+	Limit limit2003 = { "L2003", 8.99, 9.01 };
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	ACCouplingTest(const std::shared_ptr<Communication_6716>& connection);
+	ACCouplingTest();
 };

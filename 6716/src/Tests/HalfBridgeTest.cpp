@@ -1,65 +1,63 @@
 #include "../include/Tests/HalfBridgeTest.h"
-#include "../include/defines.h"
 
-bool HalfBridgeTest::test() const {
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
-	configureVoltageReferanceSwitches(0x60);
+Result HalfBridgeTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x60);
 
-	//Step 1)
-	{
-		connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_HALF_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-		connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
+	// 1
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_HALF_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
+
+	// 2
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_HBRIDGE);
+
+	// 3
+	device6716->invokeFunction(bu6716_setPosExcitation, "bu6716_setPosExcitation", device6716->channelsStateAsMask(), 5.0);
+	device6716->invokeFunction(bu6716_setNegExcitation, "bu6716_setNegExcitation", device6716->channelsStateAsMask(), 0.0);
+
+	// 4
+	auto values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		channelsResults.at(channel.index()) = Result::VALUE::PASSED;
+		if (!limit1201.checkValue(values[channel.index() - 1]))
+			channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+		log(limit1201.lastStatusMsg());
 	}
 
-	//Step 2)
-	{
-		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_HBRIDGE);
+	// 5
+	device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", device6716->channelsStateAsMask(), bu6716_MODE_FULL_BRIDGE);
+
+	// 6
+	values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		if (!limit1202.checkValue(values[channel.index() - 1]))
+			channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+		log(limit1202.lastStatusMsg());
 	}
 
-	//Step 3)
-	{
-		connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 5.0);
-		connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
+	// 7
+	device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", device6716->channelsStateAsMask(), bu6716_MODE_HALF_BRIDGE);
+
+	// 8
+	device6716->invokeFunction(bu6716_setPosExcitation, "bu6716_setPosExcitation", device6716->channelsStateAsMask(), 10.0);
+	device6716->invokeFunction(bu6716_setNegExcitation, "bu6716_setNegExcitation", device6716->channelsStateAsMask(), 0.0);
+
+	// 9
+	values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		if (!limit1201.checkValue(values[channel.index() - 1]))
+			channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+		log(limit1201.lastStatusMsg());
 	}
 
-	//Step 4)
-	auto channelsErrorsMask = 0;
-	{
-		channelsErrorsMask = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
-		bu3100_sleep(50);
-	}
+	// 10 & 11 -> Removed
 
-	//Step 5)
-	connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", CHANNEL_MASK, bu6716_MODE_FULL_BRIDGE);
-
-	//6)
-	bu3100_sleep(50);
-	channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1202", -2.5, 1.0, 1.0);
-	//7)
-	connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", CHANNEL_MASK, bu6716_MODE_HALF_BRIDGE);
-	//8)
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 10.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
-	//9)
-	bu3100_sleep(50);
-
-	channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), "L1201", 0.0, 0.050, 0.050);
-	/* removed at the moment
-	//10)
-	T028_CHECK_ERR(t028_setRelay, T028_CHAN_ALL, T028_RELAY_1, T028_OFF);
-
-	//11)
-	bu3100_sleep(50);
-	BU3416_CHECK_ERR(readValues, env, bu3416_GAIN_1000, CHANNEL_MASK, 0.1, values);
-
-	channelsErrorsMask |= checkValues(CHANNEL_MASK, values, "L1203", -2.5e-3, 1e-3, 1e-3);
-	*/
-	//12)
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 0.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
-	//13)
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
-	return channelsErrorsMask == 0;
+	return channelsResult();
 }
 
-HalfBridgeTest::HalfBridgeTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Half Bridge", connection, true) {}
+HalfBridgeTest::HalfBridgeTest() : AbstractTest6716("Half Bridge") {}

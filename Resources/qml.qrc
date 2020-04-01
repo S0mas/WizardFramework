@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+		<file>../CommonComponents/main.qml</file>
         <file>../CommonComponents/LabeledComboBox.qml</file>
         <file>../CommonComponents/LabeledTextField.qml</file>
         <file>../CommonComponents/MyPage.qml</file>
@@ -11,16 +12,18 @@
 		<file>../CommonComponents/LabeledTextInput.qml</file>
 		<file>../CommonComponents/ChannelsSelectionDialog.qml</file>
 		<file>../CommonComponents/ConfirmationDialog.qml</file>
-        <file>../6716/Components/main.qml</file>
-        <file>../6716/Components/MdaTestConfirmationPage.qml</file>
-        <file>../6716/Components/TestCompletitionPage.qml</file>
-        <file>../6716/Components/TestEquipmentIdentificationPage.qml</file>
-        <file>../6716/Components/TestSelectionPage.qml</file>
-        <file>../6716/Components/TestValidationPage.qml</file>
-        <file>../6716/Components/UserIdentificationPage.qml</file>
-        <file>../6716/Components/UutIdentificationPage.qml</file>
-        <file>../6716/Components/CommunicationTestPage.qml</file>
-		<file>../6716/Components/AddressesIdentificationPage.qml</file>
+		<file>../CommonComponents/TestsSelection.qml</file>
+		<file>../CommonComponents/LogsArea.qml</file>
+		<file>../CommonComponents/ScrollGridView.qml</file>
+        <file>../CommonComponents/Pages/MdaTestConfirmationPage.qml</file>
+        <file>../CommonComponents/Pages/TestCompletitionPage.qml</file>
+        <file>../CommonComponents/Pages/TestSelectionPage.qml</file>
+        <file>../CommonComponents/Pages/TestValidationPage.qml</file>
+        <file>../CommonComponents/Pages/UserIdentificationPage.qml</file>
+		<file>../CommonComponents/Pages/UutIdentificationPage.qml</file>
+		<file>../CommonComponents/Pages/TestEquipmentIdentificationPage.qml</file>
+        <file>../CommonComponents/Pages/CommunicationTestPage.qml</file>
+		<file>../CommonComponents/Pages/AddressesIdentificationPage.qml</file>
         <file>images/bustec.jpg</file>
     </qresource>
 </RCC>

@@ -1,44 +1,39 @@
 #include "../include/Tests/SignalPathTest.h"
-#include "../include/defines.h"
 
-bool SignalPathTest::test() const {
-	
-	const ViReal64 volts[2] = { 9.0, -9.0 };
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
+Result SignalPathTest::test() const {
 	// 1
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_FULL_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
-	// 2
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 0.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_FULL_BRIDGE, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 
-	auto autoDacNeg = getAutoDACNegative(CHANNEL_MASK);
-	auto autoDacPos = getAutoDACPositive(CHANNEL_MASK);
-	setAutoDACNegative(CHANNEL_MASK, 0.0);
-	setAutoDACPositive(CHANNEL_MASK, 0.0);
-	bu3100_sleep(50);
+	// 2
+	device6716->invokeFunction(bu6716_setPosExcitation, "bu6716_setPosExcitation", device6716->channelsStateAsMask(), 0.0);
+	device6716->invokeFunction(bu6716_setNegExcitation, "bu6716_setNegExcitation", device6716->channelsStateAsMask(), 0.0);
+	device6716->setAutoDACNegative(0.0);
+	device6716->setAutoDACPositive(0.0);
+
+	// 3
+	device6716->configureVoltageReferanceSwitches(0x74);
+
 	// 4
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
-	connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", T028_CHAN_ALL, T028_RELAY_5, T028_ON);
-	for (int j = 0; j < 2; j++) {
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_EXCAL);
+	deviceT028->invokeFunction(t028_setRelay, "t028_setRelay", T028_CHAN_ALL, T028_RELAY_5, T028_ON);
+
+	for (auto const voltage : {9.0, -9.0}) {
 		// 5 & 7
-		configureVoltageReferanceSwitches(0x74);
-		connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", volts[j]);
+		device6100->invokeFunction(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", voltage);
+
 		// 6 & 8
-		channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.1), j == 0 ? "L1801" : "L1802", volts[j], 10e-3, 10e-3);
-	}
-	// Restore
-	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
-	connection->callAndThrowOnErrorT028(t028_setRelay, "t028_setRelay", T028_CHAN_ALL, T028_RELAY_5, T028_OFF);
-	for (int i = 0, n = 0; i < bu6716_NUM_CHAN; i++) {
-		if (CHANNEL_MASK & (1 << i)) {
-			bu3100_sleep(20);
-			setAutoDACNegative(CHANNEL_MASK, autoDacNeg[n]);
-			setAutoDACPositive(CHANNEL_MASK, autoDacPos[n]);
-			n++;
+		auto values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+		for (auto& channel : device6716->channels()) {
+			if (channel.disabled())
+				continue;
+			auto status = voltage > 0 ? limit1801.checkValue(values[channel.index() - 1]) : limit1801.checkValueSigned(values[channel.index() - 1]);
+			log(limit1801.lastStatusMsg());
+			channelsResults.at(channel.index()) = status ? Result::VALUE::PASSED : Result::VALUE::FAILED;
 		}
 	}
-	return channelsErrorsMask == 0;
+
+	return channelsResult();
 }
 
-SignalPathTest::SignalPathTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Signal Path", connection, true) {}
+SignalPathTest::SignalPathTest() : AbstractTest6716("Signal Path") {}

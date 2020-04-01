@@ -1,14 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Butec_QT_Debug|Win32">
-      <Configuration>Butec_QT_Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Butec_QT_Debug|x64">
-      <Configuration>Butec_QT_Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -61,25 +53,7 @@
     <IntermediateDirectory>debug\</IntermediateDirectory>
     <PrimaryOutput>6716_ProductionTestsWizard</PrimaryOutput>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'" Label="Configuration">
-    <PlatformToolset>v142</PlatformToolset>
-    <OutputDirectory>debug\</OutputDirectory>
-    <ATLMinimizesCRunTimeLibraryUsage>false</ATLMinimizesCRunTimeLibraryUsage>
-    <CharacterSet>NotSet</CharacterSet>
-    <ConfigurationType>Application</ConfigurationType>
-    <IntermediateDirectory>debug\</IntermediateDirectory>
-    <PrimaryOutput>6716_ProductionTestsWizard</PrimaryOutput>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <PlatformToolset>v142</PlatformToolset>
-    <OutputDirectory>debug\</OutputDirectory>
-    <ATLMinimizesCRunTimeLibraryUsage>false</ATLMinimizesCRunTimeLibraryUsage>
-    <CharacterSet>NotSet</CharacterSet>
-    <ConfigurationType>Application</ConfigurationType>
-    <IntermediateDirectory>debug\</IntermediateDirectory>
-    <PrimaryOutput>6716_ProductionTestsWizard</PrimaryOutput>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'" Label="Configuration">
     <PlatformToolset>v142</PlatformToolset>
     <OutputDirectory>debug\</OutputDirectory>
     <ATLMinimizesCRunTimeLibraryUsage>false</ATLMinimizesCRunTimeLibraryUsage>
@@ -105,13 +79,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -122,16 +90,8 @@
     <QtInstall>msvc2017_64</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'" Label="QtSettings">
-    <QtInstall>QT_BUSTEC</QtInstall>
-    <QtModules>core;sql;network;gui;qml;quick</QtModules>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="QtSettings">
     <QtInstall>msvc2017</QtInstall>
-    <QtModules>core;sql;network;gui;qml;quick</QtModules>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'" Label="QtSettings">
-    <QtInstall>qt5.14_32</QtInstall>
     <QtModules>core;sql;network;gui;qml;quick</QtModules>
   </PropertyGroup>
   <PropertyGroup Label="QtSettings" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,19 +116,12 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\..\win64\Debug\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">..\..\..\win64\Debug\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6716_ProductionTestsWizard</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">6716_ProductionTestsWizard</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">6716_ProductionTestsWizard</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">6716_ProductionTestsWizard</TargetName>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IgnoreImportLibrary>
-    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">true</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</IgnoreImportLibrary>
-    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">true</IgnoreImportLibrary>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\..\..\win32\Release\</OutDir>
@@ -176,19 +129,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\..\..\win32\Debug\</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">
-    <OutDir>..\..\..\win32\Debug\</OutDir>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\ksommerf\bu6100\include;C:\ksommerf\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu6100\include;..\..\..\bu5716\t028\include;..\..\Common\3rdParty\GenericModels;$(QTDIR)\include;release;\include\Tests;\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
       <DebugInformationFormat>None</DebugInformationFormat>
       <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;QT_NO_DEBUG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -202,7 +152,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>bu6100.lib;visa64.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win64\Release;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\win64\Release;..\..\Common\3rdParty\GenericModels;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -239,7 +189,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\ksommerf\bu5716\t028\include;$(QTDIR)\include;release;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;..\..\Common\3rdParty\GenericModels;$(QTDIR)\include;release;\include\Tests;\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -252,15 +202,15 @@
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;QT_NO_DEBUG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <WarningLevel>Level3</WarningLevel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>visa32.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win32\Release;$(VXIPNPPATH)WinNT\lib\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>visa32.lib;bu3100.lib;bu3416.lib;bu6100.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\win32\Release;..\..\Common\3rdParty\GenericModels;$(VXIPNPPATH)WinNT\lib\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -297,19 +247,19 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\ksommerf\bu6100\include;C:\ksommerf\bu5716\t028\include;.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;C:\ksommerf\visa\include;C:\ksommerf\bu3100\include;C:\ksommerf\bu3416\include;C:\ksommerf\bu6716\include;C:\Qt\5.12.5\msvc2017_64\include\QtCore;$(QTDIR)\include;debug;/include/Tests;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\bu6100\include;..\..\..\bu5716\t028\include;.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;$(QTDIR)\include;debug;\include\Tests;\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>debug\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <WarningLevel>Level3</WarningLevel>
@@ -318,7 +268,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>visa64.lib;bu6100.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win64\Debug;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\win64\Debug;..\..\Common\3rdParty\GenericModels;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -350,125 +300,12 @@
       <ExecutionDescription>Rcc'ing %(Identity)...</ExecutionDescription>
       <QtRccDir>$(Configuration)</QtRccDir>
       <QtRccFileName>qrc_%(Filename).cpp</QtRccFileName>
-    </QtRcc>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;debug;/include;$(QTDIR)\mkspecs\win32-msvc;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtSql;$(QTDIR)\include\Qt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
-      <AssemblerListingLocation>debug\</AssemblerListingLocation>
-      <BrowseInformation>false</BrowseInformation>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessToFile>false</PreprocessToFile>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <WarningLevel>Level3</WarningLevel>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>visa64.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;QtCored4.lib;QtGuid4.lib;QtSqld4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win64\Debug;$(VXIPNPPATH)WinNT\Lib_x64\msc;$(QTDIR)\lib64;C:\openssl\lib;C:\Utils\my_sql\mysql-5.7.25-winx64\lib;C:\Utils\postgresql\pgsql\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
-      <DataExecutionPrevention>true</DataExecutionPrevention>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <IgnoreImportLibrary>true</IgnoreImportLibrary>
-      <OutputFile>$(OutDir)\6716_ProductionTestsWizard.exe</OutputFile>
-      <RandomizedBaseAddress>true</RandomizedBaseAddress>
-      <SubSystem>Windows</SubSystem>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Link>
-    <Midl>
-      <DefaultCharType>Unsigned</DefaultCharType>
-      <EnableErrorChecks>None</EnableErrorChecks>
-      <WarningLevel>0</WarningLevel>
-    </Midl>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;QT_QUICK_LIB;QT_GUI_LIB;QT_QML_LIB;QT_NETWORK_LIB;QT_SQL_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <QtMoc>
-      <CompilerFlavor>msvc</CompilerFlavor>
-      <Include>./$(Configuration)/moc_predefs.h</Include>
-      <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
-      <DynamicSource>output</DynamicSource>
-      <QtMocDir>$(OutDir)</QtMocDir>
-      <QtMocFileName>moc_%(Filename).cpp</QtMocFileName>
-    </QtMoc>
-    <QtRcc>
-      <InitFuncName>qml</InitFuncName>
-      <Compression>default</Compression>
-      <ExecutionDescription>Rcc'ing %(Identity)...</ExecutionDescription>
-      <QtRccDir>$(OutDir)</QtRccDir>
-      <QtRccFileName>qrc_%(Filename).cpp</QtRccFileName>
+      <QmlCacheGenerate>true</QmlCacheGenerate>
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;debug;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
-      <AssemblerListingLocation>debug\</AssemblerListingLocation>
-      <BrowseInformation>false</BrowseInformation>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4577;4467;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessToFile>false</PreprocessToFile>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <WarningLevel>Level3</WarningLevel>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>visa32.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win32\Debug;$(VXIPNPPATH)WinNT\lib\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
-      <DataExecutionPrevention>true</DataExecutionPrevention>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <IgnoreImportLibrary>true</IgnoreImportLibrary>
-      <OutputFile>$(OutDir)\6716_ProductionTestsWizard.exe</OutputFile>
-      <RandomizedBaseAddress>true</RandomizedBaseAddress>
-      <SubSystem>Windows</SubSystem>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Link>
-    <Midl>
-      <DefaultCharType>Unsigned</DefaultCharType>
-      <EnableErrorChecks>None</EnableErrorChecks>
-      <WarningLevel>0</WarningLevel>
-    </Midl>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;QT_QUICK_LIB;QT_GUI_LIB;QT_QML_LIB;QT_NETWORK_LIB;QT_SQL_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <QtMoc>
-      <CompilerFlavor>msvc</CompilerFlavor>
-      <Include>./$(Configuration)/moc_predefs.h</Include>
-      <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
-      <DynamicSource>output</DynamicSource>
-      <QtMocDir>$(OutDir)</QtMocDir>
-      <QtMocFileName>moc_%(Filename).cpp</QtMocFileName>
-    </QtMoc>
-    <QtRcc>
-      <InitFuncName>qml</InitFuncName>
-      <Compression>default</Compression>
-      <ExecutionDescription>Rcc'ing %(Identity)...</ExecutionDescription>
-      <QtRccDir>$(OutDir)</QtRccDir>
-      <QtRccFileName>qrc_%(Filename).cpp</QtRccFileName>
-    </QtRcc>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;$(QTDIR)\include;debug;/include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;.;..\..\..\visa\include;..\..\..\bu3100\include;..\..\..\bu3416\include;..\..\..\bu6716\include;..\..\..\bu5716\t028\include;..\..\Common\3rdParty\GenericModels;$(QTDIR)\include;\include\Tests;debug;\include;$(QTDIR)\mkspecs\win32-msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>debug\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -480,7 +317,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <WarningLevel>Level3</WarningLevel>
@@ -488,8 +325,8 @@
       <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>visa32.lib;bu3100.lib;bu3416.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\win32\Debug;$(VXIPNPPATH)WinNT\lib\msc;$(QTDIR)\lib;C:\openssl\lib;C:\Utils\my_sql\mysql-5.7.25-winx64\lib;C:\Utils\postgresql\pgsql\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>visa32.lib;bu3100.lib;bu3416.lib;bu6100.lib;bu6716.lib;t028.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\win32\Debug;..\..\Common\3rdParty\GenericModels;$(VXIPNPPATH)WinNT\lib\msc;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -524,15 +361,32 @@
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Common\src\AbstractDevice.cpp" />
+    <ClCompile Include="..\..\Common\src\AbstractHardwareConnector.cpp" />
+    <ClCompile Include="..\..\Common\src\AbstractProductionTestWizardContent.cpp" />
     <ClCompile Include="..\..\Common\src\AbstractTest.cpp" />
+    <ClCompile Include="..\..\Common\src\ChannelsIF.cpp" />
     <ClCompile Include="..\..\Common\src\DataBasseConnector.cpp" />
-    <ClCompile Include="..\..\Common\src\ProductionTestWizardData.cpp" />
-    <ClCompile Include="..\..\Common\src\TestListModel.cpp" />
-    <ClCompile Include="..\..\Common\src\TestSuit.cpp" />
+    <ClCompile Include="..\..\Common\src\Device3416.cpp" />
+    <ClCompile Include="..\..\Common\src\Device6100.cpp" />
+    <ClCompile Include="..\..\Common\src\Device6716.cpp" />
+    <ClCompile Include="..\..\Common\src\DeviceIdentityResources.IF.cpp" />
+    <ClCompile Include="..\..\Common\src\DevicesManager.cpp" />
+    <ClCompile Include="..\..\Common\src\DevicesManagerController.cpp" />
+    <ClCompile Include="..\..\Common\src\DeviceT028.cpp" />
+    <ClCompile Include="..\..\Common\src\HardwareConnector3416.cpp" />
+    <ClCompile Include="..\..\Common\src\HardwareConnector6100.cpp" />
+    <ClCompile Include="..\..\Common\src\HardwareConnector6716.cpp" />
+    <ClCompile Include="..\..\Common\src\HardwareConnectorT028.cpp" />
+    <ClCompile Include="..\..\Common\src\ScpiDevice.cpp" />
+    <ClCompile Include="..\..\Common\src\TestsRunnerController.cpp" />
+    <ClCompile Include="..\..\Common\src\TestsSelectionModel.cpp" />
+    <ClCompile Include="..\..\Common\src\TestsRunner.cpp" />
+    <ClCompile Include="..\..\Common\src\UserActionRequestController.cpp" />
+    <ClCompile Include="..\..\Common\src\UserActionRequestSender.cpp" />
     <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\src\AbstractTest_6716.cpp" />
-    <ClCompile Include="..\src\Communication_6716.cpp" />
-    <ClCompile Include="..\src\ProductionTestWizardData_6716.cpp" />
+    <ClCompile Include="..\src\AbstractTest6716.cpp" />
+    <ClCompile Include="..\src\ProductionTestWizardContent6716.cpp" />
     <ClCompile Include="..\src\Tests\ACCouplingTest.cpp" />
     <ClCompile Include="..\src\Tests\AutobalanceDACTest.cpp" />
     <ClCompile Include="..\src\Tests\ChannelGainTest.cpp" />
@@ -543,7 +397,6 @@
     <ClCompile Include="..\src\Tests\I2CAccessToFPGATest.cpp" />
     <ClCompile Include="..\src\Tests\I2CSegmentsSwitchingAndTemperatureSensorAccessTest.cpp" />
     <ClCompile Include="..\src\Tests\IEPETest.cpp" />
-    <ClCompile Include="..\src\Tests\InitialExcitationTest.cpp" />
     <ClCompile Include="..\src\Tests\LEDsTest.cpp" />
     <ClCompile Include="..\src\Tests\NegativeExcitationCurrentLimitTest.cpp" />
     <ClCompile Include="..\src\Tests\PositiveExcitationCurrentLimitTest.cpp" />
@@ -556,13 +409,41 @@
     <ClCompile Include="..\src\Tests\TedsClass2Test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="..\..\Common\include\AbstractDataResource.h" />
+    <QtMoc Include="..\..\Common\include\AbstractHardwareConnector.h" />
+    <QtMoc Include="..\..\Common\include\AbstractDevice.h" />
+    <QtMoc Include="..\..\Common\include\Device3416.h" />
+    <QtMoc Include="..\..\Common\include\Device6100.h" />
+    <QtMoc Include="..\..\Common\include\Device6716.h" />
+    <QtMoc Include="..\..\Common\include\DeviceT028.h" />
+    <QtMoc Include="..\..\Common\include\AbstractProductionTestWizardContent.h" />
+    <ClInclude Include="..\..\Common\include\ChannelsIF.h" />
+    <ClInclude Include="..\..\Common\include\DatabaseHandler.h" />
+    <ClInclude Include="..\..\Common\include\DeviceIdentityResourcesIF.h" />
+    <QtMoc Include="..\..\Common\include\DevicesManager.h" />
+    <QtMoc Include="..\..\Common\include\DevicesManagerController.h" />
+    <ClInclude Include="..\..\Common\include\Exceptions.h" />
+    <ClInclude Include="..\..\Common\include\HardwareConnector3416.h" />
+    <ClInclude Include="..\..\Common\include\HardwareConnector6100.h" />
+    <ClInclude Include="..\..\Common\include\HardwareConnector6716.h" />
+    <ClInclude Include="..\..\Common\include\HardwareConnectorT028.h" />
+    <ClInclude Include="..\..\Common\include\Limit.h" />
+    <QtMoc Include="..\..\Common\include\LoggingObject.h" />
+    <QtMoc Include="..\..\Common\include\Promises.h" />
+    <ClInclude Include="..\..\Common\include\RaportGenerator.h" />
+    <ClInclude Include="..\..\Common\include\Resource.h" />
     <QtMoc Include="..\..\Common\include\Clipboard.h" />
     <QtMoc Include="..\..\Common\include\AppicationSettings.h" />
-    <ClInclude Include="..\..\Common\include\MockTest.h" />
-    <ClInclude Include="..\..\Common\include\UserActionTypes.h" />
-    <ClInclude Include="..\..\Common\include\UserErrorTypes.h" />
-    <ClInclude Include="..\include\defines.h" />
-    <QtMoc Include="..\include\ProductionTestWizardData_6716_SignalInterface.h" />
+    <QtMoc Include="..\..\Common\include\ResourcesHandler.h" />
+    <ClInclude Include="..\..\Common\include\ResourceContentValidationStrategies.h" />
+    <ClInclude Include="..\..\Common\include\ResourceManagementStrategies.h" />
+    <QtMoc Include="..\..\Common\include\ScpiDevice.h" />
+    <QtMoc Include="..\..\Common\include\TestsRunnerController.h" />
+    <QtMoc Include="..\..\Common\include\UserActionRequestController.h" />
+    <QtMoc Include="..\..\Common\include\UserActionRequestSender.h" />
+    <QtMoc Include="..\include\AbstractTest6716.h" />
+    <ClInclude Include="..\..\Common\include\UserCommunicationObject.h" />
+    <QtMoc Include="..\include\ProductionTestWizardContent6716.h" />
     <ClInclude Include="..\include\Tests\ACCouplingTest.h" />
     <ClInclude Include="..\include\Tests\AutobalanceDACTest.h" />
     <ClInclude Include="..\include\Tests\ChannelGainTest.h" />
@@ -574,7 +455,6 @@
     <ClInclude Include="..\include\Tests\I2CSegmentsSwitchingAndTemperatureSensorAccessTest.h" />
     <ClInclude Include="..\include\Tests\IEPETest.h" />
     <ClInclude Include="..\include\Tests\InitialEEPROMProgrammingTest.h" />
-    <ClInclude Include="..\include\Tests\InitialExcitationTest.h" />
     <ClInclude Include="..\include\Tests\LEDsTest.h" />
     <ClInclude Include="..\include\Tests\NegativeExcitationCurrentLimitTest.h" />
     <ClInclude Include="..\include\Tests\PositiveExcitationCurrentLimitTest.h" />
@@ -587,19 +467,12 @@
     <ClInclude Include="..\include\Tests\TedsClass2Test.h" />
     <QtMoc Include="..\..\Common\include\AbstractTest.h">
     </QtMoc>
-    <ClInclude Include="..\..\..\bu6716\include\bu6716_revision.h" />
-    <QtMoc Include="..\..\Common\include\ProductionTestWizardData.h">
-    </QtMoc>
     <ClInclude Include="..\..\Common\include\DataBasseConnector.h" />
     <ClInclude Include="..\..\Common\include\ErrorChecker.h" />
     <QtMoc Include="..\..\Common\include\PrintInterface.h" />
-    <QtMoc Include="..\include\AbstractTest_6716.h" />
-    <QtMoc Include="..\include\Communication_6716.h" />
-    <ClInclude Include="..\include\ErrorChecker_6716.h" />
-    <QtMoc Include="..\include\ProductionTestWizardData_6716.h" />
-    <QtMoc Include="..\..\Common\include\TestListModel.h">
+    <QtMoc Include="..\..\Common\include\TestsSelectionModel.h">
     </QtMoc>
-    <QtMoc Include="..\..\Common\include\TestSuit.h">
+    <QtMoc Include="..\..\Common\include\TestsRunner.h">
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -608,21 +481,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\mkspecs\features\data\dummy.cpp;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">$(QTDIR)\mkspecs\features\data\dummy.cpp;%(AdditionalInputs)</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\mkspecs\features\data\dummy.cpp;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">$(QTDIR)\mkspecs\features\data\dummy.cpp;%(AdditionalInputs)</AdditionalInputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cl -Bx"$(QTDIR)\bin\qmake.exe" -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -Zi -MDd -std:c++17 -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -E $(QTDIR)\mkspecs\features\data\dummy.cpp 2&gt;NUL &gt;debug\moc_predefs.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">cl -Bx"$(QTDIR)\bin\qmake.exe" -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -Zi -MDd -std:c++17 -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -E $(QTDIR)\mkspecs\features\data\dummy.cpp 2&gt;NUL &gt;debug\moc_predefs.h</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cl -Bx"$(QTDIR)\bin\qmake.exe" -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -Zi -MDd -std:c++17 -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -E $(QTDIR)\mkspecs\features\data\dummy.cpp 2&gt;NUL &gt;debug\moc_predefs.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">cl -Bx"$(QTDIR)\bin\qmake.exe" -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -Zc:referenceBinding -Zc:__cplusplus -Zi -MDd -std:c++17 -W3 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 -wd4577 -wd4467 -E $(QTDIR)\mkspecs\features\data\dummy.cpp 2&gt;NUL &gt;debug\moc_predefs.h</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generate moc_predefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">Generate moc_predefs.h</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Generate moc_predefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">Generate moc_predefs.h</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">debug\moc_predefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">debug\moc_predefs.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">debug\moc_predefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">debug\moc_predefs.h;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="release\moc_predefs.h.cbt">
       <FileType>Document</FileType>
@@ -635,9 +500,7 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">release\moc_predefs.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">release\moc_predefs.h;%(Outputs)</Outputs>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Butec_QT_Debug|Win32'">true</ExcludedFromBuild>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
@@ -646,22 +509,25 @@
     <None Include="..\..\CommonComponents\DataBaseField.qml" />
     <None Include="..\..\CommonComponents\LabeledComboBox.qml" />
     <None Include="..\..\CommonComponents\LabeledTextField.qml" />
-    <None Include="..\..\6716\Components\MdaTestConfirmationPage.qml" />
     <None Include="..\..\CommonComponents\LabeledTextInput.qml" />
+    <None Include="..\..\CommonComponents\LogsArea.qml" />
+    <None Include="..\..\CommonComponents\main.qml" />
     <None Include="..\..\CommonComponents\MyButton.qml" />
     <None Include="..\..\CommonComponents\MyPage.qml" />
-    <None Include="..\..\6716\Components\TestCompletitionPage.qml" />
-    <None Include="..\..\6716\Components\TestEquipmentIdentificationPage.qml" />
-    <None Include="..\..\6716\Components\TestSelectionPage.qml" />
-    <None Include="..\..\6716\Components\TestValidationPage.qml" />
-    <None Include="..\..\6716\Components\UserIdentificationPage.qml" />
-    <None Include="..\..\6716\Components\UutIdentificationPage.qml" />
-    <None Include="..\..\6716\Components\main.qml" />
+    <None Include="..\..\CommonComponents\Pages\AddressesIdentificationPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\CommunicationTestPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\MdaTestConfirmationPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\TestCompletitionPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\TestEquipmentIdentificationPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\TestSelectionPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\TestValidationPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\UserIdentificationPage.qml" />
+    <None Include="..\..\CommonComponents\Pages\UutIdentificationPage.qml" />
     <None Include="..\..\CommonComponents\PlaceHolder.qml" />
+    <None Include="..\..\CommonComponents\ScrollGridView.qml" />
     <None Include="..\..\CommonComponents\ScrollList.qml" />
     <None Include="..\..\CommonComponents\TestsRunner.qml" />
-    <None Include="..\Components\AddressesIdentificationPage.qml" />
-    <None Include="..\Components\CommunicationTestPage.qml" />
+    <None Include="..\..\CommonComponents\TestsSelection.qml" />
     <QtRcc Include="..\..\Resources\qml.qrc">
     </QtRcc>
   </ItemGroup>

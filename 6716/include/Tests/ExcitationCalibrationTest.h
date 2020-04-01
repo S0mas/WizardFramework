@@ -8,11 +8,18 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class ExcitationCalibrationTest : public Abstract6716Test {
+class ExcitationCalibrationTest : public AbstractTest6716 {
+	Limit limit1101 = { "L1101", -0.05, 0.05 };
+	Limit limit1102 = { "L1102", 8.8, 9.2 };
+	Limit limit1103 = { "L1103", -9.2, -8.8 };
+	Limit limit2201 = { "L2201", -0.001, 0.001 };
+	Limit limit2202 = { "L2202", 9.997, 10.003 };
+	Limit limit2203 = { "L2203", -10.003, -9.997 };
+	bool excitCalibration(ViInt16 channel) const;
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	ExcitationCalibrationTest(const std::shared_ptr<Communication_6716>& connection);
+	ExcitationCalibrationTest();
 };

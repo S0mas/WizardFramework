@@ -3,35 +3,38 @@ import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.11
 
 Dialog {
-	id: channelMaskDialogId
+	id: channelsStateDialogId
 	x: Math.round((parent.width - width) / 2)
 	y: Math.round((parent.height - height) / 2)
 	modal: true
 	focus: true
-	title: "Select the channels that will be tested"
 	standardButtons: Dialog.Ok | Dialog.Cancel
 	property bool defaultState: true
-	property string channelMask
+	property int channelsNo : 1
+	property var channelsState : new Array(channelsNo).fill(defaultState)
+	property var enabledChannels : new Array(channelsNo).fill(true)
+	property var dataPromise
 	Column {
 		GridLayout {
-			columns: 4
+			columns: Math.ceil(Math.sqrt(channelsNo))
 			Repeater {
-				model: 16
+				model: channelsNo
 				CheckBox {
-					Layout.row: index / 4
-					Layout.column: index % 4
+					Layout.row: index / Math.ceil(Math.sqrt(channelsNo))
+					Layout.column: index % Math.ceil(Math.sqrt(channelsNo))
 					Layout.fillWidth: true
 					Layout.fillHeight: true
 					text: "Channel " + (index + 1)
 					checked: defaultState
-					onCheckedChanged: checked ? channelMaskDialogId.toggleChannel(15-index, 1) : channelMaskDialogId.toggleChannel(15-index, 0)
+					enabled: enabledChannels[index]
+					onCheckedChanged: channelsState[index] = checked
 					Connections {
 						target: selectChannelsButtonId
-						onClicked: checked = true
+						onClicked: if(enabled) checked = true
 					}
 					Connections {
 						target: deselectChannelsButtonId
-						onClicked: checked = false
+						onClicked: if(enabled) checked = false
 					}
 				}
 			}
@@ -54,9 +57,4 @@ Dialog {
 		}
 	}
 	closePolicy: Popup.CloseOnEscape
-	function toggleChannel(index, chr) {
-		channelMask = channelMask.substr(0, index) + chr + channelMask.substr(index+1);
-	}
-
-	Component.onCompleted: defaultState ? channelMask = "1111111111111111" : channelMask = "0000000000000000"
 }

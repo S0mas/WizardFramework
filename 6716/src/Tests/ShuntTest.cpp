@@ -1,61 +1,68 @@
 #include "../include/Tests/ShuntTest.h"
-#include "../include/defines.h"
 
-ViStatus ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const {
+void ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const {
 	ViReal64 corr;
-	setAutoDACPositive(channelMask, -1.0);
-	setAutoDACNegative(channelMask, 0.0);
-	bu3100_sleep(100);
-	auto nvalues = readValues(adcGain, channelMask, 0.1);
-	setAutoDACPositive(channelMask, 1.0);
-	bu3100_sleep(100);
-	auto pvalues = readValues(adcGain, channelMask, 0.1);
-	setAutoDACPositive(channelMask, 0.0);
-	bu3100_sleep(100);
-	auto values = readValues(adcGain, channelMask, 0.1);
-	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
-		if (channelMask & (1 << i)) {
-			ViUInt16 mask = (1 << i);
-			corr = -2.0 / (pvalues[i] - nvalues[i]) * values[i];
-			setAutoDACPositive(mask, corr);
-			log(QString("Quick Auto Balance, ch_%1: %2").arg(i + 1).arg(corr));
-		}
+	device6716->setAutoDACPositive(-1.0);
+	device6716->setAutoDACNegative(0.0);
+	auto nvalues = device3416_6716->measureChannels(channelMask, adcGain);
+	device6716->setAutoDACPositive(1.0);
+	auto pvalues = device3416_6716->measureChannels(channelMask, adcGain);
+	device6716->setAutoDACPositive(0.0);
+	auto values = device3416_6716->measureChannels(channelMask, adcGain);
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		corr = -2.0 / (pvalues[channel.index()-1ll] - nvalues[channel.index() - 1ll]) * values[channel.index() - 1ll];
+		device6716->setAutoDACPositive(corr);
+		log(QString("Quick Auto Balance, ch_%1: %2").arg(channel.index()).arg(corr));
 	}
-	return VI_SUCCESS;
 }
-//OK
-bool ShuntTest::test() const {
-	const ViInt16 gain = bu6716_GAIN_100;
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
+
+Result ShuntTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x60);
+
 	// 1
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_HALF_BRIDGE, gain, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	configureVoltageReferanceSwitches(0x60);
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_HALF_BRIDGE, bu6716_GAIN_100, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 	// 2
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_SHCAL);
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_SHCAL);
+
 	// 3
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 10.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
+	device6716->invokeFunction(bu6716_setPosExcitation, "bu6716_setPosExcitation", device6716->channelsStateAsMask(), 10.0);
+	device6716->invokeFunction(bu6716_setNegExcitation, "bu6716_setNegExcitation", device6716->channelsStateAsMask(), 0.0);
 	bu3100_sleep(50);
+
 	// 4
-	quickAutobalance(CHANNEL_MASK, bu3416_GAIN_1);
+	quickAutobalance(device6716->channelsStateAsMask());
 	bu3100_sleep(50);
+
 	// 5
-	auto channelsErrorsMask = checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.001 * gain), "L1701", 0, 1e-3 * gain, 1e-3 * gain);
+	auto values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		channelsResults.at(channel.index()) = Result::VALUE::PASSED;
+		if (!limit1701.checkValue(values[channel.index() - 1ll], bu6716_GAIN_100))
+			channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+		log(limit1701.lastStatusMsg());
+	}
+
 	// 6 
-	connection->callAndThrowOnError6716(bu6716_setShuntCal, "bu6716_setShuntCal", CHANNEL_MASK, true);
+	device6716->invokeFunction(bu6716_setShuntCal, "bu6716_setShuntCal", device6716->channelsStateAsMask(), true);
 	bu3100_sleep(50);
+
 	// 7
-	channelsErrorsMask |= checkValues(CHANNEL_MASK, readValues(bu3416_GAIN_1, CHANNEL_MASK, 0.001 * gain), "L1702", -6e-3 * gain, 1e-3 * gain, 1e-3 * gain);
-	// 8
-	connection->callAndThrowOnError6716(bu6716_setShuntCal, "bu6716_setShuntCal", CHANNEL_MASK, false);
-	connection->callAndThrowOnError6716(bu6716_setPosExcitation, "bu6716_setPosExcitation", CHANNEL_MASK, 0.0);
-	connection->callAndThrowOnError6716(bu6716_setNegExcitation, "bu6716_setNegExcitation", CHANNEL_MASK, 0.0);
-	setAutoDACPositive(CHANNEL_MASK, 0.0);
-	setAutoDACNegative(CHANNEL_MASK, 0.0);
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xFFFF, T028_MODE_EXCAL);
-	return channelsErrorsMask == 0;
+	values = device3416_6716->measureChannels(device6716->channelsStateAsMask());
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		if (!limit1702.checkValue(values[channel.index() - 1ll], bu6716_GAIN_100))
+			channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+		log(limit1702.lastStatusMsg());
+	}
+
+	return channelsResult();
 }
 
-ShuntTest::ShuntTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Shunt", connection, true) {}
+ShuntTest::ShuntTest() : AbstractTest6716("Shunt") {}

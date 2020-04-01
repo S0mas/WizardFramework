@@ -1,86 +1,75 @@
 #include "../include/Tests/SCUErrorTest.h"
-#include "../include/defines.h"
 
-bool SCUErrorTest::test() const {
-	
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	//volt ref setup
-	auto reg = connection->readFPGAreg(bu6716_FPGA_SEGCONF);
-	log(QString("reg value is %1").arg(QString::number(reg, 2)));
-	connection->writeFPGAreg(bu6716_FPGA_SEGCONF, 0x60);
-	reg = connection->readFPGAreg(bu6716_FPGA_SEGCONF);
-	log(QString("reg value is %1").arg(QString::number(reg, 2)));
-	bu3100_sleep(50);
-
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
-	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
-		ViInt16 sts, stsAll[bu6716_NUM_CHAN];
-		if (!(CHANNEL_MASK & (1 << i)))
+Result SCUErrorTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x60);
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_DI, bu6716_GAIN_1, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_EXCAL);
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
 			continue;
-		ViUInt16 channelMask = 1 << i;
-		log(QString("Channel %1").arg(i + 1));
-		log("- IEPE");
-		for (int s = 0; s < 2; s++) {
+		ViInt16 sts, stsAll[bu6716_NUM_CHAN];
+		log(QString("Channel %1").arg(channel.index()));
+		auto status = true;
+		for (auto const scuErrorEnabled : {false, true}) {
 			// Enable IEPE on T028 and on 6716 - the IEPE current shall be detected
-			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", channelMask, T028_MODE_ICP);
-			connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_IEPE);
-			connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channelMask, &sts, nullptr);
+			deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", channel.mask(), T028_MODE_ICP);
+			device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", channel.mask(), bu6716_MODE_IEPE);
+			device6716->invokeFunction(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channel.mask(), &sts, nullptr);
 			if (sts != bu6716_IEPE_OK) {
-				log("  IEPE current NOT detected, but should be");
-				channelsErrorsMask |= (1 << i);
+				log("IEPE current NOT detected, but should be");
+				status = false;
 			}
 			// Disable IEPE on T028, so the error should happen. Enable IEPE to SCU_ERR in iteration s==1.
-			connection->callAndThrowOnError6716(bu6716_setIEPEScuErrorMask, "bu6716_setIEPEScuErrorMask", 0xffff, s == 1);
-			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
-			connection->callAndThrowOnError6716(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channelMask, &sts, nullptr);
+			device6716->invokeFunction(bu6716_setIEPEScuErrorMask, "bu6716_setIEPEScuErrorMask", 0xffff, scuErrorEnabled);
+			deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_EXCAL);
+			device6716->invokeFunction(bu6716_getCurrentStatus, "bu6716_getCurrentStatus", channel.mask(), &sts, nullptr);
 			if (sts == bu6716_IEPE_OK) {
-				log("  IEPE current detected, but shouldn't be");
-				channelsErrorsMask |= (1 << i);
+				log("IEPE current detected, but shouldn't be");
+				status = false;
 			}
-			auto dsr = readDSR();
-			if (s == 0) {
+			auto dsr = device6716->readDSR();
+			if (!scuErrorEnabled) {
 				if (dsr & 0x08) {
-					log("  SCU_ERR detected, but shouldn't be in iteration s==0");
-					channelsErrorsMask |= (1 << i);
+					log("SCU_ERR detected, but shouldn't be in iteration s==0");
+					status = false;
 				}
 			}
 			else {
 				if (!(dsr & 0x08)) {
-					log("  SCU_ERR not detected, but should be in iteration s==1");
-					channelsErrorsMask |= (1 << i);
+					log("SCU_ERR not detected, but should be in iteration s==1");
+					status = false;
 				}
 			}
-			connection->callAndThrowOnError6716(bu6716_getLatchedStatus, "bu6716_getLatchedStatus", stsAll, nullptr);
+			device6716->invokeFunction(bu6716_getLatchedStatus, "bu6716_getLatchedStatus", stsAll, nullptr);
 			for (int j = 0; j < bu6716_NUM_CHAN; j++) {
-				if (i == j) {
+				if ((channel.index() - 1) == j) {
 					if (stsAll[j] != 1) {
-						log("  No IEPE error detected, but should be");
-						channelsErrorsMask |= (1 << i);
+						log("No IEPE error detected, but should be");
+						status = false;
 					}
 				}
 				else {
 					if (stsAll[j] != 0) {
-						log("  IEPE error detected, but shouldn't be");
-						channelsErrorsMask |= (1 << i);
+						log("IEPE error detected, but shouldn't be");
+						status = false;
 					}
 				}
 			}
-			connection->callAndThrowOnError6716(bu6716_getLatchedStatus, "bu6716_getLatchedStatus", stsAll, nullptr);
+			device6716->invokeFunction(bu6716_getLatchedStatus, "bu6716_getLatchedStatus", stsAll, nullptr);
 			for (int j = 0; j < bu6716_NUM_CHAN; j++) {
 				if (stsAll[j] != 0) {
-					log("  IEPE error detected, but shouldn't be");
-					channelsErrorsMask |= (1 << i);
+					log("IEPE error detected, but shouldn't be");
+					status = false;
 				}
 			}
-			connection->callAndThrowOnError6716(bu6716_setMode, "bu6716_setMode", channelMask, bu6716_MODE_DI);
-			connection->callAndThrowOnError6716(bu6716_setIEPEScuErrorMask, "bu6716_setIEPEScuErrorMask", 0xffff, false);
+			device6716->invokeFunction(bu6716_setMode, "bu6716_setMode", channel.mask(), bu6716_MODE_DI);
+			device6716->invokeFunction(bu6716_setIEPEScuErrorMask, "bu6716_setIEPEScuErrorMask", 0xffff, false);
 		}
-		if (!(channelsErrorsMask & (1 << i)))
-			log("  OK");
+		channelsResults.at(channel.index()) = status ? Result::VALUE::PASSED : Result::VALUE::FAILED;
+		log(QString("Channel %1, status: %2").arg(channel.index()).arg(status ? "OK" : "Error"));
 	}
-	return channelsErrorsMask == 0;
+	return channelsResult();
 }
 
-SCUErrorTest::SCUErrorTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("SCU Error", connection, true) {}
+SCUErrorTest::SCUErrorTest() : AbstractTest6716("SCU Error") {}

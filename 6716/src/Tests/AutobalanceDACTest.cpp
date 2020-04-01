@@ -1,63 +1,67 @@
 #include "../include/Tests/AutobalanceDACTest.h"
-#include "../include/defines.h"
 
-bool AutobalanceDACTest::test() const {
-	const ViInt32 gain = bu6716_GAIN_100;
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
+Result AutobalanceDACTest::test() const {
+	device6716->configureVoltageReferanceSwitches(0x64);
 	// 1
-	connection->callAndThrowOnError6716(bu6716_setChannelConf, "bu6716_setChannelConf", CHANNEL_MASK, bu6716_MODE_FULL_BRIDGE, gain, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
-	connection->callAndThrowOnError6716(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
-	// 2
-	setAutoDACPositive(CHANNEL_MASK, 0.0);
-	setAutoDACNegative(CHANNEL_MASK, 0.0);
-	// 3
-	configureVoltageReferanceSwitches(0x64);
-	connection->callAndThrowOnError6100(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
-	
-	for (int i = 0; i < bu3416_NUM_CHAN; i++) {
-		if (!(CHANNEL_MASK & (1 << i)))
-			continue;
-		ViUInt16 channelMask = 1 << i;  // Only one channel at a time
-		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_VREF);
-		// 4
-		setAutoDACPositive(channelMask, 10.0);
-		bu3100_sleep(50);
+	const ViInt32 gain = bu6716_GAIN_100;
+	device6716->invokeFunction(bu6716_setChannelConf, "bu6716_setChannelConf", device6716->channelsStateAsMask(), bu6716_MODE_FULL_BRIDGE, gain, bu6716_COUPLING_DC, bu6716_INP_SRC_FP);
+	device6716->invokeFunction(bu6716_setExcitationMonitor, "bu6716_setExcitationMonitor", bu6716_EXCMON_OFF);
 
-		auto const& checkValueLambda = [this, i, gain](const std::string& limitName, const ViReal64 expected) {
-			return checkValue_oneChannel(i + 1, readValue_oneChannel(bu3416_GAIN_1, i + 1, 0.1), limitName, expected * gain, 50e-3 * gain, 50e-3 * gain);
-		};
+	// 2
+	device6716->setAutoDACPositive(0.0);
+	device6716->setAutoDACNegative(0.0);
+
+	// 3
+	device6100->invokeFunction(bu6100_setVoltRefOutput, "bu6100_setVoltRefOutput", 0.0);
+	
+	for (auto& channel : device6716->channels()) {
+		if (channel.disabled())
+			continue;
+		log(QString("CHANNEL %1").arg(channel.index()));
+
+		// 1
+		device6716->invokeFunction(bu6716_setInputSrc, "bu6716_setInputSrc", channel.index(), bu6716_INP_SRC_VREF);
+
+		// 4
+		device6716->setAutoDACPositive(10.0);
 
 		// 5 
-		channelsErrorsMask = checkValueLambda("L1601", 30e-3);
+		bool status = limit1601.checkValue(device3416_6716->measureChannel(channel.index(), gain), gain);
+		log(limit1601.lastStatusMsg());
 
 		// 6
-		setAutoDACPositive(channelMask, -10.0);
-		bu3100_sleep(50);
+		device6716->setAutoDACPositive(-10.0);
 
 		// 7
-		channelsErrorsMask |= checkValueLambda("L1602", -30e-3);
+		status &= limit1602.checkValue(device3416_6716->measureChannel(channel.index(), gain), gain);
+		log(limit1602.lastStatusMsg());
 
-		// 8 & 9
-		setAutoDACPositive(channelMask, 0.0);
-		setAutoDACNegative(channelMask, 10.0);
-		bu3100_sleep(50);
+		// 8
+		device6716->setAutoDACPositive(0.0);
+		
+		// 9
+		device6716->setAutoDACNegative(10.0);
 
 		// 10
-		channelsErrorsMask |= checkValueLambda("L1602", -30e-3);
+		status &= limit1602.checkValue(device3416_6716->measureChannel(channel.index(), gain), gain);
+		log(limit1602.lastStatusMsg());
 
 		// 11
-		setAutoDACNegative(channelMask, -10.0);
-		bu3100_sleep(50);
+		device6716->setAutoDACNegative(-10.0);
 
 		// 12
-		channelsErrorsMask |= checkValueLambda("L1601", 30e-3);
+		status &= limit1601.checkValue(device3416_6716->measureChannel(channel.index(), gain), gain);
+		log(limit1601.lastStatusMsg());
 
 		// 13
-		setAutoDACPositive(channelMask, 0.0);
-		setAutoDACNegative(channelMask, 0.0);
-		connection->callAndThrowOnError6716(bu6716_setInputSrc, "bu6716_setInputSrc", i + 1, bu6716_INP_SRC_FP);
+		device6716->setAutoDACPositive(0.0);
+		device6716->setAutoDACNegative(0.0);
+
+		device6716->invokeFunction(bu6716_setInputSrc, "bu6716_setInputSrc", channel.index(), bu6716_INP_SRC_FP);
+		channelsResults.at(channel.index()) = status ? Result::VALUE::PASSED : Result::VALUE::FAILED;
+		log(QString("Channel %1, status: %2").arg(channel.index()).arg(status ? "OK" : "Error"));
 	}
-	return channelsErrorsMask == 0;
+	return channelsResult();
 }
 
-AutobalanceDACTest::AutobalanceDACTest(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("AutoBalance DAC", connection, true) {}
+AutobalanceDACTest::AutobalanceDACTest() : AbstractTest6716("AutoBalance DAC") {}

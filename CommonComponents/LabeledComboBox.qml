@@ -1,38 +1,31 @@
-import QtQuick 2.4
-import QtQuick.Controls 2.4
+import QtQuick 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Layouts 1.12
 
-Row {
-    property alias label : labelId
-    property alias combobox : comboboxId
-	property int holderWidth : 150
-	property int holderWidth2 : 150
-	width: parent.width
-	height: 45
-
-	PlaceHolder {
-		height: parent.height
-		width: holderWidth2
-	}
-
-    Label {
-        id: labelId
-		height: parent.height
-		font.family: "Helvetica"
+GroupBox {
+    property alias model : comboboxId.model
+	property alias text : comboboxId.currentText
+	property alias selection : comboboxId.currentIndex
+	signal selectedItemChanged()
+	label: Label {
 		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
-		verticalAlignment: Text.AlignVCenter
-    }
-
-	PlaceHolder {
-		height: parent.height
-		width: 50
+		text: title
 	}
-
-    ComboBox {
-        id: comboboxId
-		height: parent.height
-		font.family: "Helvetica"
-		font.pointSize: 12
-		anchors.verticalCenter: parent.verticalCenter
-    }
+	RowLayout {
+		anchors.horizontalCenter: parent.horizontalCenter
+		ComboBox {
+			id: comboboxId
+			Layout.fillHeight: true
+			Layout.minimumWidth: 300
+			textRole: "display"
+			onCurrentIndexChanged: selectedItemChanged()
+			contentItem: Label {
+				font.pointSize: 14
+				horizontalAlignment: TextInput.AlignHCenter
+				verticalAlignment: TextInput.AlignVCenter
+				text: parent.currentText
+			}
+		}
+	}
 }
+

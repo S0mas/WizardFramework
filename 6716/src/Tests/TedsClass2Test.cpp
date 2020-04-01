@@ -1,16 +1,14 @@
 #include "../include/Tests/TedsClass2Test.h"
-#include "../include/defines.h"
 
-bool TedsClass2Test::_initTeds2() const {
-	connection->writeI2C_no_addr(0x19, bu6716_TEDS_CMD_DRST);
-	connection->writeI2C(0x19, bu6716_TEDS_CMD_WCFG, bu6716_TEDS_CFG_DFL);
-	return true;
+void TedsClass2Test::_initTeds2() const {
+	device6716->writeI2cNoAddress(0x19, bu6716_TEDS_CMD_DRST);
+	device6716->writeI2c(0x19, bu6716_TEDS_CMD_WCFG, bu6716_TEDS_CFG_DFL);
 }
 
 bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 	unsigned char statusByte;
 	ViReal64 startTime = bu3100_getStartTime();
-	connection->writeI2C_no_addr(0x19, bu6716_TEDS_CMD_1WRS);
+	device6716->writeI2cNoAddress(0x19, bu6716_TEDS_CMD_1WRS);
 	bu3100_sleep(50);
 	do {
 		if (bu3100_getStartTime() - startTime > 1000.0) {
@@ -18,7 +16,7 @@ bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 			return false;
 		}
 		bu3100_sleep(50);
-		statusByte = connection->readI2C_no_addr(0x19);
+		statusByte = device6716->readI2cNoAddress(0x19);
 	} while (statusByte & bu6716_TEDS_STATUS_1WB);
 
 	if (statusByte & bu6716_TEDS_STATUS_SD) {
@@ -40,175 +38,137 @@ bool TedsClass2Test::_resetTeds2(unsigned channel, unsigned step) const {
 	return true;
 }
 
-static void retry(int& retries, int& currentlyTestedChannel, unsigned short& channelMask, const int& seg) {
-	channelMask &= ~(1 << (currentlyTestedChannel - 1 + seg*8));
-	currentlyTestedChannel--;
-	++retries;
-}
-
-bool TedsClass2Test::test() const {
-	
-	unsigned char write_data[2];
-	unsigned char read_data[2];
-	connection->callAndThrowOnError6716(bu6716_reloadConfig, "bu6716_reloadConfig", true);
-	connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", CHANNEL_MASK, T028_MODE_EXCAL);
-	configureVoltageReferanceSwitches(0x60);
+Result TedsClass2Test::test() const {
+	device6716->invokeFunction(bu6716_reloadConfig, "bu6716_reloadConfig", true);
+	deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", device6716->channelsStateAsMask(), T028_MODE_EXCAL);
+	device6716->configureVoltageReferanceSwitches(0x60);
 	auto retries = 0;
 	auto maxRetries = 3;
-	auto segsw_dev = connection->readFPGAreg(bu6716_FPGA_SEGSW);
-	for (int s = 0; s < 2; s++) {
-		if (s == 0)
-			// 1
-			connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1);
-		else
-			// 11
-			connection->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
+	auto segsw_dev = device6716->readFPGAreg(bu6716_FPGA_SEGSW);
+	for (auto& channel : device6716->channels()) {
+	retrySameChannel:
+		if (channel.disabled())
+			continue;
+		log(QString("CHANNEL %1").arg(channel.index()));
+		if (retries == 0)
+			sender_->waitForConfirmation(QString("Please connect sensor to channel %1 and click ok").arg(channel.index()));
+		//1 or 11
+		device6716->isSegment1(channel.index()) ? device6716->writeFPGAreg(bu6716_FPGA_SEGSW, 0x1) : device6716->writeFPGAreg(bu6716_FPGA_SEGSW, 0x0);
 		bu3100_sleep(100);
-		if (!_initTeds2())
-			channelsErrorsMask |= 0xffff;
-		for (int currentlyTestedChannel = 1; currentlyTestedChannel <= 8; currentlyTestedChannel++) {
-			unsigned short portExp;
-			unsigned char ch = currentlyTestedChannel + s * 8;
-			if (!(CHANNEL_MASK & 1 << (ch - 1)))
-				continue;
-			if(retries == 0)
-				waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(ch), UserActionType::CONFIRMATION);
 
-			log(QString("CHANNEL %1").arg(ch));
-			// 2
-			portExp = connection->readPortExpander(ch);
-			connection->writePortExpander(ch, (portExp & 0xfffe) | 0x4000);  // enable teds2 and disable shunt cal																							   // 3
-			connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", ch, T028_MODE_TEDS2);
-			bu3100_sleep(100);
-			// 4
-			_resetTeds2(ch, 4);
-			// 5
-			write_data[0] = (ViUInt8)ch;
-			write_data[1] = (ViUInt8)(~ch);
-			read_data[0] = 0;
-			read_data[1] = 0;
-			connection->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
-			connection->writeTeds2(bu6716_1W_CMD_WRITE_SPD);
-			connection->writeTeds2(0x00);
-			for (int i = 0; i < 2; i++)
-				connection->writeTeds2(write_data[i]);
-			// 6
-			_resetTeds2(ch, 6);
-			// 7
-			connection->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
-			connection->writeTeds2(bu6716_1W_CMD_READ_SPD);
-			connection->writeTeds2(0x00);
-			for (int i = 0; i < 2; i++)
-				read_data[i] = connection->readTeds2();
-			for (int i = 0; i < 2; i++) {
-				if (read_data[i] != write_data[i]) {
-					log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)").arg(read_data[i]).arg(write_data[i]).arg(ch));
-					channelsErrorsMask |= (1 << (ch - 1));
-				}
+		channelsResults.at(channel.index()) = Result::VALUE::PASSED;
+		_initTeds2();
+
+		// 2
+		auto portExp = device6716->readPortExpander(channel.index());
+		device6716->writePortExpander(channel.index(), (portExp & 0xfffe) | 0x4000);  // enable teds2 and disable shunt cal																							   // 3
+		deviceT028->invokeFunction(t028_setChanConfig, "t028_setChanConfig", channel.index(), T028_MODE_TEDS2);
+		bu3100_sleep(100);
+
+		// 4
+		_resetTeds2(channel.index(), 4);
+
+		// 5
+		unsigned char write_data[2] = { channel.index(), ~channel.index() };
+		unsigned char read_data[2] = { 0, 0 };
+		device6716->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
+		device6716->writeTeds2(bu6716_1W_CMD_WRITE_SPD);
+		device6716->writeTeds2(0x00);
+		for (int i = 0; i < 2; i++)
+			device6716->writeTeds2(write_data[i]);
+
+		// 6
+		_resetTeds2(channel.index(), 6);
+
+		// 7
+		device6716->writeTeds2(bu6716_1W_CMD_SKIP_ROM);
+		device6716->writeTeds2(bu6716_1W_CMD_READ_SPD);
+		device6716->writeTeds2(0x00);
+		for (int i = 0; i < 2; i++)
+			read_data[i] = device6716->readTeds2();
+		for (int i = 0; i < 2; i++) {
+			if (read_data[i] != write_data[i]) {
+				log(QString("- ERROR! Read value %1 from TEDS is not equal to %2 (channel: %3, step 7)").arg(read_data[i]).arg(write_data[i]).arg(channel.index()));
+				channelsResults.at(channel.index()) = Result::VALUE::FAILED;
 			}
-			// 8
-			_resetTeds2(ch, 8);
-			// 9
-			connection->writePortExpander(ch, portExp);
-			connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);
-			_resetTeds2(ch, 9);
-			if (!(channelsErrorsMask & (1 << (ch - 1)))) {
-				log(QString("OK, number of retries: %1)").arg(retries));
+		}
+
+		// 8
+		_resetTeds2(channel.index(), 8);
+
+		// 9
+		device6716->writePortExpander(channel.index(), portExp);
+		deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", 0xffff, T028_MODE_EXCAL);
+		_resetTeds2(channel.index(), 9);
+		if (channelsResults.at(channel.index()) == Result::VALUE::PASSED) {
+			log(QString("OK, number of retries: %1)").arg(retries));
+			retries = 0;
+		}
+		else if (retries % maxRetries == 0 && retries != 0) {
+			if (sender_->waitForAcceptOrDecline(QString("There was an error on channel %1. Retry? Press Cancel to skip to the next channel").arg(channel.index()))) {
+				++retries;
+				goto retrySameChannel;
+			}
+			else {
+				log(QString("Channel %1 skipped)").arg(channel.index()));
 				retries = 0;
 			}
-			else if (retries % maxRetries == 0 && retries != 0) {
-				waitForUserAction(QString("There was an error on channel %1. Retry? Press Cancel to skip to the next channel").arg(ch), UserActionType::CONFIRMATION_OR_DECLINE);
-				if (userDecision)
-					retry(retries, currentlyTestedChannel, channelsErrorsMask, s);
-				else {
-					log(QString("Channel %1 skipped)").arg(ch));
-					retries = 0;
-				}
-			}
-			else 
-				retry(retries, currentlyTestedChannel, channelsErrorsMask, s);
 		}
+		else 
+			goto retrySameChannel;
 	}
-	connection->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
-
-	return channelsErrorsMask == 0;
-
+	device6716->writeFPGAreg(bu6716_FPGA_SEGSW, segsw_dev);
+	return channelsResult();
+	//////////////////////////////////////////////////////////////////
 	///////// DRIVER TEST WILL WAIT (problem with write teds function
 	log("SCPI/driver functionality test:");
 	srand((unsigned int)time(nullptr));
-	for (int i = 0; i < bu6716_NUM_CHAN; i++) {
+	for (auto& channel : device6716->channels()) {
 		unsigned char data[32];
 		unsigned char data_wr[32];
-		if (!(CHANNEL_MASK & (1 << i)))
+		if (channel.disabled())
 			continue;
-		waitForUserAction(QString("Please connect sensor to channel %1 and click ok").arg(i+1), UserActionType::CONFIRMATION);
+		sender_->waitForConfirmation(QString("Please connect sensor to channel %1 and click ok").arg(channel.index()));
 
-		connection->callAndThrowOnErrorT028(t028_setChanConfig, "t028_setChanConfig", i + 1, T028_MODE_TEDS2);
-		log(QString("CHANNEL %1:").arg(i + 1));
+		deviceT028->invokeFunction(t028_setChanConfig, "t028_setChanConfig", channel.index(), T028_MODE_TEDS2);
+		log(QString("CHANNEL %1:").arg(channel.index()));
 		for (int j = 0; j < 32; j++)
 			data_wr[j] = rand();
-		if (bu6716_writeTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS2, 0, data_wr, 32) == VI_SUCCESS) {
-			log("  EEPROM (written): ");
-			for (int j = 0; j < 32; j++)
-				log(QString("%1 ").arg(data_wr[j]));
-			log("");
-		}
-		else {
-			ViInt32 code;
-			ViChar message[1024] = { 0 };
-			bu6716_error_query(connection->getVi6716(), &code, message);
-			log(QString("  EEPROM: ERROR! %1").arg(message));
-			channelsErrorsMask |= (1 << i);
-		}
-		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_EEPROM, data) == VI_SUCCESS) {
-			log("  EEPROM (read)   : ");
-			for (int j = 0; j < 32; j++)
-				log(QString("%1 ").arg(data[j]));
-			log("");
-			for (int j = 0; j < 32; j++) {
-				if (data[j] != data_wr[j]) {
-					log("  ERROR! Data verification failed!");
-					channelsErrorsMask |= (1 << i);
-					break;
-				}
+
+		deviceT028->invokeFunction(bu6716_writeTEDS, "bu6716_writeTEDS", channel.index(), bu6716_TEDS_CLASS2, 0, data_wr, 32);
+		log("  EEPROM (written): ");
+		for (int j = 0; j < 32; j++)
+			log(QString("%1 ").arg(data_wr[j]));
+		log("");
+
+		deviceT028->invokeFunction(bu6716_readTEDS, "bu6716_readTEDS", channel.index(), bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_EEPROM, data);
+		log("  EEPROM (read)   : ");
+		for (int j = 0; j < 32; j++)
+			log(QString("%1 ").arg(data[j]));
+		log("");
+		for (int j = 0; j < 32; j++) {
+			if (data[j] != data_wr[j]) {
+				log("  ERROR! Data verification failed!");
+				channelsResults.at(channel.index()) = Result::VALUE::FAILED;
+				break;
 			}
 		}
-		else {
-			ViInt32 code;
-			ViChar message[1024] = { 0 };
-			bu6716_error_query(connection->getVi6716(), &code, message);
-			log(QString("  EEPROM: ERROR! %1").arg(message));
-			channelsErrorsMask |= (1 << i);
-		}
-		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_OTPROM, data) == VI_SUCCESS) {
-			log("  OTPROM          : ");
-			for (int j = 0; j < 8; j++)
-				log(QString("%1").arg(data[j]));
-			log("");
-		}
-		else {
-			ViInt32 code;
-			ViChar message[1024] = { 0 };
-			bu6716_error_query(connection->getVi6716(), &code, message);
-			log(QString("  OTPROM: ERROR! %1").arg(message));
-			channelsErrorsMask |= (1 << i);
-		}
-		if (bu6716_readTEDS(connection->getVi6716(), i + 1, bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_ROM, data) == VI_SUCCESS) {
-			log("  ROM             : ");
-			for (int j = 0; j < 8; j++)
-				log(QString("%1").arg(data[j]));
-			log("");
-		}
-		else {
-			ViInt32 code;
-			ViChar message[1024] = { 0 };
-			bu6716_error_query(connection->getVi6716(), &code, message);
-			log(QString("  ROM: ERROR! %1").arg(message));
-			channelsErrorsMask |= (1 << i);
-		}
-		connection->callAndThrowOnErrorT028(t028_setChannelsConfig, "t028_setChannelsConfig", (unsigned short)0xffff, T028_MODE_EXCAL);
+
+		deviceT028->invokeFunction(bu6716_readTEDS, "bu6716_readTEDS", channel.index(), bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_OTPROM, data);
+		log("  OTPROM          : ");
+		for (int j = 0; j < 8; j++)
+			log(QString("%1").arg(data[j]));
+		log("");
+
+		deviceT028->invokeFunction(bu6716_readTEDS, "bu6716_readTEDS", channel.index(), bu6716_TEDS_CLASS2, bu6716_TEDS_MEM_ROM, data);
+		log("  ROM             : ");
+		for (int j = 0; j < 8; j++)
+			log(QString("%1").arg(data[j]));
+		log("");
+
+		deviceT028->invokeFunction(t028_setChannelsConfig, "t028_setChannelsConfig", (unsigned short)0xffff, T028_MODE_EXCAL);
 	}
-	return channelsErrorsMask == 0;
+	return channelsResult();
 }
-#undef CALL
-TedsClass2Test::TedsClass2Test(const std::shared_ptr<Communication_6716>& connection) : Abstract6716Test("Teds Class 2", connection, true) {}
+
+TedsClass2Test::TedsClass2Test() : AbstractTest6716("Teds Class 2") {}

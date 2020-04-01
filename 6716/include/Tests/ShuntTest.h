@@ -8,12 +8,14 @@
 #include <stdio.h>
 #include <string>
 #include <QString>
-#include "../AbstractTest_6716.h"
+#include "../AbstractTest6716.h"
 
-class ShuntTest : public Abstract6716Test {
-	ViStatus quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const;
+class ShuntTest : public AbstractTest6716 {
+	void quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain = bu3416_GAIN_1) const;
+	Limit limit1701 = {"L1701", -0.001, 0.001};
+	Limit limit1702 = {"L1702", -0.007 , -0.005};
 protected:
-	bool test() const override;
+	Result test() const override;
 public:
-	ShuntTest(const std::shared_ptr<Communication_6716>& connection);
+	ShuntTest();
 };
