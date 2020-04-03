@@ -4,6 +4,7 @@
 #include "../DeviceIdentityResourcesIF.h"
 #include "../DeviceIdentityResourcesIF.h"
 #include "Defines6991.h"
+#include <QTcpSocket>
 
 #include <array>
 #include <bitset>
@@ -20,6 +21,8 @@
 
 class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public ChannelsIF {
 	Q_OBJECT
+	QTcpSocket tcpSocket_;
+	QDataStream in_;
 	QString readError() const noexcept {
 		scpiCmd("SYSTem:ERR?");
 		return readResponse();
@@ -138,8 +141,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		return std::nullopt;
 	}
 
-	void setClockSource(ClockSourceEnum::Type const source) const noexcept {
-		// TODO
+	void setClockSource(ClockSourceEnum::Type const source) const noexcept { // TODO
+
 	}
 
 	std::optional<PtpTime> ptpAlarm() const noexcept {
@@ -162,16 +165,30 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 	}
 
-	bool openSocketConnection(int const port) const noexcept {
-		//TODO OPEN SOCKET CONNECTION TO SELECTED PORT
-		//TCPIP::<ip>::<port>::SOCKET
-		return true;
+	bool openSocketConnection(QString const& addresss, int const port) noexcept {
+		tcpSocket_.abort();
+		qDebug() << "Connecting: " << addresss << ":" << port;
+		tcpSocket_.connectToHost(addresss, port);
+		QObject::connect(&tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
+		QObject::connect(&tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
+		return tcpSocket_.isOpen();
 	}
 
-	bool closeSocketConnection(int const port) const noexcept {
-		//TODO CLOSE SOCKET CONNECTION TO SELECTED PORT
-		//TCPIP::<ip>::<port>::SOCKET
-		return true;
+	bool closeSocketConnection() noexcept {
+		tcpSocket_.abort();
+		return !tcpSocket_.isOpen();
+	}
+private slots:
+	void displayError(QAbstractSocket::SocketError socketError) const noexcept {
+		qDebug() << "Error: " << socketError;
+	}
+	void readData() noexcept {
+		in_.startTransaction();
+		QString data;
+		in_ >> data;
+		if (!in_.commitTransaction())
+			return;
+		qDebug() << "I read: " << data;
 	}
 public:
 	using DataType = QVector<bool>;
@@ -190,6 +207,8 @@ public:
 
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, int const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
 		connect();
+		in_.setDevice(&tcpSocket_);
+		in_.setVersion(QDataStream::Qt_5_14);
 	}
 	~Device6991() override = default;
 
@@ -209,13 +228,14 @@ public:
 	}
 public slots:
 	void connectDataStreamRequest(int const port) {
-		bool status = openSocketConnection(port); 
+		auto ipResource = inputResources().back();
+		bool status = openSocketConnection({ ipResource->load() }, port);
 		if (status)
 			emit connectedDataStream();
 	}
 
 	void disconnectDataStreamRequest(int const port) {
-		bool status = closeSocketConnection(port);
+		bool status = closeSocketConnection();
 		if (status)
 			emit disconnectedDataStream();
 	}
