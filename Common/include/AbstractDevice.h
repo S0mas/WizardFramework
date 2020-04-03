@@ -12,7 +12,7 @@
 /// @date	04.02.2020
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class AbstractDevice  : public UserCommunicationObject {
+class AbstractDevice : public UserCommunicationObject {
 	Q_OBJECT
 	QString nameId_;
 	bool connected_ = false;

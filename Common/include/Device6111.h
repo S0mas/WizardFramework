@@ -1,8 +1,5 @@
 #pragma once
-#include "ScpiDevice.h"
-#include "ChannelsIF.h"
-#include "DeviceIdentityResourcesIF.h"
-#include "HardwareConnector6111.h"
+#include "Device6991.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @class	Device6111
@@ -13,7 +10,7 @@
 /// @date	06.02.2020
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Device6111 : public ScpiDevice, public DeviceIdentityResourcesIF, public ChannelsIF {
+class Device6111 : public Device6991 {
 	Q_OBJECT
 public:
 	using DataType = QVector<bool>;
@@ -30,21 +27,7 @@ public:
 	/// 					QObject tree.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	Device6111(const QString& nameId, QObject* parent = nullptr) noexcept : ScpiDevice(nameId, new HardwareConnector6111(nameId), parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(128) {}
+	Device6111(const QString& nameId, ScpiIF* scpiIF, QObject* parent = nullptr) noexcept : Device6991(nameId, nullptr, scpiIF, 256, parent) {}
 	~Device6111() override = default;
-
-	void saveSubtype(const QString& str) const override {}
-	void saveSerialnumber(const QString& str) const override {}
-	void saveFirmwareRevision(const QString& str) const override {}
-	void saveDriverRevision(const QString& str) const override {}
-	QString loadSubtype() const override { return ""; }
-	QString loadSerialnumber() const override { return ""; }
-	QString loadFirmwareRevision() const override { return ""; }
-	QString loadDriverRevision() const override { return ""; }
-
-
-	DataType data(const int channelId) const noexcept {
-		return {};
-	}
 };
 

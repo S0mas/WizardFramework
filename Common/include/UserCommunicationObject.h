@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class UserCommunicationObject : public QObject {
+	Q_OBJECT
 protected:
 	UserActionRequestSender* sender_ = nullptr;
 public:
