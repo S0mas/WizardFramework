@@ -1,6 +1,6 @@
 #pragma once
-#include "AbstractHardwareConnector.h"
-#include "Resource.h"
+#include "../AbstractHardwareConnector.h"
+#include "../Resource.h"
 #include <string>
 #include <memory>
 #include <QDebug>

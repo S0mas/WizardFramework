@@ -1,8 +1,8 @@
 #pragma once
-#include "ScpiDevice.h"
-#include "ChannelsIF.h"
-#include "DeviceIdentityResourcesIF.h"
-#include "DeviceIdentityResourcesIF.h"
+#include "../ScpiDevice.h"
+#include "../ChannelsIF.h"
+#include "../DeviceIdentityResourcesIF.h"
+#include "../DeviceIdentityResourcesIF.h"
 #include "Defines6991.h"
 
 #include <array>
