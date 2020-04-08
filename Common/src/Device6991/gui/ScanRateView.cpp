@@ -7,12 +7,12 @@ void ScanRateView::createConnections() noexcept {
 		[this]() {
 			if (unitComboBox_->currentData().toInt() == static_cast<int>(ScanRateUnitsEnum::HZ)) {
 				valueSpinBox_->setSingleStep(HZ_STEP);
-				valueSpinBox_->setRange(HZ_STEP, HZ_LIMIT);
+				valueSpinBox_->setRange(HZ_MIN, HZ_LIMIT);
 				valueSpinBox_->disconnect();
 			}
 			else if (unitComboBox_->currentData().toInt() == static_cast<int>(ScanRateUnitsEnum::US)) {
 				valueSpinBox_->setSingleStep(US_STEP);
-				valueSpinBox_->setRange(US_STEP, US_LIMIT);
+				valueSpinBox_->setRange(US_MIN, US_LIMIT);
 				connect(valueSpinBox_, &QAbstractSpinBox::editingFinished, [this, step = US_STEP]() {if (valueSpinBox_->value() % step != 0) valueSpinBox_->setValue(valueSpinBox_->value() - valueSpinBox_->value() % step); });
 				emit valueSpinBox_->editingFinished();
 			}

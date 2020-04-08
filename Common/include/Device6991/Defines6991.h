@@ -1,5 +1,5 @@
 #pragma once
-#include "../SmartEnum.h"
+#include "../ScpiIF.h"
 #include <array>
 #include <bitset>
 #include <optional>
@@ -135,13 +135,28 @@ struct ScanRateUnitsEnum {
 
 
 struct ScanRateModel {
-	int value_;
+	uint32_t value_;
 	ScanRateUnitsEnum::Type units_;
+	QString toString() const noexcept {
+		return QString("%1,%2").arg(value_).arg(ScanRateUnitsEnum::toString(units_));
+	}
+	static ScanRateModel fromString(QString const& str) noexcept {
+		auto list = str.split(',');
+		return { list[0].toUInt(), ScanRateUnitsEnum::fromString(list[1])};
+	}
 };
 
 struct PtpTime {
 	int32_t seconds_;
 	int32_t nanoseconds_;
+	QString toString() const noexcept {
+		return QString("%1,%2").arg(seconds_).arg(nanoseconds_);
+	}
+
+	static PtpTime fromString(QString const& str) noexcept {
+		auto list = str.split(',');
+		return { list[0].toInt(), list[1].toInt() };
+	}
 };
 
 struct TemperaturesEnum {
@@ -179,6 +194,111 @@ struct TemperaturesEnum {
 			return DOWN;
 		else if (mode == "UP")
 			return UP;
+		return INVALID;
+	}
+};
+
+struct Commands1Enum {
+	Commands1Enum() = default;
+	enum Type {
+		READ = 0x51,
+		WRITE = 0x52,
+		WRITE_LOOPBACK = 0x53,
+		CUSTOM = 0x00,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { READ, WRITE, WRITE_LOOPBACK, CUSTOM };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case READ:
+			return "READ";
+		case WRITE:
+			return "WRITE";
+		case WRITE_LOOPBACK:
+			return "WRITE_LOOPBACK";
+		case CUSTOM:
+			return "CUSTOM";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "READ")
+			return READ;
+		else if (mode == "WRITE")
+			return WRITE;
+		else if (mode == "WRITE_LOOPBACK")
+			return WRITE_LOOPBACK;
+		else if (mode == "CUSTOM")
+			return CUSTOM;
+		return INVALID;
+	}
+};
+
+struct Commands2Enum {
+	Commands2Enum() = default;
+	enum Type {
+		READ,
+		WRITE,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 2> TYPES = { READ, WRITE };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case READ:
+			return "READ";
+		case WRITE:
+			return "WRITE";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "READ")
+			return READ;
+		else if (mode == "WRITE")
+			return WRITE;
+		return INVALID;
+	}
+};
+
+struct RegistersEnum {
+	RegistersEnum() = default;
+	enum Type {
+		REG_1 = 0x1,
+		REG_2 = 0x2,
+		REG_3 = 0x3,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 3> TYPES = { REG_1, REG_2, REG_3 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case REG_1:
+			return "REG_1";
+		case REG_2:
+			return "REG_2";
+		case REG_3:
+			return "REG_3";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "REG_1")
+			return REG_1;
+		else if (mode == "REG_2")
+			return REG_2;
+		else if (mode == "REG_3")
+			return REG_3;
 		return INVALID;
 	}
 };
@@ -353,6 +473,10 @@ public:
 	void setState(DeviceStateEnum::Type const state) noexcept {
 		state_ = state;
 	}
+
+	uint32_t toUInt() const noexcept {
+		return data_.to_ulong();
+	}
 };
 
 struct StatusPart {
@@ -403,7 +527,7 @@ struct AcquisitionStopModeModel {
 
 struct Configuration6991 {
 	std::optional<ScanRateModel> scanRate_;
-	std::optional<std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()>> temperatures_;
+	std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> temperatures_;
 	std::optional<FansModeEnum::Type> fansMode_;
 	std::optional<ClockSourceEnum::Type> clockSource_;
 	std::optional<PtpTime> ptpTime_;
@@ -412,7 +536,6 @@ struct Configuration6991 {
 	std::optional<int> scansPerDirectReadPacket_;
 	std::optional<bool> timestamps_;
 };
-
 
 enum class TestType {
 	CL0,

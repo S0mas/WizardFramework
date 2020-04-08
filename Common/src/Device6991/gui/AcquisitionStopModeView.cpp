@@ -63,10 +63,12 @@ AcquisitionStopModeView::AcquisitionStopModeView(QWidget * parent) : QGroupBox("
 	emit modeComboBox_->currentIndexChanged(0);
 }
 
-AcquisitionStopModeModel AcquisitionStopModeView::model() const noexcept {
+AcquisitionStopModeModel AcquisitionStopModeView::model(ScanRateModel const& scanRate) const noexcept {
 	AcquisitionStopModeModel values;
-	if (modeComboBox_->currentData().toInt() == AcquisitionStopModeEnum::TIME)
-		values.scansThreshold_ = 0; // TODO calculate treshold from time acquisitionTimeEdit_->time();
+	if (modeComboBox_->currentData().toInt() == AcquisitionStopModeEnum::TIME) {
+		double seconds = acquisitionTimeEdit_->sectionText(QDateTimeEdit::HourSection).toInt() * 3600 + acquisitionTimeEdit_->sectionText(QDateTimeEdit::MinuteSection).toInt() * 60 + acquisitionTimeEdit_->sectionText(QDateTimeEdit::SecondSection).toInt() + acquisitionTimeEdit_->sectionText(QDateTimeEdit::MSecSection).toDouble() * 1/1000;
+		values.scansThreshold_ = scanRate.units_ == ScanRateUnitsEnum::HZ ? scanRate.value_ * seconds : seconds * 1'000'000 / scanRate.value_;
+	}
 	else if (modeComboBox_->currentData().toInt() == AcquisitionStopModeEnum::SCANS_TRESHOLD)
 		values.scansThreshold_ = numberOfScansSpinBox_->value();
 	else

@@ -1,19 +1,20 @@
 #include "../../../include/Device6991/gui/RegisterController.h"
+#include <QMessageBox>
 
-void TargetFrontendCardView::createConnections(AbstractDeviceXX* device) noexcept {
-	connect(this, &TargetFrontendCardView::sendCommand,
-		[this](unsigned int const cmd, unsigned int const address) {
-			if (isEnabled() && checkBox_->isChecked())
-				emit commandExecutionReq({ cmd , address, lineEdit_->text().toUInt(nullptr, 16) });
+void TargetFrontendCardView::createConnections() noexcept {
+	connect(this, &TargetFrontendCardView::stateReq, [this]() { deviceIF_->fcCardStateRequest(index_); });
+	connect(parentCommandSelector_, &EnumSelector::enumChanged,
+		[this](int const concreteEnum) {
+			if (concreteEnum == Commands1Enum::READ)
+				lineEdit_->setEnabled(false);
+			else if (concreteEnum == Commands1Enum::WRITE)
+				lineEdit_->setEnabled(checkBox_->isChecked());
 		}
 	);
-	connect(this, &TargetFrontendCardView::stateReq, device, &AbstractDeviceXX::handleDeviceStatusReq);
-	connect(this, &TargetFrontendCardView::commandExecutionReq, device, &AbstractDeviceXX::handleCommandExecutionReq);
-
-	initializeStateMachine(device);
+	initializeStateMachine();
 }
 
-void TargetFrontendCardView::initializeStateMachine(AbstractDeviceXX* device) noexcept {
+void TargetFrontendCardView::initializeStateMachine() noexcept {
 	auto enabled = new QState();
 	auto active = new QState(enabled);
 	auto inactive = new QState(enabled);
@@ -28,8 +29,8 @@ void TargetFrontendCardView::initializeStateMachine(AbstractDeviceXX* device) no
 	unchecktransition->setTargetState(inactive);
 	active->addTransition(unchecktransition);
 
-	enabled->addTransition(device, &AbstractDeviceXX::disable, disabled);
-	disabled->addTransition(device, &AbstractDeviceXX::enable, enabled);
+	enabled->addTransition(deviceIF_, &Device6991::fcCardDisabled, disabled);
+	disabled->addTransition(deviceIF_, &Device6991::fcCardEnabled, enabled);
 
 	sm_.addState(enabled);
 	sm_.addState(disabled);
@@ -41,7 +42,7 @@ void TargetFrontendCardView::initializeStateMachine(AbstractDeviceXX* device) no
 	);
 	connect(active, &QState::entered,
 		[this]() {
-			lineEdit_->setEnabled(true);
+			lineEdit_->setEnabled(parentCommandSelector_->value() == Commands1Enum::WRITE);
 		}
 	);
 	connect(inactive, &QState::entered,
@@ -59,7 +60,9 @@ void TargetFrontendCardView::initializeStateMachine(AbstractDeviceXX* device) no
 	sm_.start();
 }
 
-TargetFrontendCardView::TargetFrontendCardView(AbstractDeviceXX* device, int const index, QWidget* parent) : QGroupBox(QString("Front End %1").arg(index), parent) {
+TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, int const index, QWidget* parent)
+	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), parentCommandSelector_(parentCommandSelector) {
+	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;0");
 	lineEdit_->setEnabled(false);
@@ -71,22 +74,38 @@ TargetFrontendCardView::TargetFrontendCardView(AbstractDeviceXX* device, int con
 	layout->addWidget(checkBox_);
 	setLayout(layout);
 
-	createConnections(device);
+	createConnections();
 }
 
-void RegisterController::createConnections(AbstractDeviceXX* device1, AbstractDeviceXX* device2) noexcept {
+void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept {
+	if (isEnabled() && checkBox_->isChecked()) {
+		if (cmd == Commands1Enum::READ) {
+			if (auto clSpiCsrReg_ = deviceIF_->readFcRegister(index_, address); clSpiCsrReg_)
+				lineEdit_->setText(QString::number(*clSpiCsrReg_, 16));
+			else
+				QMessageBox::critical(this, "Error", QString("Read operation faild for frontend card %1!").arg(index_));
+		}
+		else if (cmd == Commands1Enum::WRITE) {
+			auto success = deviceIF_->writeFcRegister(index_, address, lineEdit_->text().toUInt(nullptr, 16));
+			if (!success)
+				QMessageBox::critical(this, "Error", QString("Write operation faild for frontend card %1!").arg(index_));
+		}
+	}
+}
+
+void RegisterControllerFrontend::createConnections() noexcept {
 	connect(refreshButton, &QPushButton::clicked, frontend1_, &TargetFrontendCardView::stateReq);
 	connect(refreshButton, &QPushButton::clicked, frontend2_, &TargetFrontendCardView::stateReq);
 	connect(executeButton, &QPushButton::clicked,
 		[this]() {
-			emit frontend1_->sendCommand(commandSelector_->value(), addressSelector_->value());
-			emit frontend2_->sendCommand(commandSelector_->value(), addressSelector_->value());
+			emit frontend1_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
+			emit frontend2_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
 		}
 	);
 }
 
-RegisterController::RegisterController(AbstractDeviceXX* device1, AbstractDeviceXX* device2, QWidget* parent)
-	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(device1, 1)), frontend2_(new TargetFrontendCardView(device2, 2)){
+RegisterControllerFrontend::RegisterControllerFrontend(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
+	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, 1)), frontend2_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, 2)){
 	auto frontendsLayout = new QHBoxLayout;
 	frontendsLayout->addWidget(frontend1_);
 	frontendsLayout->addWidget(frontend2_);
@@ -103,5 +122,52 @@ RegisterController::RegisterController(AbstractDeviceXX* device1, AbstractDevice
 	layout->addLayout(acceptRow);
 	setLayout(layout);
 
-	createConnections(device1, device2);
+	createConnections();
+}
+
+void RegisterController6991::createConnections() noexcept {
+	connect(executeButton, &QPushButton::clicked,
+		[this]() {
+			if (commandSelector_->value() == Commands2Enum::READ) {
+				if (auto clSpiCsrReg_ = deviceIF_->readFpgaRegister(addressSelector_->value()); clSpiCsrReg_)
+					lineEdit_->setText(toHex(*clSpiCsrReg_, 8));
+			}				
+			else if(commandSelector_->value() == Commands2Enum::WRITE)
+				deviceIF_->writeFpgaRegister(addressSelector_->value(), lineEdit_->text().toUInt(nullptr, 16));
+		}
+	);
+
+	connect(commandSelector_, &EnumSelector::enumChanged,
+		[this](int const concreteEnum) {
+			if (concreteEnum == Commands2Enum::READ)
+				lineEdit_->setEnabled(false);
+			else if(concreteEnum == Commands2Enum::WRITE)
+				lineEdit_->setEnabled(true);
+		}
+	);
+}
+
+RegisterController6991::RegisterController6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
+	: QGroupBox("Register Controller", parent) {
+	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, 256, this);
+	lineEdit_->setMaximumWidth(70);
+	lineEdit_->setInputMask("\\0\\xHHHHHHHH;0");
+	lineEdit_->setEnabled(false);
+	auto dataGroup = new QGroupBox("Data", this);
+	auto hLayout = new QHBoxLayout;
+	hLayout->addWidget(lineEdit_);
+	hLayout->addStretch(0);
+	dataGroup->setLayout(hLayout);
+
+	auto acceptRow = new QHBoxLayout;
+	acceptRow->addWidget(executeButton, 1, Qt::AlignRight);
+
+	auto layout = new QVBoxLayout;
+	layout->addWidget(commandSelector_);
+	layout->addWidget(addressSelector_);
+	layout->addWidget(dataGroup);
+	layout->addLayout(acceptRow);
+	setLayout(layout);
+
+	createConnections();
 }

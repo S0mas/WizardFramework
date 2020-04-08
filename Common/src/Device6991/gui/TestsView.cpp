@@ -68,22 +68,23 @@ TestsSelectionModel TestSelectionView::model() const noexcept {
 }
 
 
-void TestsView::createConnections(AbstractDeviceXX * device) noexcept {
-	connect(device, &AbstractDeviceXX::testsStarted, startStopTestsButton_, &TwoStateButton::connected);
-	connect(device, &AbstractDeviceXX::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
-	connect(device, &AbstractDeviceXX::sendCounters, resultView_, &TestsResultView::setModel);
-	initializeStateMachine(device);
+void TestsView::createConnections() noexcept {
+	connect(deviceIF_, &Device6991::testsStarted, startStopTestsButton_, &TwoStateButton::connected);
+	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
+	connect(deviceIF_, &Device6991::testCounters, resultView_, &TestsResultView::setModel);
+	initializeStateMachine();
 }
 
-void TestsView::initializeStateMachine(AbstractDeviceXX * device) noexcept {
+void TestsView::initializeStateMachine() noexcept {
 	auto idle = new QState();
 	auto running = new QState();
 
-	idle->addTransition(device, &AbstractDeviceXX::testsStarted, running);
-	running->addTransition(device, &AbstractDeviceXX::testsStopped, idle);
+	idle->addTransition(deviceIF_, &Device6991::testsStarted, running);
+	running->addTransition(deviceIF_, &Device6991::testsStopped, idle);
 
 	auto timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, &TestsView::updateTime);
+	connect(timer, &QTimer::timeout, deviceIF_, &Device6991::testCountersRequest);
 
 	sm_.addState(idle);
 	sm_.addState(running);
@@ -114,8 +115,8 @@ void TestsView::updateTime() const noexcept {
 	testElapsedTimeLabel_->setText(QString("Time elapsed: %1m %2s").arg(minutes).arg(seconds));
 }
 
-TestsView::TestsView(AbstractDeviceXX * device, QWidget * parent) : QGroupBox("", parent) {
-	startStopTestsButton_ = new TwoStateButton("Start", [device, this]() { device->handleStartTestsReq(selectionView_->model()); }, "Stop", [device]() {device->handleStopTestsReq(); });
+TestsView::TestsView(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("", parent) {
+	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	auto hlayout = new QHBoxLayout;
 	hlayout->addWidget(selectionView_);
 	hlayout->addWidget(resultView_);
@@ -131,5 +132,5 @@ TestsView::TestsView(AbstractDeviceXX * device, QWidget * parent) : QGroupBox(""
 	hlayout->addWidget(testElapsedTimeLabel_);
 	layout->addLayout(hlayout);
 	setLayout(layout);
-	createConnections(device);
+	createConnections();
 }

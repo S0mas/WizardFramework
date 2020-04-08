@@ -2,7 +2,7 @@
 #include <bitset>
 
 QString ScpiDevice::readResponse() const {
-	unsigned long ret;
+	unsigned long ret = 1;
 	char data[256];
 	connector_->call([this](auto vi, unsigned char* dataPtr, int size, unsigned long* ret) { return scpiIF_->read(vi, dataPtr, size, ret); }, "SCPI buffor read:", reinterpret_cast<unsigned char*>(data), sizeof(data) - 1, &ret);
 	data[ret - 1] = '\0';
