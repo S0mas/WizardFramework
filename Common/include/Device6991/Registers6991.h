@@ -1,6 +1,7 @@
 #pragma once
 #include <bitset>
 #include <optional>
+#include "../../include/Device6991/Defines6991.h"
 
 class Device6991;
 class Register {
@@ -11,7 +12,8 @@ protected:
 	bool readHw() noexcept;
 	bool writeHw() const noexcept;
 public:
-	Register(int const address, Device6991* deviceIF);
+	Register(int const, Device6991*);
+	std::optional<int> value() noexcept;
 };
 
 class CL_SPI_CSR_reg : public Register {
@@ -27,19 +29,14 @@ class CL_SPI_CSR_reg : public Register {
 	};
 
 	bool isBusy() noexcept;
-	void setCommand(Command const cmd) noexcept;
-public:
-	enum TargetSelection {
-		FE1,
-		FE2,
-		BOTH
-	};
+	void setCommand(Command const) noexcept;
 
-	CL_SPI_CSR_reg(Device6991* deviceIF);
-	bool startTests(TargetSelection const target) noexcept;
+public:
+	CL_SPI_CSR_reg(Device6991*);
+	bool startTests(bool const CL0, bool const CL1) noexcept;
 	bool stopTests() noexcept;
 
-	std::optional<bool> isTestRunning() noexcept;
+	std::optional<bool> isTestRunning(TestTypeEnum::Type const type = TestTypeEnum::INVALID) noexcept;
 };
 
 class DL_SPI_CSR1_reg : public Register {
@@ -47,14 +44,8 @@ class DL_SPI_CSR1_reg : public Register {
 	const int DL1_TEST_MODE = 28;
 	const int DL_EN = 31;
 public:
-	enum TargetSelection {
-		FE1,
-		FE2,
-		BOTH
-	};
-
-	DL_SPI_CSR1_reg(Device6991* deviceIF);
-	bool startTests(TargetSelection const target) noexcept;
+	DL_SPI_CSR1_reg(Device6991*);
+	bool startTests(bool const DL0, bool const DL1) noexcept;
 	bool stopTests() noexcept;
 	std::optional<bool> isTestRunning() noexcept;
 };
@@ -68,89 +59,37 @@ public:
 	std::optional<bool> isTestRunning() noexcept;
 };
 
-/*DFIFO_CSR_reg
+class CL_SPI_TLCNT_reg : public Register {
+public:
+	CL_SPI_TLCNT_reg(Device6991*);
+};
 
- – 
-Bit
-Access & Default
-Description
-31
-RO
-0x0
-DFIFO_EMPTY_FLAG
-The DFIFO_EMPTY_FLAG indicates that Data FIFO is empty.
-Read:
-0: Data FIFO not empty
-1: Data FIFO empty 
-30
-RO
-0x0
-DFIFO_FULL_FLAG
-The DFIFO_FULL_FLAG indicates that Data FIFO is full.
-Read:
-0: Data FIFO not full
-1: Data FIFO full
-29
-RO
-0x0
-DFIFO_PROG_FLAG
-The DFIFO_PROG_FLAG indicates that Data FIFO reached programmed threshold: the amount of data in FIFO is not less that the number setup in .
-Read:
-0: Data FIFO not almost empty
-1: Data FIFO almost full
-28
-RW1C
-0x0
-DFIFO_OVF_FLAG
-The DFIFO_OVF_FLAG indicates that the overflow when writing to Data FIFO happened (writing to full FIFO).
-This bit is cleared during reset of the FIFO or can be cleared by writing ‘1’ to it.
-Write:
-0: no effect
-1: clears the flag if flag was asserted and no overflow condition at the same time
-Read:
-0: No overflow
-1: Data FIFO overflow happened
-27
-RW1C
-0x0
-DFIFO_UNF_FLAG
-The DFIFO_UNF_FLAG indicates that the underflow when reading from Data FIFO happened (reading from empty FIFO).
-This bit is cleared during reset of the FIFO or can be cleared by writing ‘1’ to it.
-Write:
-0: no effect
-1: clears the flag if flag was asserted and no overflow condition at the same time
-Read:
-0: No underflow
-1: Data FIFO underflow happened 
-26:24
-WO
+class CL0_SPI_TLERR_reg : public Register {
+public:
+	CL0_SPI_TLERR_reg(Device6991*);
+};
 
+class CL1_SPI_TLERR_reg : public Register {
+public:
+	CL1_SPI_TLERR_reg(Device6991*);
+};
 
-DFIFO_RST
-These bits are used to reset (initialize) the Data FIFO.
-Write:
-Writing 0x4 causes data FIFO reset 
-Other : no effect
-23
-RW
-0x0
-DFIFO_TEST_MODE
-Test Mode allows to write to Data FIFO linear pattern in automated mode. The rate of writing every data to FIFO is defined by TBD. Linear pattern starts from 0 and is 32-bit wide: every next data written is incremented by one.
-Test Mode can be started only if Data Link is not enabled with DL_EN bit.
-Write:
-0: Test Mode disabled
-1: Test Mode enabled 
-Read:
-Returns previously written value 
-15:13
-RO
-0x0
-Reserved
-12:0
-RO
-0x0
-DFIFO_CNT[11:0]
-DFIFO_CNT bits gives current number of the data stored in Data FIFO.
-Read:
-Returns current number of data stored in the Data FIFO  
-*/
+class DL0_SPI_TMCNT_reg : public Register {
+public:
+	DL0_SPI_TMCNT_reg(Device6991*);
+};
+
+class DL0_SPI_TMERR_reg : public Register {
+public:
+	DL0_SPI_TMERR_reg(Device6991*);
+};
+
+class DL1_SPI_TMCNT_reg : public Register {
+public:
+	DL1_SPI_TMCNT_reg(Device6991*);
+};
+
+class DL1_SPI_TMERR_reg : public Register {
+public:
+	DL1_SPI_TMERR_reg(Device6991*);
+};

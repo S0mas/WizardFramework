@@ -271,34 +271,70 @@ struct Commands2Enum {
 struct RegistersEnum {
 	RegistersEnum() = default;
 	enum Type {
-		REG_1 = 0x1,
-		REG_2 = 0x2,
-		REG_3 = 0x3,
+		CL_SPI_CSR_reg = 0x4488,
+		CL_SPI_TLCNT_reg = 0x44A0,
+		CL0_SPI_TLERR_reg = 0x44A4,
+		CL1_SPI_TLERR_reg = 0x44A8,
+		DL_SPI_CSR1_reg = 0x4500,
+		DL0_SPI_TMCNT_reg = 0x4520,
+		DL0_SPI_TMERR_reg = 0x4524,
+		DL1_SPI_TMCNT_reg = 0x4528,
+		DL1_SPI_TMERR_reg = 0x452C,
+		DFIFO_CSR_reg = 0x4700,
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 3> TYPES = { REG_1, REG_2, REG_3 };
+	inline constexpr static std::array<Type, 10> TYPES = { CL_SPI_CSR_reg, CL_SPI_TLCNT_reg, CL0_SPI_TLERR_reg,
+		CL1_SPI_TLERR_reg, DL_SPI_CSR1_reg, DL0_SPI_TMCNT_reg, DL0_SPI_TMERR_reg, DL1_SPI_TMCNT_reg, DL1_SPI_TMERR_reg, DFIFO_CSR_reg };
 
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
-		case REG_1:
-			return "REG_1";
-		case REG_2:
-			return "REG_2";
-		case REG_3:
-			return "REG_3";
+		case CL_SPI_CSR_reg:
+			return "CL_SPI_CSR_reg";
+		case CL_SPI_TLCNT_reg:
+			return "CL_SPI_TLCNT_reg";
+		case CL0_SPI_TLERR_reg:
+			return "CL0_SPI_TLERR_reg";
+		case CL1_SPI_TLERR_reg:
+			return "CL1_SPI_TLERR_reg";
+		case DL_SPI_CSR1_reg:
+			return "DL_SPI_CSR1_reg";
+		case DL0_SPI_TMCNT_reg:
+			return "DL0_SPI_TMCNT_reg";
+		case DL0_SPI_TMERR_reg:
+			return "DL0_SPI_TMERR_reg";
+		case DL1_SPI_TMCNT_reg:
+			return "DL1_SPI_TMCNT_reg";
+		case DL1_SPI_TMERR_reg:
+			return "DL1_SPI_TMERR_reg";
+		case DFIFO_CSR_reg:
+			return "DFIFO_CSR_reg";
 		default:
 			return "invalid";
 		}
 	}
 
 	static Type fromString(QString const& mode) noexcept {
-		if (mode == "REG_1")
-			return REG_1;
-		else if (mode == "REG_2")
-			return REG_2;
-		else if (mode == "REG_3")
-			return REG_3;
+		if (mode == "CL_SPI_CSR_reg")
+			return CL_SPI_CSR_reg;
+		else if (mode == "CL_SPI_TLCNT_reg")
+			return CL_SPI_TLCNT_reg;
+		else if (mode == "CL0_SPI_TLERR_reg")
+			return CL0_SPI_TLERR_reg;
+		if (mode == "CL1_SPI_TLERR_reg")
+			return CL1_SPI_TLERR_reg;
+		else if (mode == "DL_SPI_CSR1_reg")
+			return DL_SPI_CSR1_reg;
+		else if (mode == "DL0_SPI_TMCNT_reg")
+			return DL0_SPI_TMCNT_reg;
+		if (mode == "DL0_SPI_TMERR_reg")
+			return DL0_SPI_TMERR_reg;
+		else if (mode == "DL1_SPI_TMCNT_reg")
+			return DL1_SPI_TMCNT_reg;
+		else if (mode == "DL1_SPI_TMERR_reg")
+			return DL1_SPI_TMERR_reg;
+		else if (mode == "DFIFO_CSR_reg")
+			return DFIFO_CSR_reg;
 		return INVALID;
 	}
 };
@@ -537,37 +573,55 @@ struct Configuration6991 {
 	std::optional<bool> timestamps_;
 };
 
-enum class TestType {
-	CL0,
-	CL1,
-	DL0,
-	DL1,
-	FIFO,
-	UNKNOWN
-};
 
-inline std::vector<TestType> testTypes = { TestType::CL0 , TestType::CL1, TestType::DL0, TestType::DL1, TestType::FIFO };
-inline QString toString(TestType const test) noexcept {
-	switch (test) {
-	case TestType::CL0:
-		return "CL0";
-	case TestType::CL1:
-		return "CL1";
-	case TestType::DL0:
-		return "DL0";
-	case TestType::DL1:
-		return "DL1";
-	case TestType::FIFO:
-		return "FIFO";
-	default:
-		return "UNKNOWN";
+struct TestTypeEnum {
+	enum Type {
+		CL0,
+		CL1,
+		DL0,
+		DL1,
+		FIFO,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 5> TYPES = { CL0, CL1, DL0, DL1, FIFO };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case CL0:
+			return "CL0";
+		case CL1:
+			return "CL1";
+		case DL0:
+			return "DL0";
+		case DL1:
+			return "DL1";
+		case FIFO:
+			return "FIFO";
+		default:
+			return "invalid";
+		}
 	}
-}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "CL0")
+			return CL0;
+		else if (mode == "CL1")
+			return CL1;
+		else if (mode == "DL0")
+			return DL0;
+		if (mode == "DL1")
+			return DL1;
+		else if (mode == "FIFO")
+			return FIFO;
+		return INVALID;
+	}
+};
 
 struct Result {
-	int count_;
-	int errors_;
+	std::optional<int> count_;
+	std::optional<int> errors_;
 };
 
-using TestsResultModel = std::map<TestType, Result>;
-using TestsSelectionModel = std::map<TestType, bool>;
+using TestsResultModel = std::map<TestTypeEnum::Type, Result>;
+using TestsSelectionModel = std::map<TestTypeEnum::Type, bool>;

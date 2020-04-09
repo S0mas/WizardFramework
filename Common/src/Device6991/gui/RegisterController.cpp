@@ -80,8 +80,8 @@ TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelect
 void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept {
 	if (isEnabled() && checkBox_->isChecked()) {
 		if (cmd == Commands1Enum::READ) {
-			if (auto clSpiCsrReg_ = deviceIF_->readFcRegister(index_, address); clSpiCsrReg_)
-				lineEdit_->setText(QString::number(*clSpiCsrReg_, 16));
+			if (auto reg = deviceIF_->readFcRegister(index_, address); reg)
+				lineEdit_->setText(QString::number(*reg, 16));
 			else
 				QMessageBox::critical(this, "Error", QString("Read operation faild for frontend card %1!").arg(index_));
 		}
@@ -129,8 +129,8 @@ void RegisterController6991::createConnections() noexcept {
 	connect(executeButton, &QPushButton::clicked,
 		[this]() {
 			if (commandSelector_->value() == Commands2Enum::READ) {
-				if (auto clSpiCsrReg_ = deviceIF_->readFpgaRegister(addressSelector_->value()); clSpiCsrReg_)
-					lineEdit_->setText(toHex(*clSpiCsrReg_, 8));
+				if (auto reg = deviceIF_->readFpgaRegister(addressSelector_->value()); reg)
+					lineEdit_->setText(toHex(*reg, 8));
 			}				
 			else if(commandSelector_->value() == Commands2Enum::WRITE)
 				deviceIF_->writeFpgaRegister(addressSelector_->value(), lineEdit_->text().toUInt(nullptr, 16));

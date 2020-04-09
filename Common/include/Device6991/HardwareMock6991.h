@@ -13,6 +13,7 @@
 #include <vector>
 #include "Command.h"
 #include "Defines6991.h"
+#include "Registers6991.h"
 #include <map>
 
 //dbg
@@ -33,26 +34,91 @@ class HardwareMock6991 : public QObject {
 	int controllerId_ = 0;
 
 	bool isAcqActive_ = false;
-	bool dbgModeOn_;
+	bool dbgModeOn_ = false;
+	bool areTestsRunning = false;
 	mutable bool state = false;
-	virtual bool isDeviceAvailable() const noexcept {
-		state = !state;
-		return state;
-	}
-	void updateCounters() noexcept {
-		std::vector<TestType> activetests;
-		for (auto test : testTypes)
-			if (testSelectionModel_.at(test))
-				activetests.push_back(test);
-		auto testErrorId = QRandomGenerator::global()->bounded(0, activetests.size());
 
-		resultModel_.at(activetests[testErrorId]).errors_++;
-		for (auto test : activetests)
-			resultModel_.at(test).count_++;
+	void checkTestsRegs() noexcept {
+		bool testsStarted = false;
+		bool testsStopped = true;
+		const int CL0_SEL = 24;
+		const int CL1_SEL = 25;
+		const int CL_TEST_LOOP = 26;
+		const int CL_START_CL_BUSY = 31;
+		std::bitset<32> regCL = fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg];
+
+		const int DL0_TEST_MODE = 24;
+		const int DL1_TEST_MODE = 28;
+		const int DL_EN = 31;
+		std::bitset<32> regDL = fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg];
+
+		const int DFIFO_TEST_MODE = 23;
+		std::bitset<32> regFIFO = fpgaRegs_[RegistersEnum::DFIFO_CSR_reg];
+		if (!areTestsRunning) {
+			if (regCL[CL_TEST_LOOP] && regCL[CL_START_CL_BUSY]) {
+				testsStarted = true;
+				if (regCL[CL0_SEL])
+					testSelectionModel_[TestTypeEnum::CL0] = true;
+				if (regCL[CL1_SEL])
+					testSelectionModel_[TestTypeEnum::CL1] = true;
+			}
+			if (regDL[DL_EN]) {
+				testsStarted = true;
+				if (regDL[DL0_TEST_MODE])
+					testSelectionModel_[TestTypeEnum::DL0] = true;
+				if (regDL[DL1_TEST_MODE])
+					testSelectionModel_[TestTypeEnum::DL1] = true;
+			}
+			if (regFIFO[DFIFO_TEST_MODE]) {
+				testsStarted = true;
+				testSelectionModel_[TestTypeEnum::FIFO] = true;
+			}
+			if (testsStarted)
+				startTests();
+		}
+		else {
+			if (!regCL[CL_TEST_LOOP]) {
+				testSelectionModel_[TestTypeEnum::CL0] = false;
+				testSelectionModel_[TestTypeEnum::CL1] = false;
+			}
+			if (!regDL[DL_EN]) {
+				testSelectionModel_[TestTypeEnum::DL0] = false;
+				testSelectionModel_[TestTypeEnum::DL1] = false;
+			}
+			if (!regFIFO[DFIFO_TEST_MODE])
+				testSelectionModel_[TestTypeEnum::FIFO] = false;
+			for (auto test : testSelectionModel_)
+				if (test.second)
+					testsStopped = false;
+			if (testsStopped)
+				stopTests();
+		}
+	}
+
+	void updateCounters() noexcept {
+		std::vector<RegistersEnum::Type> countersRegsToUpdate;
+		if (testSelectionModel_[TestTypeEnum::CL0] || testSelectionModel_[TestTypeEnum::CL1]) {
+			countersRegsToUpdate.push_back(RegistersEnum::CL_SPI_TLCNT_reg);
+			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL0])
+				countersRegsToUpdate.push_back(RegistersEnum::CL0_SPI_TLERR_reg);
+			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL1])
+				countersRegsToUpdate.push_back(RegistersEnum::CL1_SPI_TLERR_reg);
+		}
+		if (testSelectionModel_[TestTypeEnum::DL0]) {
+			countersRegsToUpdate.push_back(RegistersEnum::DL0_SPI_TMCNT_reg);
+			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL0])
+				countersRegsToUpdate.push_back(RegistersEnum::DL0_SPI_TMERR_reg);
+		}
+		if (testSelectionModel_[TestTypeEnum::DL1]) {
+			countersRegsToUpdate.push_back(RegistersEnum::DL1_SPI_TMCNT_reg);
+			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL1])
+				countersRegsToUpdate.push_back(RegistersEnum::DL1_SPI_TMERR_reg);
+		}
+		for (auto regType : countersRegsToUpdate)
+			++fpgaRegs_[regType];			
 	}
 	QTimer* timer_;
 	TestsSelectionModel testSelectionModel_;
-	TestsResultModel resultModel_;
 
 	void setError(QString const& errorMsg) const noexcept {
 		lastError_ = errorMsg;
@@ -60,6 +126,14 @@ class HardwareMock6991 : public QObject {
 	}
 public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
+		timer_ = new QTimer(this);
+		auto checkTestsRegsTimer = new QTimer(this);
+		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
+		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
+		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
+		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 0;
+		checkTestsRegsTimer->start(500);
 		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
@@ -251,5 +325,26 @@ public:
 
 	int readFcReg(int const fcId, int const address) const noexcept {
 		return fcRegs_[fcId - 1].find(address) != fcRegs_[fcId - 1].end() ? fcRegs_[fcId - 1].at(address) : 0xFFFFFFFF;
+	}
+
+	void startTests() noexcept {
+		fpgaRegs_[RegistersEnum::CL_SPI_TLCNT_reg] = 0;
+		fpgaRegs_[RegistersEnum::CL0_SPI_TLERR_reg] = 0;
+		fpgaRegs_[RegistersEnum::CL1_SPI_TLERR_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL0_SPI_TMCNT_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL0_SPI_TMERR_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL1_SPI_TMCNT_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL1_SPI_TMERR_reg] = 0;
+		timer_->start(1000);
+		areTestsRunning = true; 
+		std::bitset<32> reg = fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg];
+		const int CL_START_CL_BUSY = 31;
+		reg[CL_START_CL_BUSY] = false;
+		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = reg.to_ulong();
+	}
+
+	void stopTests() noexcept {
+		timer_->stop();
+		areTestsRunning = false;
 	}
 };

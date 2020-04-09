@@ -27,14 +27,28 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	QTcpSocket tcpSocket_;
 	QDataStream in_;
 	mutable QString response_;
-	CL_SPI_CSR_reg clSpiCsrReg_{ this };
-	DL_SPI_CSR1_reg dlSpiCsrReg_{ this };
-	DFIFO_CSR_reg dFifoCsrReg_{ this };
+	CL_SPI_CSR_reg CL_SPI_CSR_reg_{ this };
+	CL_SPI_TLCNT_reg CL_SPI_TLCNT_reg_{ this };
+	CL0_SPI_TLERR_reg CL0_SPI_TLERR_reg_{ this };
+	CL1_SPI_TLERR_reg CL1_SPI_TLERR_reg_{ this };
+	DL_SPI_CSR1_reg DL_SPI_CSR1_reg_{ this };
+	DL0_SPI_TMCNT_reg DL0_SPI_TMCNT_reg_{ this };
+	DL0_SPI_TMERR_reg DL0_SPI_TMERR_reg_{ this };
+	DL1_SPI_TMCNT_reg DL1_SPI_TMCNT_reg_{ this };
+	DL1_SPI_TMERR_reg DL1_SPI_TMERR_reg_{ this };
+	DFIFO_CSR_reg DFIFO_CSR_reg_{ this };
+
+	std::optional<bool> isTestsRunning() noexcept {
+		auto clTests = CL_SPI_CSR_reg_.isTestRunning();
+		auto dlTests = DL_SPI_CSR1_reg_.isTestRunning();
+		auto fifoTests = DFIFO_CSR_reg_.isTestRunning();
+		return clTests && dlTests && fifoTests ? std::optional(*clTests || *dlTests || *fifoTests) : std::nullopt;
+	}
+
 	QString readError() const noexcept {
 		scpiCmd("SYSTem:ERR?");
 		return readResponse();
 	}
-
 	bool succeeded() const noexcept {
 		response_ = readResponse();
 		scpiCmd("*STB?");
@@ -306,14 +320,15 @@ public slots:
 		if (config.clockSource_)
 			setClockSource(*config.clockSource_);
 	}
-	// TODO START ONLY SELECTED TESTS, ADD STARTING DL AND FIFO TESTS
+
 	void startTestsRequest(TestsSelectionModel const& selectioModel) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
-				if (auto isTestRunning = clSpiCsrReg_.isTestRunning(); isTestRunning) {
-					if (!*isTestRunning && clSpiCsrReg_.startTests(CL_SPI_CSR_reg::BOTH))
-						emit testsStarted();
-				}
+				CL_SPI_CSR_reg_.startTests(selectioModel.at(TestTypeEnum::CL0), selectioModel.at(TestTypeEnum::CL1));
+				DL_SPI_CSR1_reg_.startTests(selectioModel.at(TestTypeEnum::DL0), selectioModel.at(TestTypeEnum::DL1));
+				if(selectioModel.at(TestTypeEnum::FIFO))
+					DFIFO_CSR_reg_.startTests();			
+				emit testsStarted();
 				invokeCmd("*DBG 0");
 			}
 			else {
@@ -322,14 +337,12 @@ public slots:
 		}
 	}
 
-	// TODO ADD STOPPING DL AND FIFO TESTS
 	void stopTestsRequest() noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
-				if (auto isTestRunning = clSpiCsrReg_.isTestRunning(); isTestRunning) {
-					if (*isTestRunning && clSpiCsrReg_.stopTests())
-						emit testsStopped();
-				}		
+				CL_SPI_CSR_reg_.stopTests();	
+				DL_SPI_CSR1_reg_.stopTests();
+				DFIFO_CSR_reg_.stopTests();
 				invokeCmd("*DBG 0");
 			}
 		}
@@ -337,20 +350,44 @@ public slots:
 			invokeCmd("SYSTem:LOCK 0");
 	}
 
-	void testCountersRequest() const noexcept {
-		TestsResultModel result;
-		//todo read from count registers
-		//CL0_SPI_TLCNT_reg - executed tests for CL0
-		//CL1_SPI_TLCNT_reg - executed tests for CL1
-		//CL0_SPI_TLERR_reg - errors for CL0
-		//CL1_SPI_TLERR_reg - errors for CL1
-		//DL0_SPI_TLCNT_reg - executed tests for DL0
-		//DL1_SPI_TLCNT_reg - executed tests for DL1
-		//DL0_SPI_TLERR_reg - errors for DL0
-		//DL1_SPI_TLERR_reg - errors for DL1
-		//DFIFO DFIFO_DATA  - executed tests for FIFO
-		// ?                - errors for FIFO
+	void testCountersRequest() noexcept {
+		if (auto testsRunning = isTestsRunning(); testsRunning && (!*testsRunning)) {
+			emit testsStopped();
+			return;
+		}
+			
+		Result result_CL0;
+		Result result_CL1;
+		Result result_DL0;
+		Result result_DL1;
+		Result result_FIFO;
+	
+		if (auto count = CL_SPI_TLCNT_reg_.value(); count) {
+			if(auto regCL0 = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0); regCL0 && *regCL0)
+				result_CL0.count_ = count;
+			if(auto regCL1 = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL1); regCL1 && *regCL1)
+				result_CL1.count_ = count;
+		}			
+		if (auto errors = CL0_SPI_TLERR_reg_.value(); errors)
+			result_CL0.errors_ = errors;
+		if (auto errors = CL1_SPI_TLERR_reg_.value(); errors)
+			result_CL1.errors_ = errors;
+		if (auto count = DL0_SPI_TMCNT_reg_.value(); count)
+			result_DL0.count_ = count;
+		if (auto errors = DL0_SPI_TMERR_reg_.value(); errors)
+			result_DL0.errors_ = errors;
+		if (auto count = DL1_SPI_TMCNT_reg_.value(); count)
+			result_DL1.count_ = count;
+		if (auto errors = DL1_SPI_TMERR_reg_.value(); errors)
+			result_DL1.errors_ = errors;
+		//TODO add counters read for FIFO test
 
+		TestsResultModel result;
+		result[TestTypeEnum::CL0] = result_CL0;
+		result[TestTypeEnum::CL1] = result_CL1;
+		result[TestTypeEnum::DL0] = result_DL0;
+		result[TestTypeEnum::DL1] = result_DL1;
+		result[TestTypeEnum::FIFO] = result_FIFO;
 		emit testCounters(result);
 	}
 

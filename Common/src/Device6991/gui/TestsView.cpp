@@ -1,17 +1,19 @@
 #include "../../../include/Device6991/gui/TestsView.h"
 
-TestsResultView::ResultView::ResultView(TestType const & type) noexcept : type_(type), testName_(new QLabel(toString(type))) {}
+TestsResultView::ResultView::ResultView(TestTypeEnum::Type const& type) noexcept : type_(type), testName_(new QLabel(TestTypeEnum::toString(type))) {}
 
 void TestsResultView::ResultView::setModel(Result const & result) noexcept {
-	count_->setText(QString::number(result.count_));
-	errors_->setText(QString::number(result.errors_));
+	if(result.count_)
+		count_->setText(QString::number(*result.count_));
+	if(result.errors_)
+		errors_->setText(QString::number(*result.errors_));
 }
 
 Result TestsResultView::ResultView::model() const noexcept {
 	return { count_->text().toInt(), errors_->text().toInt() };
 }
 
-void TestsResultView::addResult(TestType const type, QGridLayout * layout, int const row) noexcept {
+void TestsResultView::addResult(TestTypeEnum::Type const type, QGridLayout * layout, int const row) noexcept {
 	auto resultView = new ResultView(type);
 	layout->addWidget(resultView->testName_, row, 0, Qt::AlignLeft | Qt::AlignVCenter);
 	layout->addWidget(resultView->count_, row, 1, Qt::AlignCenter);
@@ -23,7 +25,7 @@ TestsResultView::TestsResultView(QWidget * parent) : QGroupBox("Result", parent)
 	auto layout = new QGridLayout;
 	for (auto resultLabel : resultLabels)
 		layout->addWidget(new QLabel(resultLabel), 0, layout->columnCount(), Qt::AlignCenter);
-	for (auto test : testTypes)
+	for (auto test : TestTypeEnum::TYPES)
 		addResult(test, layout, layout->rowCount());
 	setLayout(layout);
 }
@@ -47,7 +49,7 @@ void TestsResultView::resetModel() const noexcept {
 
 TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", parent) {
 	auto layout = new QVBoxLayout;
-	for (auto test : testTypes) {
+	for (auto test : TestTypeEnum::TYPES) {
 		auto testSelectView = new TestSelectView(test);
 		layout->addWidget(testSelectView->checkBox_);
 		testSelectViews_.push_back(testSelectView);
