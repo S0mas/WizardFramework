@@ -1,4 +1,4 @@
-#include "../../../include/Device6991/gui/TestsView.h"
+#include "../../../include/Device6991/gui/TestsController.h"
 
 TestsResultView::ResultView::ResultView(TestTypeEnum::Type const& type) noexcept : type_(type), testName_(new QLabel(TestTypeEnum::toString(type))) {}
 
@@ -70,14 +70,14 @@ TestsSelectionModel TestSelectionView::model() const noexcept {
 }
 
 
-void TestsView::createConnections() noexcept {
+void TestsController::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::testsStarted, startStopTestsButton_, &TwoStateButton::connected);
 	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
 	connect(deviceIF_, &Device6991::testCounters, resultView_, &TestsResultView::setModel);
 	initializeStateMachine();
 }
 
-void TestsView::initializeStateMachine() noexcept {
+void TestsController::initializeStateMachine() noexcept {
 	auto idle = new QState();
 	auto running = new QState();
 
@@ -85,7 +85,7 @@ void TestsView::initializeStateMachine() noexcept {
 	running->addTransition(deviceIF_, &Device6991::testsStopped, idle);
 
 	auto timer = new QTimer(this);
-	connect(timer, &QTimer::timeout, this, &TestsView::updateTime);
+	connect(timer, &QTimer::timeout, this, &TestsController::updateTime);
 	connect(timer, &QTimer::timeout, deviceIF_, &Device6991::testCountersRequest);
 
 	sm_.addState(idle);
@@ -110,14 +110,14 @@ void TestsView::initializeStateMachine() noexcept {
 	sm_.start();
 }
 
-void TestsView::updateTime() const noexcept {
+void TestsController::updateTime() const noexcept {
 	auto msecs = time_.elapsed();
 	auto seconds = (msecs / 1000) % 60;
 	auto minutes = (msecs / 60000) % 60;
 	testElapsedTimeLabel_->setText(QString("Time elapsed: %1m %2s").arg(minutes).arg(seconds));
 }
 
-TestsView::TestsView(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("", parent) {
+TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("", parent) {
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	auto hlayout = new QHBoxLayout;
 	hlayout->addWidget(selectionView_);

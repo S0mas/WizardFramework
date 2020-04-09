@@ -53,7 +53,7 @@ public:
 	TestsSelectionModel model() const noexcept;
 };
 
-class TestsView : public QGroupBox {
+class TestsController : public QGroupBox {
 	Q_OBJECT
 	TestsResultView* resultView_ = new TestsResultView;
 	TestSelectionView* selectionView_ = new TestSelectionView;
@@ -67,5 +67,5 @@ private:
 	void initializeStateMachine() noexcept;
 	void updateTime() const noexcept;
 public:
-	TestsView(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
+	TestsController(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
 };
