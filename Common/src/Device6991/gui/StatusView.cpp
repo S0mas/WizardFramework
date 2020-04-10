@@ -37,12 +37,13 @@ StatusView::StatusView(QWidget * parent) : QWidget(parent) {
 }
 
 void StatusView::update(DeviceState const& state) noexcept {
-	//idValue_->setText(toHex(state.id_));
-	//modeValue_->setText(toString(state.mode_));
-	//stateValue_->setText(state.state_);
+	idValue_->setText("0xFF");
+	modeValue_->setText("NONE");
+	stateValue_->setText(DeviceStateEnum::toString(state.state()));
 	QString list;
-	//for (auto stream : state.streams_)
-	//	stream.second ? list.append(QString("[<font color=\"green\">%1</font>]").arg(stream.first)) : list.append(QString("[<font color=\"red\">%1</font>]").arg(stream.first));
+	int streamId = 1;
+	for (auto streamState : state.linksConnectionStatus())
+		streamState ? list.append(QString("[<font color=\"green\">%1</font>]").arg(streamId++)) : list.append(QString("[<font color=\"red\">%1</font>]").arg(streamId++));
 	dataStreamValue_->setText(list);
 	currentTimeValue_->setText(QDateTime::currentDateTime().toString("dd.MM.yyyy, hh:mm:ss"));
 }

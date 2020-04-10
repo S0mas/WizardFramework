@@ -13,6 +13,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+#include <QMessageBox>
 #include <QVBoxLayout>
 
 #include "../Device6991.h"
@@ -54,6 +55,7 @@ private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
 	Configuration6991 model() const noexcept;
+	void showError(QString const&) noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
 public:

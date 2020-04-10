@@ -1,19 +1,23 @@
 #include "../../include/gui/EnumSelector.h"
-
+#include "../../include/Device6991/Defines6991.h"
 #include <QHBoxLayout>
 #include <QLabel>
 
 void EnumSelector::createConnections() const noexcept {
 	QObject::connect(comboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		[this](int const index) {
-			//lineEdit_->setText(comboBox_->toHex());
-			//comboBox_->isCustomSelected() ? lineEdit_->setEnabled(true) : lineEdit_->setDisabled(true);
+			lineEdit_->setText(toHex(comboBox_->currentData().toUInt(), 8));
+			isCustomSelected() ? lineEdit_->setEnabled(true) : lineEdit_->setDisabled(true);
 			emit enumChanged(comboBox_->currentData().toInt());
 		}
 	);
 	emit comboBox_->currentIndexChanged(comboBox_->currentIndex());
 }
 
+bool EnumSelector::isCustomSelected() const noexcept {
+	return cutomEnabled_ && comboBox_->currentText() == "CUSTOM";
+}
+
 unsigned int EnumSelector::value() const noexcept {
-	return comboBox_->currentData().toInt();
+	return isCustomSelected() ? lineEdit_->text().toUInt(nullptr, 16) : comboBox_->currentData().toInt();
 }

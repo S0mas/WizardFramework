@@ -81,7 +81,7 @@ void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned
 	if (isEnabled() && checkBox_->isChecked()) {
 		if (cmd == Commands1Enum::READ) {
 			if (auto reg = deviceIF_->readFcRegister(index_, address); reg)
-				lineEdit_->setText(QString::number(*reg, 16));
+				lineEdit_->setText(toHex(*reg, 8));
 			else
 				QMessageBox::critical(this, "Error", QString("Read operation faild for frontend card %1!").arg(index_));
 		}

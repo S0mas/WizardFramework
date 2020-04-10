@@ -10,6 +10,7 @@
 #include <QTcpSocket>
 #include <QRandomGenerator>
 #include <array>
+#include <algorithm>
 #include <vector>
 #include "Command.h"
 #include "Defines6991.h"
@@ -22,10 +23,12 @@
 
 class HardwareMock6991 : public QObject {
 	Q_OBJECT
+	const int ERROR_DEBUG_PRIVATE_REGISTER = 0xFACE;
 	Configuration6991 config_;
 	PtpTime ptpTime_;
-	mutable std::bitset<8> stb_ = 0;
-	mutable QString lastError_;
+	std::bitset<8> stb_ = 0;
+	QString lastError_;
+	DeviceStateEnum::Type state_ = DeviceStateEnum::INIT;
 	std::array<QTcpServer*, 4> servers_;
 	std::array<QTcpSocket*, 4> sockets_;
 	std::map<int, int> fpgaRegs_;
@@ -33,10 +36,18 @@ class HardwareMock6991 : public QObject {
 	std::array<std::map<int, int>, 2> fcRegs_;
 	int controllerId_ = 0;
 
-	bool isAcqActive_ = false;
 	bool dbgModeOn_ = false;
 	bool areTestsRunning = false;
+	bool acquisitionStoppedOnError_ = false;
+
 	mutable bool state = false;
+
+	void checkError() noexcept {
+		if (fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] != 0) {
+			setError("DEBUG_ERROR_TRIGGERED");
+			fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
+		}
+	}
 
 	void checkTestsRegs() noexcept {
 		bool testsStarted = false;
@@ -93,6 +104,8 @@ class HardwareMock6991 : public QObject {
 			if (testsStopped)
 				stopTests();
 		}
+
+		checkError();
 	}
 
 	void updateCounters() noexcept {
@@ -115,17 +128,23 @@ class HardwareMock6991 : public QObject {
 				countersRegsToUpdate.push_back(RegistersEnum::DL1_SPI_TMERR_reg);
 		}
 		for (auto regType : countersRegsToUpdate)
-			++fpgaRegs_[regType];			
+			++fpgaRegs_[regType];
 	}
 	QTimer* timer_;
 	TestsSelectionModel testSelectionModel_;
 
-	void setError(QString const& errorMsg) const noexcept {
+	void setError(QString const& errorMsg) noexcept {
 		lastError_ = errorMsg;
 		stb_.set(2);
+		if (isAcqActive() && stopOnError()) {
+			stopAcquisition();
+			state_ = DeviceStateEnum::ERROR;
+			acquisitionStoppedOnError_ = true;
+		}
 	}
 public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
+		fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
 		timer_ = new QTimer(this);
 		auto checkTestsRegsTimer = new QTimer(this);
 		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
@@ -133,12 +152,14 @@ public:
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
 		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 0;
+		fpgaRegs_[0x4680] = 0; //ACQ_CSR_reg
 		checkTestsRegsTimer->start(500);
 		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
 			servers_[i]->setMaxPendingConnections(1);
 			servers_[i]->listen(QHostAddress::LocalHost, i+1);
+			sockets_[i] = nullptr;
 			connect(servers_[i], &QTcpServer::newConnection,
 				[this, i]() {
 					sockets_[i] = servers_[i]->nextPendingConnection();
@@ -155,10 +176,11 @@ public:
 		}
 	}
 
-	QString readError() const noexcept {
+	QString readError() noexcept {
 		stb_.set(2, false);
 		auto tmp = lastError_;
 		lastError_ = "";
+		state_ = isAcqActive() ? DeviceStateEnum::ACQUISITION : DeviceStateEnum::IDLE;	
 		return tmp;
 	}
 
@@ -166,9 +188,34 @@ public:
 		return stb_.to_ulong();
 	}
 
+	bool isFifoOverflow() const noexcept {
+		return false; // TODO
+	}
+
+	bool isFifoUnderflow() const noexcept {
+		return false; // TODO
+	}
+
+	int scansInFifo() const noexcept {
+		return 500;
+	}
+
+	bool wasAcqStoppedOnError() const noexcept {
+		return acquisitionStoppedOnError_; 
+	}
+
 	DeviceState status() const noexcept {
-		DeviceState status;
-		return status;
+		DeviceState state;
+		state.setFifoOverflow(isFifoOverflow());
+		state.setFifoUnderflow(isFifoUnderflow());
+		state.setNumberOfScansInFifo(scansInFifo());
+		state.setAcquisitionStoppedOnError(wasAcqStoppedOnError());
+		std::array<bool, 4> links;
+		std::transform(sockets_.begin(), sockets_.end(), links.begin(),
+			[](QTcpSocket* socket) { return socket != nullptr; });
+		state.setLinksConnectionStatus(links);
+		state.setState(state_);
+		return state;
 	}
 
 	ScanRateModel scanRate() const noexcept {
@@ -266,16 +313,29 @@ public:
 		controllerId_ = 0;
 	}
 
+	bool isAcqActive() const noexcept {
+		return fpgaRegs_.at(0x4680) & 0x80000000;
+	}
+
+	void setAcqActive(bool const state) noexcept {
+		state ? fpgaRegs_[0x4680] |= 0x80000000 : fpgaRegs_[0x4680] &= 0x7FFFFFFF;
+	}
+
 	void startAcquisition() noexcept {
-		if(!isAcqActive_)
-			isAcqActive_ = true;
+		if (!isAcqActive()) {
+			setAcqActive(true);
+			acquisitionStoppedOnError_ = false;
+			state_ = DeviceStateEnum::ACQUISITION;
+		}
 		else
 			setError("ERR: The acquisition is already active.");
 	}
 
 	void stopAcquisition() noexcept {
-		if (isAcqActive_)
-			isAcqActive_ = false;
+		if (isAcqActive()) {
+			setAcqActive(false);
+			state_ = DeviceStateEnum::IDLE;
+		}
 		else
 			setError("ERR: The acquisition is already stopped.");
 	}

@@ -93,3 +93,12 @@ class DL1_SPI_TMERR_reg : public Register {
 public:
 	DL1_SPI_TMERR_reg(Device6991*);
 };
+
+class ACQ_CSR_reg : public Register {
+	const int ACQ_ON = 31;
+public:
+	ACQ_CSR_reg(Device6991*);
+
+	std::optional<bool> isAcqActive() noexcept;
+};
+

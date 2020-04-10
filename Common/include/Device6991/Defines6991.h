@@ -466,7 +466,14 @@ class DeviceState {
 	DeviceStateEnum::Type state_;
 public:
 	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		return { data_[31], data_[30], data_[29], data_[28] };
+		return { data_[28], data_[29], data_[30], data_[31] };
+	}
+
+	void setLinksConnectionStatus(std::array<bool, 4> const& linksStatus) noexcept {
+		data_[31] = linksStatus[3];
+		data_[30] = linksStatus[2];
+		data_[29] = linksStatus[1];
+		data_[28] = linksStatus[0];
 	}
 
 	bool linksConnectionStatus(int const linkIndex) const noexcept {
@@ -481,12 +488,29 @@ public:
 		return data_[13];
 	}
 
+	void setFifoUnderflow(bool const state) noexcept {
+		data_[12] = state;
+	}
+
+	void setFifoOverflow(bool const state) noexcept {
+		data_[13] = state;
+	}
+
 	bool acquisitionStoppedOnError() const noexcept {
 		return data_[16];
 	}
 
+	void setAcquisitionStoppedOnError(bool const state) noexcept {
+		data_[16] = state;
+	}
+
 	unsigned int numberOfScansInFifo() const noexcept {
 		return data_.to_ulong() & 0xFFF;
+	}
+
+	void setNumberOfScansInFifo(unsigned int const numbersOfScansInFifo) noexcept {
+		data_ &= 0xFFFFF000;
+		data_ |= (numbersOfScansInFifo & 0xFFF);
 	}
 
 	void set(QString const& hexString) noexcept {

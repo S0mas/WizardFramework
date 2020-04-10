@@ -122,3 +122,9 @@ DL0_SPI_TMERR_reg::DL0_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersE
 DL1_SPI_TMCNT_reg::DL1_SPI_TMCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMCNT_reg, deviceIF) {}
 
 DL1_SPI_TMERR_reg::DL1_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMERR_reg, deviceIF) {}
+
+ACQ_CSR_reg::ACQ_CSR_reg(Device6991* deviceIF) : Register(0x4680, deviceIF) {}
+
+std::optional<bool> ACQ_CSR_reg::isAcqActive() noexcept {
+	return readHw() ? std::optional{ data_.test(ACQ_ON) } : std::nullopt;
+}

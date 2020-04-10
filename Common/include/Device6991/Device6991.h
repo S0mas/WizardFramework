@@ -27,6 +27,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	QTcpSocket tcpSocket_;
 	QDataStream in_;
 	mutable QString response_;
+	bool isAcqActive_ = false;
 	CL_SPI_CSR_reg CL_SPI_CSR_reg_{ this };
 	CL_SPI_TLCNT_reg CL_SPI_TLCNT_reg_{ this };
 	CL0_SPI_TLERR_reg CL0_SPI_TLERR_reg_{ this };
@@ -37,6 +38,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	DL1_SPI_TMCNT_reg DL1_SPI_TMCNT_reg_{ this };
 	DL1_SPI_TMERR_reg DL1_SPI_TMERR_reg_{ this };
 	DFIFO_CSR_reg DFIFO_CSR_reg_{ this };
+	ACQ_CSR_reg ACQ_CSR_reg_{ this };
 
 	std::optional<bool> isTestsRunning() noexcept {
 		auto clTests = CL_SPI_CSR_reg_.isTestRunning();
@@ -56,7 +58,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		bool eva = stb[2];
 		if (eva) {
 			auto error = readError();
-			qDebug() << error;
 			emit reportError(error);
 			return false;
 		}
@@ -69,13 +70,23 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		return succeeded();
 	}
 
-	DeviceState extractStatus(QString const& statusData) const noexcept {
-		DeviceState status;
-		//TODO EXTRACT STATUS
-		return status;
+	DeviceState extractStatus(QString const& stateData) noexcept {
+		auto list = stateData.split(',');
+		DeviceState state;
+		state.setState(DeviceStateEnum::fromString(list[0]));
+		state.set(list[1]);
+		if (auto acqRealState = isAcquisitionActive(); acqRealState) {
+			if (*acqRealState && !isAcqActive_) 
+				emit acquisitionStarted();
+			else if (!*acqRealState && isAcqActive_) 
+				emit acquisitionStopped();
+			isAcqActive_ = *acqRealState;
+		}
+			
+		return state;
 	}
 
-	std::optional<DeviceState> status() const noexcept {
+	std::optional<DeviceState> status() noexcept {
 		return invokeCmd(QString("SYSTem:STATe?")) ? std::optional{extractStatus(response_)} : std::nullopt;
 	}
 
@@ -233,10 +244,8 @@ public:
 	QString loadFirmwareRevision() const override { return ""; }
 	QString loadDriverRevision() const override { return ""; }
 
-	std::optional<bool> isAcquisitionActive() const noexcept {
-		if (auto opt = status(); opt)
-			return std::optional{opt->state() == DeviceStateEnum::ACQUISITION};
-		return std::nullopt;
+	std::optional<bool> isAcquisitionActive() noexcept {
+		return ACQ_CSR_reg_.isAcqActive();
 	}
 	std::optional<int> controllerId() const noexcept {
 		return invokeCmd("SYSTem:LOCK?") ? std::optional{ response_.toInt()} : std::nullopt;
@@ -251,7 +260,7 @@ public slots:
 		closeSocketConnection();
 	}
 
-	void deviceStateRequest() const noexcept {
+	void deviceStateRequest() noexcept {
 		if (invokeCmd("SYSTem:STATe?"))
 			emit state(extractStatus(response_));
 	}
@@ -261,14 +270,18 @@ public slots:
 			emit controlReleased();
 	}
 
-	void startAcquisitionRequest() const noexcept {
-		if(invokeCmd("MEASure:ASYNc"))
+	void startAcquisitionRequest() noexcept {
+		if (invokeCmd("MEASure:ASYNc")) {
+			isAcqActive_ = true;
 			emit acquisitionStarted();
+		}
 	}
 
-	void stopAcquisitionRequest() const noexcept {
-		if (invokeCmd("MEASure:ABORt"))
+	void stopAcquisitionRequest() noexcept {
+		if (invokeCmd("MEASure:ABORt")) {
+			isAcqActive_ = false;
 			emit acquisitionStopped();
+		}
 	}
 
 	void takeControlRequest(int const id) const noexcept {

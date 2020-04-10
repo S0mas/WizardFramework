@@ -11,11 +11,13 @@ class EnumSelector : public QWidget {
 	QLabel* label_;
 	QComboBox* comboBox_ = new QComboBox;
 	QLineEdit* lineEdit_ = new QLineEdit;
+	bool cutomEnabled_;
 	void createConnections() const noexcept;
+	bool isCustomSelected() const noexcept;
 public:
 	template<typename T>
-	EnumSelector(T const& t, QString const& name, bool const translatesToOtherValue = false, QWidget* parent = nullptr)
-		: QWidget(parent), label_(new QLabel(name)) {
+	EnumSelector(T const& t, QString const& name, bool const cutomEnabled = false, int const inputwidth = 8, QWidget* parent = nullptr)
+		: QWidget(parent), label_(new QLabel(name)), cutomEnabled_(cutomEnabled) {
 		for (auto concreteEnum : T::TYPES)
 			comboBox_->addItem(T::toString(concreteEnum), concreteEnum);
 
@@ -25,12 +27,13 @@ public:
 		auto layout = new QHBoxLayout;
 		layout->addWidget(label_);
 		layout->addWidget(comboBox_);
-		//if (translatesToOtherValue) {
-		//	lineEdit_->setMaximumWidth(50);
-		//	lineEdit_->setDisabled(true);
-		//	lineEdit_->setInputMask(comboBox_->inputMask());
-		//	layout->addWidget(lineEdit_);
-		//}
+		if (cutomEnabled) {
+			lineEdit_->setMaximumWidth(70);
+			lineEdit_->setDisabled(true);
+			lineEdit_->setInputMask(QString("\\0\\x%1;0").arg(QString(inputwidth, 'H')));
+			layout->addWidget(lineEdit_);
+			comboBox_->addItem("CUSTOM", 0x00);
+		}
 
 		setLayout(layout);
 		createConnections();

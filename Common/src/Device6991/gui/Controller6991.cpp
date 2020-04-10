@@ -7,6 +7,7 @@ void Controller6991::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::disconnectedDataStream, connectDisconnectButton_, &TwoStateButton::disconnected);
 	connect(deviceIF_, &Device6991::state, statusView_, &StatusView::update);
 	connect(deviceIF_, &Device6991::configuration, this, &Controller6991::setModel);
+	connect(deviceIF_, &Device6991::reportError, this, &Controller6991::showError);
 
 	connect(setModeButton_, &QPushButton::clicked,
 		[this]() {
@@ -98,10 +99,15 @@ Configuration6991 Controller6991::model() const noexcept {
 	config.startMode_ = startModeView_->model();
 	config.stopMode_ = stopModeView_->model(*config.scanRate_);
 	config.clockSource_ = static_cast<ClockSourceEnum::Type>(clockSourceComboBox->currentData().toInt());
+	//TODO
 	//config.timestamps_ =
 	//config.scansPerDirectReadPacket_ = 
 	//config.fansMode_ =
 	return config;
+}
+
+void Controller6991::showError(QString const& msg) noexcept {
+	QMessageBox::critical(this, "Error", QString("Error Occured: %1").arg(msg));
 }
 
 void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
@@ -111,7 +117,7 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	stopModeView_->setModel(configuration.stopMode_);
 	if (configuration.clockSource_)
 		clockSourceComboBox->setCurrentIndex(*configuration.clockSource_);
-
+	//TODO
 	//if (configuration.fansMode_)
 	//	//
 	//if (configuration.timestamps_)

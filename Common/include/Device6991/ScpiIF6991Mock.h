@@ -82,7 +82,7 @@ public:
 		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("STATe?", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.status().toUInt(), 16);
+				responseContainer_ = QString("%1,%2").arg(DeviceStateEnum::toString(devMock_.status().state())).arg(QString::number(devMock_.status().toUInt(), 16));
 				return 0;
 			}
 		)));
