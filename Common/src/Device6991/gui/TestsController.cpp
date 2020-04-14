@@ -49,11 +49,47 @@ void TestsResultView::resetModel() const noexcept {
 
 TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", parent) {
 	auto layout = new QVBoxLayout;
+	TestSelectView* dl0CheckBox = nullptr;
+	TestSelectView* dl1CheckBox = nullptr;
+	TestSelectView* fifoCheckBox = nullptr;
+
+
 	for (auto test : TestTypeEnum::TYPES) {
 		auto testSelectView = new TestSelectView(test);
 		layout->addWidget(testSelectView->checkBox_);
 		testSelectViews_.push_back(testSelectView);
+		if (test == TestTypeEnum::DL0)
+			dl0CheckBox = testSelectView;
+		else if (test == TestTypeEnum::DL1)
+			dl1CheckBox = testSelectView;
+		else if (test == TestTypeEnum::FIFO)
+			fifoCheckBox = testSelectView;
 	}
+
+	//FIFO AND DL TESTS ARE EXCLUDING EACH OTHER
+	connect(fifoCheckBox->checkBox_, &QCheckBox::stateChanged, 
+		[dl0CheckBox, dl1CheckBox](int const state) {
+			if (state == Qt::Checked) {
+				dl0CheckBox->checkBox_->setChecked(false);
+				dl1CheckBox->checkBox_->setChecked(false);
+			}
+		}
+	);
+
+	connect(dl0CheckBox->checkBox_, &QCheckBox::stateChanged,
+		[fifoCheckBox](int const state) {
+			if (state == Qt::Checked)
+				fifoCheckBox->checkBox_->setChecked(false);
+		}
+	);
+
+	connect(dl1CheckBox->checkBox_, &QCheckBox::stateChanged,
+		[fifoCheckBox](int const state) {
+			if (state == Qt::Checked)
+				fifoCheckBox->checkBox_->setChecked(false);
+		}
+	);
+
 	setLayout(layout);
 }
 
