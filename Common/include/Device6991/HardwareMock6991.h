@@ -34,6 +34,7 @@ class HardwareMock6991 : public QObject {
 	std::map<int, int> fpgaRegs_;
 	std::map<int, int> cpuRegs_;
 	std::array<std::map<int, int>, 2> fcRegs_;
+	QTimer* acqStartTimer_;
 	int controllerId_ = 0;
 
 	bool dbgModeOn_ = false;
@@ -146,8 +147,10 @@ public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
 		fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
 		timer_ = new QTimer(this);
+		acqStartTimer_ = new QTimer(this);
 		auto checkTestsRegsTimer = new QTimer(this);
 		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
+
 		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
@@ -232,10 +235,19 @@ public:
 
 	void setStartMode(AcquisitionStartModeEnum::Type const mode) noexcept {
 		config_.startMode_.mode_ = mode;
+		if (mode == AcquisitionStartModeEnum::PTP_ALARM) {
+			acqStartTimer_->stop();
+			auto mseconds = (ptpAlarm().seconds_ - ptpTime().seconds_) * 1000;
+			(mseconds > 0) ? acqStartTimer_->singleShot(mseconds, this, &HardwareMock6991::startAcquisition) : startAcquisition();
+		}		
+		else
+			acqStartTimer_->stop();
 	}
 
 	PtpTime ptpTime() const noexcept {
-		return ptpTime_;
+		PtpTime time;
+		time.seconds_ = static_cast<int>(QDateTime::currentDateTime().currentSecsSinceEpoch());
+		return time;
 	}
 
 	bool stopOnError() const noexcept {
@@ -296,6 +308,11 @@ public:
 
 	void setPtpAlarm(PtpTime const alarmTime) noexcept {
 		config_.startMode_.ptpAlarm_ = alarmTime;
+		if (startMode() == AcquisitionStartModeEnum::PTP_ALARM) {
+			acqStartTimer_->stop();
+			auto mseconds = (ptpAlarm().seconds_ - ptpTime().seconds_) * 1000;
+			(mseconds > 0) ? acqStartTimer_->singleShot(mseconds, this, &HardwareMock6991::startAcquisition) : startAcquisition();
+		}
 	}
 
 	int scansNoPerDirectReadPacket() const noexcept {

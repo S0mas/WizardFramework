@@ -47,13 +47,16 @@ AcquisitionStartModeModel AcquisitionStartModeView::model() const noexcept {
 	AcquisitionStartModeModel values;
 	values.mode_ = static_cast<AcquisitionStartModeEnum::Type>(modeComboBox_->currentData().toInt());
 	if (values.mode_ == AcquisitionStartModeEnum::PTP_ALARM)
-		values.ptpAlarm_ = { 0, 0 }; // TODO calculate ptp alarm time from startDateTime_->dateTime();
+		values.ptpAlarm_ = { static_cast<int>(startDateTime_->dateTime().toSecsSinceEpoch()), 0 };
 	return values;
 }
 
 void AcquisitionStartModeView::setModel(AcquisitionStartModeModel const& model) noexcept {
 	if(model.mode_)
 		modeComboBox_->setCurrentIndex(*model.mode_);
-	if(model.ptpAlarm_)
-		startDateTime_->setDateTime(QDateTime()); // TODO calculate QDateTime from ptp alarm
+	if (model.ptpAlarm_) {
+		QDateTime dateTime;
+		dateTime.setSecsSinceEpoch((*model.ptpAlarm_).seconds_);
+		startDateTime_->setDateTime(dateTime);
+	}
 }

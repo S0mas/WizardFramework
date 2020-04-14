@@ -170,7 +170,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	std::optional<PtpTime> ptpAlarm() const noexcept {
-		if (invokeCmd(QString("TRIGger:PTP:ALARm?"))) {
+		if (invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm?"))) {
 			auto list = response_.split(',');
 			return std::optional(PtpTime{ list[0].toInt(), list[1].toInt() });
 		}
@@ -178,7 +178,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	void setPtpAlarm(PtpTime const alarmTime) const noexcept {
-		invokeCmd(QString("TRIGger:PTP:ALARm %1,%2").arg(alarmTime.seconds_).arg(alarmTime.nanoseconds_));
+		invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm %1,%2").arg(alarmTime.seconds_).arg(alarmTime.nanoseconds_));
 	}
 
 	std::optional<int> scansNoPerDirectReadPacket() const noexcept { 
@@ -271,7 +271,7 @@ public slots:
 	}
 
 	void startAcquisitionRequest() noexcept {
-		if (invokeCmd("MEASure:ASYNc")) {
+		if (auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && invokeCmd("MEASure:ASYNc")) {
 			isAcqActive_ = true;
 			emit acquisitionStarted();
 		}
@@ -318,9 +318,9 @@ public slots:
 		if (config.fansMode_)
 			setFansMode(*config.fansMode_);
 		if (config.startMode_.mode_) {
-			setStartMode(*config.startMode_.mode_);
-			if(*config.startMode_.mode_ == AcquisitionStartModeEnum::PTP_ALARM && config.startMode_.ptpAlarm_)
+			if (*config.startMode_.mode_ == AcquisitionStartModeEnum::PTP_ALARM && config.startMode_.ptpAlarm_)
 				setPtpAlarm(*config.startMode_.ptpAlarm_);
+			setStartMode(*config.startMode_.mode_);
 		}
 		if (config.stopMode_.stopOnError_)
 			setStopOnError(*config.stopMode_.stopOnError_);	

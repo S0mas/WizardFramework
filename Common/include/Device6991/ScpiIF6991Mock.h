@@ -250,13 +250,16 @@ public:
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("PTPalarm", ScpiFunction::getScpiFunction<double, double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("PTP"));
+
+		navigator = root->findCmd(std::vector<std::string>({ "CONFigure", "TRIGger", "PTP" }));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ALARm", ScpiFunction::getScpiFunction<double, double>(
 			[this](std::vector<ScpiArg> const& args) {
 				devMock_.setPtpAlarm({ static_cast<int32_t>(args[0].get<double>()), static_cast<int32_t>(args[1].get<double>()) });
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("PTPalarm?", ScpiFunction::getScpiFunction<>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ALARm?", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
 				responseContainer_ = devMock_.ptpAlarm().toString();
 				return 0;
