@@ -261,8 +261,11 @@ public slots:
 	}
 
 	void deviceStateRequest() noexcept {
-		if (invokeCmd("SYSTem:STATe?"))
-			emit state(extractStatus(response_));
+		if (invokeCmd("SYSTem:STATe?")) {
+			auto devState = extractStatus(response_);
+			devState.setControllerId(controllerId());
+			emit state(devState);
+		}	
 	}
 
 	void releaseControlRequest() const noexcept {

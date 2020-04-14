@@ -6,8 +6,8 @@ class DeviceState;
 
 class StatusView : public QWidget {
 	Q_OBJECT
-	QLabel* idLabel_ = new QLabel("Id:");
-	QLabel* idValue_ = new QLabel;
+	QLabel* masterIdLabel_ = new QLabel("Master Id:");
+	QLabel* masterIdValue_ = new QLabel;
 	QLabel* modeLabel_ = new QLabel("ControlMode:");
 	QLabel* modeValue_ = new QLabel;
 	QLabel* dataStreamLabel_ = new QLabel("Data Stream:");
@@ -18,6 +18,7 @@ class StatusView : public QWidget {
 	QLabel* currentTimeValue_ = new QLabel;
 public:
 	StatusView(QWidget* parent = nullptr);
+	void setMode(QString const& mode) noexcept;
 public slots:
 	void update(DeviceState const& status) noexcept;
 };

@@ -464,6 +464,7 @@ struct DeviceStateEnum {
 class DeviceState {
 	std::bitset<32> data_;
 	DeviceStateEnum::Type state_;
+	std::optional<int> controllerId_;
 public:
 	std::array<bool, 4> linksConnectionStatus() const noexcept {
 		return { data_[28], data_[29], data_[30], data_[31] };
@@ -536,6 +537,14 @@ public:
 
 	uint32_t toUInt() const noexcept {
 		return data_.to_ulong();
+	}
+
+	void setControllerId(std::optional<int> const& controllerId) noexcept {
+		controllerId_ = controllerId;
+	}
+
+	std::optional<int> controllerId() const noexcept {
+		return controllerId_;
 	}
 };
 

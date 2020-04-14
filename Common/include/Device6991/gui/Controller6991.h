@@ -29,7 +29,7 @@ class Controller6991 : public QGroupBox {
 	Q_OBJECT
 	QStateMachine sm_;
 	QTime time_;
-	unsigned int id_;
+	QSpinBox* idEdit_ = new QSpinBox;
 	QWidget* modeGroup_ = new QGroupBox("ControlMode");
 	QComboBox* comboBoxMode_ = new QComboBox;
 	QPushButton* setModeButton_ = new QPushButton("Set");
@@ -56,8 +56,9 @@ private:
 	void initializeStateMachine() noexcept;
 	Configuration6991 model() const noexcept;
 	void showError(QString const&) noexcept;
+	int id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
 public:
-	Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, unsigned int const id, QWidget* parent = nullptr);
+	Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
 };
