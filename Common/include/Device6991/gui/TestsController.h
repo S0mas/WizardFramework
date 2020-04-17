@@ -9,14 +9,28 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QStateMachine>
 #include <QTime>
 #include <QTimer>
 #include "../Device6991.h"
-#include <map>
-#include <set>
 #include "../../gui/TwoStateButton.h"
 
+class FifoTestView : public QGroupBox {
+	QSpinBox* blockSizeEdit_ = new QSpinBox;
+	QDoubleSpinBox* rateEdit_ = new QDoubleSpinBox;
+	QSpinBox* tresholdEdit_ = new QSpinBox;
+	QLabel* samplesInFifoCount_ = new QLabel;
+	QLabel* overflowCounter_ = new QLabel;
+	QLabel* dataError_ = new QLabel;
+	QLabel* passThresholdCounter_ = new QLabel;
+	QLabel* lastSample_ = new QLabel;
+public:
+	FifoTestView(QWidget* parent = nullptr);
+	FifoTestModel::Configuration config() const noexcept;
+	void setModel(FifoTestModel const& model) noexcept;
+};
 class TestsResultView : public QGroupBox {
 	Q_OBJECT
 	struct ResultView {
@@ -51,6 +65,8 @@ public:
 	TestSelectionView(QWidget* parent = nullptr);
 	void setModel(TestsSelectionModel const& model) const noexcept;
 	TestsSelectionModel model() const noexcept;
+signals:
+	void fifoSelected(bool const selected) const;
 };
 
 class TestsController : public QGroupBox {
@@ -59,9 +75,10 @@ class TestsController : public QGroupBox {
 	TestSelectionView* selectionView_ = new TestSelectionView;
 	QLabel* testElapsedTimeLabel_ = new QLabel("Time elapsed:");
 	Device6991* deviceIF_;
-	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { deviceIF_->startTestsRequest(selectionView_->model()); }, "Stop", [this]() {deviceIF_->stopTestsRequest(); });
+	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { deviceIF_->startTestsRequest({ selectionView_->model(), fifoTestView_->config() }); }, "Stop", [this]() {deviceIF_->stopTestsRequest(); });
 	QStateMachine sm_;
 	QTime time_;
+	FifoTestView* fifoTestView_ = new FifoTestView;
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;

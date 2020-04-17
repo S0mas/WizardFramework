@@ -280,12 +280,18 @@ struct RegistersEnum {
 		DL0_SPI_TMERR_reg = 0x4524,
 		DL1_SPI_TMCNT_reg = 0x4528,
 		DL1_SPI_TMERR_reg = 0x452C,
+		DEBUG_CSR_reg = 0x4620,
+		DEBUG_CLK_RATE_reg = 0x4624,
+		ACQ_CSR_reg = 0x4680,
 		DFIFO_CSR_reg = 0x4700,
+		DFIFO_PFLAG_THR_reg = 0x4704,
+		DFIFO = 0x10000,
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 10> TYPES = { CL_SPI_CSR_reg, CL_SPI_TLCNT_reg, CL0_SPI_TLERR_reg,
-		CL1_SPI_TLERR_reg, DL_SPI_CSR1_reg, DL0_SPI_TMCNT_reg, DL0_SPI_TMERR_reg, DL1_SPI_TMCNT_reg, DL1_SPI_TMERR_reg, DFIFO_CSR_reg };
+	inline constexpr static std::array<Type, 15> TYPES = { CL_SPI_CSR_reg, CL_SPI_TLCNT_reg, CL0_SPI_TLERR_reg,
+		CL1_SPI_TLERR_reg, DL_SPI_CSR1_reg, DL0_SPI_TMCNT_reg, DL0_SPI_TMERR_reg, DL1_SPI_TMCNT_reg, DL1_SPI_TMERR_reg,
+		DEBUG_CSR_reg, DEBUG_CLK_RATE_reg, ACQ_CSR_reg, DFIFO_CSR_reg, DFIFO_PFLAG_THR_reg, DFIFO };
 
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
@@ -307,8 +313,18 @@ struct RegistersEnum {
 			return "DL1_SPI_TMCNT_reg";
 		case DL1_SPI_TMERR_reg:
 			return "DL1_SPI_TMERR_reg";
+		case DEBUG_CSR_reg:
+			return "DEBUG_CSR_reg";
+		case DEBUG_CLK_RATE_reg:
+			return "DEBUG_CLK_RATE_reg";
 		case DFIFO_CSR_reg:
 			return "DFIFO_CSR_reg";
+		case ACQ_CSR_reg:
+			return "ACQ_CSR_reg";
+		case DFIFO_PFLAG_THR_reg:
+			return "DFIFO_PFLAG_THR_reg";
+		case DFIFO:
+			return "DFIFO";
 		default:
 			return "invalid";
 		}
@@ -333,8 +349,18 @@ struct RegistersEnum {
 			return DL1_SPI_TMCNT_reg;
 		else if (mode == "DL1_SPI_TMERR_reg")
 			return DL1_SPI_TMERR_reg;
+		else if (mode == "DEBUG_CSR_reg")
+			return DEBUG_CSR_reg;
+		else if (mode == "DEBUG_CLK_RATE_reg")
+			return DEBUG_CLK_RATE_reg;
 		else if (mode == "DFIFO_CSR_reg")
 			return DFIFO_CSR_reg;
+		else if (mode == "ACQ_CSR_reg")
+			return ACQ_CSR_reg;
+		else if (mode == "DFIFO_PFLAG_THR_reg")
+			return DFIFO_PFLAG_THR_reg;
+		else if (mode == "DFIFO")
+			return DFIFO;
 		return INVALID;
 	}
 };
@@ -658,3 +684,27 @@ struct Result {
 
 using TestsResultModel = std::map<TestTypeEnum::Type, Result>;
 using TestsSelectionModel = std::map<TestTypeEnum::Type, bool>;
+struct FifoTestModel {
+	struct Configuration {
+		std::optional<uint32_t> blockSize_;
+		std::optional<uint32_t> rate_;
+		std::optional<uint32_t> treshold_;
+	};
+
+	Configuration config_;
+	std::optional<uint32_t> samplesCount_;
+	std::optional<uint32_t> lastSample_;
+	uint32_t overflows_ = 0;
+	uint32_t dataErrorsCount_ = 0;
+	uint32_t passTresholdCount_ = 0;
+};
+
+struct StartTestsRequest {
+	TestsSelectionModel model;
+	FifoTestModel::Configuration fifoTestConfig_;
+};
+
+struct TestsStatus {
+	TestsResultModel model;
+	FifoTestModel fifoTestModel_;
+};

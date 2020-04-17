@@ -13,7 +13,7 @@ protected:
 	bool writeHw() const noexcept;
 public:
 	Register(int const, Device6991*);
-	std::optional<int> value() noexcept;
+	std::optional<uint32_t> value() noexcept;
 };
 
 class CL_SPI_CSR_reg : public Register {
@@ -51,12 +51,26 @@ public:
 };
 
 class DFIFO_CSR_reg : public Register {
+	const int DFIFO_EMPTY_FLAG = 31;
+	const int DFIFO_FULL_FLAG = 30;
+	const int DFIFO_PROG_FLAG = 29;
+	const int DFIFO_OVF_FLAG = 28;
+	const int DFIFO_UNF_FLAG = 27;
 	const int DFIFO_TEST_MODE = 23;
 public:
 	DFIFO_CSR_reg(Device6991* deviceIF);
 	bool startTests() noexcept;
 	bool stopTests() noexcept;
+	bool clearOverflow() noexcept;
+	bool resetFifo() noexcept;
+	bool setBlockSize(uint32_t const blockSize) noexcept;
+	std::optional<int> blockSize() noexcept;
+	std::optional<int> samplesInFifo() noexcept;
 	std::optional<bool> isTestRunning() noexcept;
+	std::optional<bool> isFifoEmpty() noexcept;
+	std::optional<bool> isFifoFull() noexcept;
+	std::optional<bool> isFifoProgFull() noexcept;
+	std::optional<bool> overflowHappened() noexcept;
 };
 
 class CL_SPI_TLCNT_reg : public Register {
@@ -102,3 +116,31 @@ public:
 	std::optional<bool> isAcqActive() noexcept;
 };
 
+class DEBUG_CSR_reg : public Register {
+	const int DEBUG_CLK_EN = 31;
+public:
+	DEBUG_CSR_reg(Device6991*);
+	bool startClock() noexcept;
+	bool stopClock() noexcept;
+};
+
+class DEBUG_CLK_RATE_reg : public Register {
+	const double MAX_RATE_NANO_SECS = 35791392693.34424;
+	const double RATE_STEP_NANO_SECS = 8.333333;
+public:
+	DEBUG_CLK_RATE_reg(Device6991*);
+	bool setRate(double const rateInNano) noexcept;
+	std::optional<double> rate() noexcept;
+};
+
+class DFIFO_PFLAG_THR_reg : public Register {
+public:
+	DFIFO_PFLAG_THR_reg(Device6991*);
+	bool setThreshold(uint32_t const threshold) noexcept;
+	std::optional<uint32_t> threshold() noexcept;
+}; 
+
+class DFIFO : public Register {
+public:
+	DFIFO(Device6991*);
+};

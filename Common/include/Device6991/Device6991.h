@@ -7,8 +7,10 @@
 #include "Registers6991.h"
 #include <QTcpSocket>
 #include <QDataStream>
+#include <future>
 
 #include <array>
+#include <atomic>
 #include <bitset>
 #include <optional>
 
@@ -39,6 +41,82 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	DL1_SPI_TMERR_reg DL1_SPI_TMERR_reg_{ this };
 	DFIFO_CSR_reg DFIFO_CSR_reg_{ this };
 	ACQ_CSR_reg ACQ_CSR_reg_{ this };
+	DEBUG_CSR_reg DEBUG_CSR_reg_{ this };
+	DEBUG_CLK_RATE_reg DEBUG_CLK_RATE_reg_{ this };
+	DFIFO_PFLAG_THR_reg DFIFO_PFLAG_THR_reg_{ this };
+	DFIFO DFIFO_{ this };
+	std::future<void> future;
+	std::atomic<uint32_t> dataErrors_;
+	std::atomic<uint32_t> lastSample_;
+	bool exiting = false;
+	mutable std::mutex hwAccess_;
+
+	std::optional<uint32_t> readFifo() noexcept {
+		return DFIFO_.value();
+	}
+
+	void restartTest() noexcept {
+		//TODO
+	}
+
+	FifoTestModel fillFifoStatus() noexcept {
+		FifoTestModel fifoTestModel_;
+		auto count = DFIFO_CSR_reg_.samplesInFifo();
+		auto overflow = DFIFO_CSR_reg_.overflowHappened();
+		auto progThresholdPassed = DFIFO_CSR_reg_.isFifoProgFull();
+		fifoTestModel_.config_.blockSize_ = DFIFO_CSR_reg_.blockSize();
+		fifoTestModel_.config_.rate_ = DEBUG_CLK_RATE_reg_.rate();
+		fifoTestModel_.config_.treshold_ = DFIFO_PFLAG_THR_reg_.threshold();
+		if (overflow && *overflow)
+			fifoTestModel_.overflows_++;
+		if (progThresholdPassed && *progThresholdPassed)
+			fifoTestModel_.passTresholdCount_++;
+		if (count)
+			fifoTestModel_.samplesCount_ = count;
+		fifoTestModel_.lastSample_ = lastSample_;
+		fifoTestModel_.dataErrorsCount_ = dataErrors_;
+		return fifoTestModel_;
+	}
+
+	void fifoTest() {
+		auto isRunning = DFIFO_CSR_reg_.isTestRunning();
+		uint32_t expectedData = 0;
+		dataErrors_ = 0;
+		lastSample_ = 0;
+		while (isRunning && *isRunning && !exiting) {
+			auto reg = DFIFO_CSR_reg_.samplesInFifo();
+			auto samplesNo = reg ? *reg : 0;
+			for (auto i = 0; i < samplesNo; ++i) {
+				auto read = readFifo();
+				if (!read)
+					//connection error
+					continue;
+				lastSample_ = *read;
+				if (lastSample_ != expectedData++)
+					dataErrors_++;
+			}
+			isRunning = DFIFO_CSR_reg_.isTestRunning();
+		}
+	}
+
+	bool configureFifoTest(FifoTestModel::Configuration const& config) noexcept {
+		bool rateChangeStatus = true;
+		bool blockSizeChangeStatus = true;
+		bool thresholdChangeStatus = true;
+		if(config.rate_)
+			rateChangeStatus = DEBUG_CLK_RATE_reg_.setRate(*config.rate_);
+		if (config.blockSize_)
+			blockSizeChangeStatus = DFIFO_CSR_reg_.setBlockSize(*config.blockSize_);
+		if (config.treshold_)
+			thresholdChangeStatus = DFIFO_PFLAG_THR_reg_.setThreshold(*config.treshold_);
+
+		return rateChangeStatus && blockSizeChangeStatus && thresholdChangeStatus;
+	}
+
+	void startFifoTest(FifoTestModel::Configuration const& config) noexcept {
+		if (DL_SPI_CSR1_reg_.stopTests() && configureFifoTest(config) && DEBUG_CSR_reg_.startClock() && DFIFO_CSR_reg_.startTests())
+			future = std::async(std::launch::async, [this]() { fifoTest(); });
+	}
 
 	std::optional<bool> isTestsRunning() noexcept {
 		auto clTests = CL_SPI_CSR_reg_.isTestRunning();
@@ -65,6 +143,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	bool invokeCmd(const QString& cmd) const noexcept {
+		std::lock_guard lock(hwAccess_);
 		scpiCmd(cmd);
 		qDebug() << cmd;
 		return succeeded();
@@ -233,7 +312,9 @@ public:
 		QObject::connect(&tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
 		QObject::connect(&tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
 	}
-	~Device6991() override = default;
+	~Device6991() override {
+		//exiting = true;
+	}
 
 	void saveSubtype(const QString& str) const override {}
 	void saveSerialnumber(const QString& str) const override {}
@@ -337,13 +418,13 @@ public slots:
 			setClockSource(*config.clockSource_);
 	}
 
-	void startTestsRequest(TestsSelectionModel const& selectioModel) noexcept {
+	void startTestsRequest(StartTestsRequest const& request) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
-				CL_SPI_CSR_reg_.startTests(selectioModel.at(TestTypeEnum::CL0), selectioModel.at(TestTypeEnum::CL1));
-				DL_SPI_CSR1_reg_.startTests(selectioModel.at(TestTypeEnum::DL0), selectioModel.at(TestTypeEnum::DL1));
-				if(selectioModel.at(TestTypeEnum::FIFO))
-					DFIFO_CSR_reg_.startTests();			
+				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
+				DL_SPI_CSR1_reg_.startTests(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
+				if (request.model.at(TestTypeEnum::FIFO))
+					startFifoTest(request.fifoTestConfig_);						
 				emit testsStarted();
 				invokeCmd("*DBG 0");
 			}
@@ -404,7 +485,11 @@ public slots:
 		result[TestTypeEnum::DL0] = result_DL0;
 		result[TestTypeEnum::DL1] = result_DL1;
 		result[TestTypeEnum::FIFO] = result_FIFO;
-		emit testCounters(result);
+		TestsStatus status;
+		status.model = result;
+		if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning) 
+			status.fifoTestModel_ = fillFifoStatus();
+		emit testCounters(status);
 	}
 
 	bool writeFpgaRegister(int const address, int const data) const noexcept {
@@ -448,7 +533,7 @@ signals:
 	void configuration(Configuration6991 const configuration) const;
 	void testsStarted() const;
 	void testsStopped() const;
-	void testCounters(TestsResultModel const& resultModel) const;
+	void testCounters(TestsStatus const& status) const;
 	void fcCardEnabled(int const fcId) const;
 	void fcCardDisabled(int const fcId) const;
 };

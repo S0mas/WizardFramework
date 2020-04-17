@@ -154,8 +154,8 @@ public:
 		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
-		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 0;
-		fpgaRegs_[0x4680] = 0; //ACQ_CSR_reg
+		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 8191;
+		fpgaRegs_[RegistersEnum::ACQ_CSR_reg] = 0;
 		checkTestsRegsTimer->start(500);
 		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
@@ -331,11 +331,11 @@ public:
 	}
 
 	bool isAcqActive() const noexcept {
-		return fpgaRegs_.at(0x4680) & 0x80000000;
+		return fpgaRegs_.at(RegistersEnum::ACQ_CSR_reg) & 0x80000000;
 	}
 
 	void setAcqActive(bool const state) noexcept {
-		state ? fpgaRegs_[0x4680] |= 0x80000000 : fpgaRegs_[0x4680] &= 0x7FFFFFFF;
+		state ? fpgaRegs_[RegistersEnum::ACQ_CSR_reg] |= 0x80000000 : fpgaRegs_[RegistersEnum::ACQ_CSR_reg] &= 0x7FFFFFFF;
 	}
 
 	void startAcquisition() noexcept {
@@ -393,6 +393,9 @@ public:
 	}
 
 	int readFpgaReg(int const address) const noexcept {
+		static uint32_t c = 0;
+		if (address == RegistersEnum::DFIFO)
+			return c++;
 		return fpgaRegs_.find(address) != fpgaRegs_.end() ? fpgaRegs_.at(address) : 0xFFFFFFFF;
 	}
 
@@ -412,6 +415,7 @@ public:
 		fpgaRegs_[RegistersEnum::DL0_SPI_TMERR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL1_SPI_TMCNT_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL1_SPI_TMERR_reg] = 0;
+		fpgaRegs_[RegistersEnum::DFIFO] = 0;
 		timer_->start(1000);
 		areTestsRunning = true; 
 		std::bitset<32> reg = fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg];

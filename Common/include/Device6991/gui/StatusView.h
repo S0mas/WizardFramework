@@ -1,10 +1,11 @@
 #pragma once
+#include <QGroupBox>
 #include <QLabel>
 #include <QWidget>
 
 class DeviceState;
 
-class StatusView : public QWidget {
+class StatusView : public QGroupBox {
 	Q_OBJECT
 	QLabel* masterIdLabel_ = new QLabel("Master Id:");
 	QLabel* masterIdValue_ = new QLabel;
