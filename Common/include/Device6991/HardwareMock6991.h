@@ -34,7 +34,6 @@ class HardwareMock6991 : public QObject {
 	std::map<int, int> fpgaRegs_;
 	std::map<int, int> cpuRegs_;
 	std::array<std::map<int, int>, 2> fcRegs_;
-	QTimer* acqStartTimer_;
 	int controllerId_ = 0;
 
 	bool dbgModeOn_ = false;
@@ -42,6 +41,10 @@ class HardwareMock6991 : public QObject {
 	bool acquisitionStoppedOnError_ = false;
 
 	mutable bool state = false;
+	QTimer* timer_ = new QTimer(this);
+	QTimer* dataSendingTimer = new QTimer(this);
+	QTimer* acqStartTimer_ = new QTimer(this);
+	TestsSelectionModel testSelectionModel_;
 
 	void checkError() noexcept {
 		if (fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] != 0) {
@@ -131,8 +134,6 @@ class HardwareMock6991 : public QObject {
 		for (auto regType : countersRegsToUpdate)
 			++fpgaRegs_[regType];
 	}
-	QTimer* timer_;
-	TestsSelectionModel testSelectionModel_;
 
 	void setError(QString const& errorMsg) noexcept {
 		lastError_ = errorMsg;
@@ -143,14 +144,20 @@ class HardwareMock6991 : public QObject {
 			acquisitionStoppedOnError_ = true;
 		}
 	}
+
+	void startDataSending() const noexcept {
+		dataSendingTimer->start(500);
+	}
+
+	void stopDataSending() const noexcept {
+		dataSendingTimer->stop();
+	}
 public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
 		fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
-		timer_ = new QTimer(this);
-		acqStartTimer_ = new QTimer(this);
 		auto checkTestsRegsTimer = new QTimer(this);
 		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
-
+		connect(dataSendingTimer, &QTimer::timeout, [this]() {for (auto socket : sockets_) if (socket) { socket->write("0x12345678"); }});
 		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
@@ -343,6 +350,7 @@ public:
 			setAcqActive(true);
 			acquisitionStoppedOnError_ = false;
 			state_ = DeviceStateEnum::ACQUISITION;
+			startDataSending();
 		}
 		else
 			setError("ERR: The acquisition is already active.");
@@ -352,6 +360,7 @@ public:
 		if (isAcqActive()) {
 			setAcqActive(false);
 			state_ = DeviceStateEnum::IDLE;
+			stopDataSending();
 		}
 		else
 			setError("ERR: The acquisition is already stopped.");

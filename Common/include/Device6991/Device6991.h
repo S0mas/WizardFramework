@@ -6,6 +6,9 @@
 #include "Defines6991.h"
 #include "Registers6991.h"
 #include <QTcpSocket>
+#include <QTextStream>
+#include <QDataStream>
+#include <QFile>
 #include <QDataStream>
 #include <future>
 
@@ -50,6 +53,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	std::atomic<uint32_t> lastSample_;
 	bool exiting = false;
 	mutable std::mutex hwAccess_;
+	bool storeData_ = false;
+	QFile* dataFile_ = new QFile("data6991.txt");
 
 	std::optional<uint32_t> readFifo() noexcept {
 		return DFIFO_.value();
@@ -275,18 +280,32 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	void closeSocketConnection() noexcept {
 		tcpSocket_.disconnectFromHost();
 	}
+
+	void storeData(std::string const& data) noexcept {		
+		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
+			return;
+		QTextStream out(dataFile_);
+		out << data.data();
+	}
 private slots:
 	void displayError(QAbstractSocket::SocketError socketError) noexcept {
-		qDebug() << "Error: " << socketError;
+		emit reportError(QString(tcpSocket_.errorString()));
 		closeSocketConnection();
 	}
 	void readData() noexcept {
 		in_.startTransaction();
-		QString data;
-		in_ >> data;
-		if (!in_.commitTransaction())
+		auto bytes = tcpSocket_.bytesAvailable();
+		std::string data;
+		data.resize(bytes);
+		in_.readRawData(data.data(), bytes);
+		if (!in_.commitTransaction()) {
+			emit reportError("Reading data from socket error.");
 			return;
-		qDebug() << "I read: " << data;
+		}
+			
+		qDebug() << "I read: " << QString::fromStdString(data);
+		if (storeData_)
+			storeData(data);
 	}
 public:
 	using DataType = QVector<bool>;
@@ -520,6 +539,10 @@ public slots:
 		//todo
 		bool enabled = true;
 		enabled ? emit fcCardEnabled(fcId) : emit fcCardDisabled(fcId);
+	}
+
+	void setStoreData(bool const state) noexcept {
+		storeData_ = state;
 	}
 signals:
 	void actualControllerKey(int const id) const;
