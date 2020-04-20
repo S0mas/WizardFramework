@@ -1,10 +1,11 @@
 #pragma once
 #include "../AbstractHardwareConnector.h"
 #include "../Resource.h"
+#include <QString>
 #include <string>
 #include <memory>
 #include <QDebug>
-#include <visa.h>
+#include "../../../../visa/include/visa.h"
 
 class HardwareConnector6991 : public AbstractHardwareConnector {
 	std::shared_ptr<AbstractDataResource> ipResource;

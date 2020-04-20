@@ -1,21 +1,16 @@
 #include "../../../include/Device6991/gui/StatusView.h"
+#include "../../../include/Device6991/Defines6991.h"
 #include <QDateTime>
 #include <QHBoxLayout>
 #include <QString>
 #include <QVBoxLayout>
-#include "../../../include/Device6991/Defines6991.h"
 
-StatusView::StatusView(QWidget * parent) : QWidget(parent) {
+StatusView::StatusView(QWidget * parent) : QGroupBox("Device status", parent) {
 	auto layout = new QVBoxLayout;
 
 	auto hlayout = new QHBoxLayout;
-	hlayout->addWidget(idLabel_);
-	hlayout->addWidget(idValue_);
-	layout->addLayout(hlayout);
-
-	hlayout = new QHBoxLayout;
-	hlayout->addWidget(modeLabel_);
-	hlayout->addWidget(modeValue_);
+	hlayout->addWidget(masterIdLabel_);
+	hlayout->addWidget(masterIdValue_);
 	layout->addLayout(hlayout);
 
 	hlayout = new QHBoxLayout;
@@ -37,8 +32,9 @@ StatusView::StatusView(QWidget * parent) : QWidget(parent) {
 }
 
 void StatusView::update(DeviceState const& state) noexcept {
-	idValue_->setText("0xFF");
-	modeValue_->setText("NONE");
+	if(auto masterId = state.controllerId(); masterId)
+		masterIdValue_->setText(QString::number(*masterId));
+	
 	stateValue_->setText(DeviceStateEnum::toString(state.state()));
 	QString list;
 	int streamId = 1;

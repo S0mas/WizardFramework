@@ -8,11 +8,12 @@ void Controller6991::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::state, statusView_, &StatusView::update);
 	connect(deviceIF_, &Device6991::configuration, this, &Controller6991::setModel);
 	connect(deviceIF_, &Device6991::reportError, this, &Controller6991::showError);
+	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_, &Device6991::setStoreData);
 
 	connect(setModeButton_, &QPushButton::clicked,
 		[this]() {
 			if (comboBoxMode_->currentData().toInt() == ControlModeEnum::CONTROLLER)
-				deviceIF_->takeControlRequest(id_);
+				deviceIF_->takeControlRequest(id());
 			else
 				deviceIF_->releaseControlRequest();
 
@@ -60,6 +61,7 @@ void Controller6991::initializeStateMachine() noexcept {
 			statusAutoRefreshCheckBox_->setChecked(false);
 			dataStorageCheckBox_->setEnabled(false);
 			dataStorageCheckBox_->setChecked(false);
+			idEdit_->setEnabled(true);
 		}
 	);
 	connect(connected, &QState::entered,
@@ -69,6 +71,7 @@ void Controller6991::initializeStateMachine() noexcept {
 			dataStorageCheckBox_->setEnabled(true);
 			statusAutoRefreshCheckBox_->setEnabled(true);
 			dataStreamComboBox_->setEnabled(false);
+			idEdit_->setEnabled(false);
 		}
 	);
 	connect(controller, &QState::entered,
@@ -110,6 +113,10 @@ void Controller6991::showError(QString const& msg) noexcept {
 	QMessageBox::critical(this, "Error", QString("Error Occured: %1").arg(msg));
 }
 
+int Controller6991::id() const noexcept {
+	return idEdit_->value();
+}
+
 void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	if (configuration.scanRate_)
 		scanRateView_->setModel(*configuration.scanRate_);
@@ -128,12 +135,22 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	//	//
 }
 
-Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, unsigned int const id, QWidget * parent) : QGroupBox("Controller", parent), id_(id) {
+Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("Controller", parent) {
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 
 	comboBoxMode_->setMaximumWidth(100);
 	for (auto mode : ControlModeEnum::TYPES)
 		comboBoxMode_->addItem(ControlModeEnum::toString(mode), mode);
+
+	idEdit_->setMaximum(255);
+	idEdit_->setMinimum(1);
+	idEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
+	auto hlayoutId = new QHBoxLayout;
+	hlayoutId->addWidget(idEdit_);
+
+	auto groupId = new QGroupBox("Id");
+	groupId->setLayout(hlayoutId);
 
 	auto hlayout = new QHBoxLayout;
 	hlayout->addWidget(comboBoxMode_);
@@ -158,6 +175,7 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	vlayout = new QVBoxLayout;
 	hlayout = new QHBoxLayout;
 	hlayout->setContentsMargins(0, 0, 0, 0);
+	hlayout->addWidget(groupId);
 	hlayout->addWidget(modeGroup_);
 	hlayout->addWidget(dataStreamGroup_);
 	vlayout->addLayout(hlayout);

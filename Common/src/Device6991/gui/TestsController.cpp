@@ -53,7 +53,6 @@ TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", 
 	TestSelectView* dl1CheckBox = nullptr;
 	TestSelectView* fifoCheckBox = nullptr;
 
-
 	for (auto test : TestTypeEnum::TYPES) {
 		auto testSelectView = new TestSelectView(test);
 		layout->addWidget(testSelectView->checkBox_);
@@ -66,13 +65,15 @@ TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", 
 			fifoCheckBox = testSelectView;
 	}
 
+	////////////////////////////////////////////////
 	//FIFO AND DL TESTS ARE EXCLUDING EACH OTHER
 	connect(fifoCheckBox->checkBox_, &QCheckBox::stateChanged, 
-		[dl0CheckBox, dl1CheckBox](int const state) {
+		[this, dl0CheckBox, dl1CheckBox](int const state) {
 			if (state == Qt::Checked) {
 				dl0CheckBox->checkBox_->setChecked(false);
 				dl1CheckBox->checkBox_->setChecked(false);
 			}
+			emit fifoSelected(state == Qt::Checked);
 		}
 	);
 
@@ -89,6 +90,7 @@ TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", 
 				fifoCheckBox->checkBox_->setChecked(false);
 		}
 	);
+	///////////////////////////////////////////////
 
 	setLayout(layout);
 }
@@ -109,7 +111,8 @@ TestsSelectionModel TestSelectionView::model() const noexcept {
 void TestsController::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::testsStarted, startStopTestsButton_, &TwoStateButton::connected);
 	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
-	connect(deviceIF_, &Device6991::testCounters, resultView_, &TestsResultView::setModel);
+	connect(deviceIF_, &Device6991::testCounters, [this](TestsStatus const& status) { resultView_->setModel(status.model); if(selectionView_->model().at(TestTypeEnum::FIFO))fifoTestView_->setModel(status.fifoTestModel_); });
+	connect(selectionView_, &TestSelectionView::fifoSelected, fifoTestView_, &FifoTestView::setEnabled);
 	initializeStateMachine();
 }
 
@@ -130,12 +133,14 @@ void TestsController::initializeStateMachine() noexcept {
 	connect(idle, &QState::entered,
 		[this, timer]() {
 			selectionView_->setEnabled(true);
+			fifoTestView_->setEnabled(selectionView_->model().at(TestTypeEnum::FIFO));
 			timer->stop();
 		}
 	);
 	connect(running, &QState::entered,
 		[this, timer]() {
 			selectionView_->setEnabled(false);
+			fifoTestView_->setEnabled(false);
 			resultView_->resetModel();
 			time_.restart();
 			updateTime();
@@ -161,6 +166,7 @@ TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF*
 
 	auto layout = new QVBoxLayout;
 	layout->addLayout(hlayout);
+	layout->addWidget(fifoTestView_);
 
 	hlayout = new QHBoxLayout;
 	hlayout->addWidget(startStopTestsButton_, 1, Qt::AlignRight);
@@ -171,4 +177,98 @@ TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF*
 	layout->addLayout(hlayout);
 	setLayout(layout);
 	createConnections();
+}
+
+FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
+	blockSizeEdit_->setMaximum(127);
+	blockSizeEdit_->setMinimum(1);
+	blockSizeEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
+	blockSizeEdit_->setMaximumWidth(30);
+
+	tresholdEdit_->setMaximum(2500);
+	tresholdEdit_->setMinimum(1);
+	tresholdEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
+	tresholdEdit_->setMaximumWidth(40);
+
+	rateEdit_->setMaximum(4294967295);
+	rateEdit_->setMinimum(1);
+	rateEdit_->setDecimals(0);
+	rateEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
+	rateEdit_->setMaximumWidth(80);
+
+	auto group = new QGroupBox("Block Size");
+	auto layout = new QVBoxLayout;
+	auto hlayout = new QHBoxLayout;
+	layout->addWidget(blockSizeEdit_);
+	group->setLayout(layout);
+	hlayout->addWidget(group);
+
+	group = new QGroupBox("Rate");
+	layout = new QVBoxLayout;
+	layout->addWidget(rateEdit_);
+	group->setLayout(layout);
+	hlayout->addWidget(group);
+
+	group = new QGroupBox("Fifo Treshold");
+	layout = new QVBoxLayout;
+	layout->addWidget(tresholdEdit_);
+	group->setLayout(layout);
+	hlayout->addWidget(group);
+
+	auto mainLayout = new QVBoxLayout;
+	mainLayout->addLayout(hlayout);
+
+	group = new QGroupBox("Test status");
+	layout = new QVBoxLayout;
+	hlayout = new QHBoxLayout;
+	hlayout->addWidget(new QLabel("Samples count:"));
+	hlayout->addWidget(samplesInFifoCount_);
+	layout->addLayout(hlayout);
+
+	hlayout = new QHBoxLayout;
+	hlayout->addWidget(new QLabel("Overflows:"));
+	hlayout->addWidget(overflowCounter_);
+	layout->addLayout(hlayout);
+
+	hlayout = new QHBoxLayout;
+	hlayout->addWidget(new QLabel("Data Errors:"));
+	hlayout->addWidget(dataError_);
+	layout->addLayout(hlayout);
+
+	hlayout = new QHBoxLayout;
+	hlayout->addWidget(new QLabel("Pass treshold:"));
+	hlayout->addWidget(passThresholdCounter_);
+	layout->addLayout(hlayout);
+
+	hlayout = new QHBoxLayout;
+	hlayout->addWidget(new QLabel("Last sample:"));
+	hlayout->addWidget(lastSample_);
+	layout->addLayout(hlayout);
+	group->setLayout(layout);
+	mainLayout->addWidget(group);
+	setLayout(mainLayout);
+}
+
+FifoTestModel::Configuration FifoTestView::config() const noexcept {
+	FifoTestModel::Configuration configuration;
+	configuration.blockSize_ = blockSizeEdit_->value();
+	configuration.treshold_ = tresholdEdit_->value();
+	configuration.rate_ = rateEdit_->value();
+	return configuration;
+}
+
+void FifoTestView::setModel(FifoTestModel const & model) noexcept {
+	if (model.config_.blockSize_)
+		blockSizeEdit_->setValue(*model.config_.blockSize_);
+	if (model.config_.rate_)
+		rateEdit_->setValue(*model.config_.rate_);
+	if (model.config_.treshold_)
+		tresholdEdit_->setValue(*model.config_.treshold_);
+	if (model.samplesCount_)
+		samplesInFifoCount_->setText(QString::number(*model.samplesCount_));
+	if (model.lastSample_)
+		lastSample_->setText(QString::number(*model.lastSample_, 16));
+	overflowCounter_->setText(QString::number(model.overflows_));
+	dataError_->setText(QString::number(model.dataErrorsCount_));
+	passThresholdCounter_->setText(QString::number(model.passTresholdCount_));
 }

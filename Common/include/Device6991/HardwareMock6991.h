@@ -1,8 +1,4 @@
 #pragma once
-#include <QApplication>
-#include <QWidget>
-#include <QPushButton>
-#include <QCheckBox>
 #include <QDebug>
 #include <QString>
 #include <QTimer>
