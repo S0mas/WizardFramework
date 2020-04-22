@@ -80,13 +80,13 @@ TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelect
 void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept {
 	if (isEnabled() && checkBox_->isChecked()) {
 		if (cmd == Commands1Enum::READ) {
-			if (auto reg = deviceIF_->readFcRegister(index_, address); reg)
+			if (auto reg = deviceIF_->readFecRegister(index_, address); reg)
 				lineEdit_->setText(toHex(*reg, 8));
 			else
 				QMessageBox::critical(this, "Error", QString("Read operation faild for frontend card %1!").arg(index_));
 		}
 		else if (cmd == Commands1Enum::WRITE) {
-			auto success = deviceIF_->writeFcRegister(index_, address, lineEdit_->text().toUInt(nullptr, 16));
+			auto success = deviceIF_->writeFecRegister(index_, address, lineEdit_->text().toUInt(nullptr, 16));
 			if (!success)
 				QMessageBox::critical(this, "Error", QString("Write operation faild for frontend card %1!").arg(index_));
 		}

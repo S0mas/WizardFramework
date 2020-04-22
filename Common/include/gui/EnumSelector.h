@@ -30,7 +30,7 @@ public:
 		if (cutomEnabled) {
 			lineEdit_->setMaximumWidth(70);
 			lineEdit_->setDisabled(true);
-			lineEdit_->setInputMask(QString("\\0\\x%1;0").arg(QString(inputwidth, 'H')));
+			lineEdit_->setInputMask(QString("\\0\\x%1;_").arg(QString(inputwidth, 'H')));
 			layout->addWidget(lineEdit_);
 			comboBox_->addItem("CUSTOM", 0x00);
 		}

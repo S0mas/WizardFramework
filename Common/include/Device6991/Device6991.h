@@ -150,9 +150,12 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	bool invokeCmd(const QString& cmd) const noexcept {
 		std::lock_guard lock(hwAccess_);
 		scpiCmd(cmd);
-		qDebug() << cmd;
+		if(enablePrint_)
+			qDebug() << cmd;
 		return succeeded();
 	}
+
+	bool enablePrint_ = true;
 
 	DeviceState extractStatus(QString const& stateData) noexcept {
 		auto list = stateData.split(',');
@@ -323,6 +326,8 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, int const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
+		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
+		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
 		connect();
 		in_.setDevice(&tcpSocket_);
 		in_.setVersion(QDataStream::Qt_5_14);
@@ -511,28 +516,37 @@ public slots:
 		emit testCounters(status);
 	}
 
-	bool writeFpgaRegister(int const address, int const data) const noexcept {
-		return invokeCmd(QString("*HW:FPGA %1,%2").arg(address).arg(data));
+	bool writeFpgaRegister(uint32_t const address, uint32_t const data) const noexcept {
+		return invokeCmd(QString("*HW:FPGA #h%1,#h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
-	bool writeFcRegister(int const fcId, int const address, int const data) const noexcept {
-		return invokeCmd(QString("*HW:FC %1,%2,%3").arg(fcId).arg(address).arg(data));
+	bool writeFecRegister(uint32_t const fcId, uint32_t const address, int const data) const noexcept {
+		return invokeCmd(QString("*HW:FEC %1,#h%2,#h%3").arg(fcId).arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
-	bool writeCpuRegister(int const address, int const data) const noexcept {
-		return invokeCmd(QString("*HW:REG %1,%2").arg(address).arg(data));
+	bool writeCpuRegister(uint32_t const address, uint32_t const data) const noexcept {
+		return invokeCmd(QString("*HW:REG #h%1,#h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
-	std::optional<int> readFpgaRegister(int const address) const noexcept {
-		return invokeCmd(QString("*HW:FPGA? %1").arg(address)) ? std::optional{ response_.toInt() } : std::nullopt;
+	std::optional<uint32_t> readFpgaRegister(uint32_t const address) const noexcept {
+		return invokeCmd(QString("*HW:FPGA? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
-	std::optional<int> readFcRegister(int const fcId, int const address) const noexcept {
-		return invokeCmd(QString("*HW:FC? %1,%2").arg(fcId).arg(address)) ? std::optional{ response_.toInt() } : std::nullopt;
+	std::optional<uint32_t> readFecRegister(int const fcId, uint32_t const address) const noexcept {
+		return invokeCmd(QString("*HW:FEC? %1,#h%2").arg(fcId).arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
-	std::optional<int> readCpuRegister(int const address) const noexcept {
-		return invokeCmd(QString("*HW:REG? %1").arg(address)) ? std::optional{ response_.toInt() } : std::nullopt;
+	std::optional<std::pair<uint32_t, uint32_t>> readBothFecRegisters(uint32_t const address) const noexcept {
+		auto success = invokeCmd(QString("*HW:FEC? %1,#h%2").arg(0).arg(toHex(address, 8)));
+		if (success) {
+			auto list = response_.split(';');
+			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };
+		}
+		return  std::nullopt;
+	}
+
+	std::optional<uint32_t> readCpuRegister(uint32_t const address) const noexcept {
+		return invokeCmd(QString("*HW:REG? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
 	void fcCardStateRequest(int const fcId) const noexcept {
@@ -543,6 +557,42 @@ public slots:
 
 	void setStoreData(bool const state) noexcept {
 		storeData_ = state;
+	}
+
+	bool testReg(std::function<std::optional<uint32_t>()> const readFunction, uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+		auto value = readFunction();
+		bool result = value ? ((*value)&mask) == expected : false;
+		if (result)
+			return true;
+		else if (value && verbose)
+			qDebug() << QString("ERR: Value different than expected. Address: %1 Expected: %2, Read:%3, Mask:%4")
+			.arg(QString::number(address, 16)).arg(QString::number(expected, 16)).arg(QString::number(*value, 16)).arg(QString::number(mask, 16));
+		else if(verbose)
+			qDebug() << QString("ERR: Couldnt read register. Address: %1").arg(QString::number(address, 16));
+		return false;
+	}
+
+	bool testFpgaReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+		return testReg([this, address]() { return readFpgaRegister(address); }, address, expected, mask, verbose);
+	}
+
+	bool testFecReg(int const fcId, int32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+		return testReg([this, fcId, address]() {
+			auto result = readFecRegister(fcId, address);
+			if(!result)
+				qDebug() << "ERR: FROM FC ID:" << fcId;
+			return result;
+		}
+		, address, expected, mask, verbose);
+	}
+
+	bool testCpuReg(int32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+		return testReg([this, address]() { return readCpuRegister(address); }, address, expected, mask, verbose);
+	}
+
+
+	void enableScpiCommandsPrints(bool const enable) {
+		enablePrint_ = enable;
 	}
 signals:
 	void actualControllerKey(int const id) const;

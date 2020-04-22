@@ -24,8 +24,8 @@ bool CL_SPI_CSR_reg::isBusy() noexcept {
 }
 
 void CL_SPI_CSR_reg::setCommand(Command const cmd) noexcept {
-	data_ &= 0xFFFFFF00;
-	data_ |= cmd;
+	data_ &= 0xFF00FFFF;
+	data_ |= cmd << 16;
 }
 
 CL_SPI_CSR_reg::CL_SPI_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::CL_SPI_CSR_reg, deviceIF) {}

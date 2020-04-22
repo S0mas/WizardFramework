@@ -7,7 +7,7 @@
 #include <QDateTime>
 #include <QTime>
 
-inline QString toHex(unsigned int const value, int const width = 2) noexcept {
+inline QString toHex(uint32_t const value, int const width = 2) noexcept {
 	return QString("0x%1").arg(value, width, 16, QLatin1Char('0'));
 }
 
