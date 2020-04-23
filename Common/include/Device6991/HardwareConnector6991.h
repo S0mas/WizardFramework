@@ -11,7 +11,7 @@ class HardwareConnector6991 : public AbstractHardwareConnector {
 	std::shared_ptr<AbstractDataResource> ipResource;
 	unsigned long rmVi_ = 0;
 	std::string resource() const noexcept {
-		return "TCPIP::192.168.2.44::INSTR";
+		return QString("TCPIP::%1::INSTR").arg(ipResource->value()).toStdString();
 	}
 	bool isConnectionPossible() const override { 
 		ViSession rmSession = 0;

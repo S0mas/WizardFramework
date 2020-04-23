@@ -30,7 +30,7 @@ class HardwareMock6991 : public QObject {
 	std::map<int, int> fpgaRegs_;
 	std::map<int, int> cpuRegs_;
 	std::array<std::map<int, int>, 2> fcRegs_;
-	int controllerId_ = 0;
+	uint32_t controllerId_ = 0;
 
 	bool dbgModeOn_ = false;
 	bool areTestsRunning = false;
@@ -190,7 +190,7 @@ public:
 		return tmp;
 	}
 
-	int stb() const noexcept {
+	uint32_t stb() const noexcept {
 		return stb_.to_ulong();
 	}
 
@@ -202,7 +202,7 @@ public:
 		return false; // TODO
 	}
 
-	int scansInFifo() const noexcept {
+	uint32_t scansInFifo() const noexcept {
 		return 500;
 	}
 
@@ -318,11 +318,11 @@ public:
 		}
 	}
 
-	int scansNoPerDirectReadPacket() const noexcept {
+	uint32_t scansNoPerDirectReadPacket() const noexcept {
 		return *config_.scansPerDirectReadPacket_;
 	}
 
-	void setScansNoPerDirectReadPacket(int const scansNo) noexcept {
+	void setScansNoPerDirectReadPacket(uint32_t const scansNo) noexcept {
 		if (scansNo < 1 || scansNo > 1000)
 			setError("ERR: Provided wrong scans number - it should be in <1 - 1000> range.");
 		else
@@ -362,18 +362,18 @@ public:
 			setError("ERR: The acquisition is already stopped.");
 	}
 
-	void takeControl(int const id) noexcept {
+	void takeControl(uint32_t const id) noexcept {
 		if (controllerId_ == 0)
 			controllerId_ = id;
 		else
 			setError(QString("ERR: Control is already taken by: %1").arg(id));
 	}
 
-	int controllerId() const noexcept {
+	uint32_t controllerId() const noexcept {
 		return controllerId_;
 	}
 
-	int voltage() const noexcept {
+	uint32_t voltage() const noexcept {
 		return 100;
 	}
 
@@ -385,30 +385,30 @@ public:
 		return dbgModeOn_;
 	}
 
-	void writeFpgaReg(int const address, int const data) noexcept {
+	void writeFpgaReg(uint32_t const address, uint32_t const data) noexcept {
 		fpgaRegs_[address] = data;
 	}
 
-	void writeCpuReg(int const address, int const data) noexcept {
+	void writeCpuReg(uint32_t const address, uint32_t const data) noexcept {
 		cpuRegs_[address] = data;
 	}
 
-	void writeFcReg(int const fcId, int const address, int const data) noexcept {
+	void writeFcReg(uint32_t const fcId, uint32_t const address, uint32_t const data) noexcept {
 		fcRegs_[fcId - 1][address] = data;
 	}
 
-	int readFpgaReg(int const address) const noexcept {
+	uint32_t readFpgaReg(uint32_t const address) const noexcept {
 		static uint32_t c = 0;
 		if (address == RegistersEnum::DFIFO)
 			return c++;
 		return fpgaRegs_.find(address) != fpgaRegs_.end() ? fpgaRegs_.at(address) : 0xFFFFFFFF;
 	}
 
-	int readCpuReg(int const address) const noexcept {
+	uint32_t readCpuReg(uint32_t const address) const noexcept {
 		return cpuRegs_.find(address) != cpuRegs_.end() ? cpuRegs_.at(address) : 0xFFFFFFFF;
 	}
 
-	int readFcReg(int const fcId, int const address) const noexcept {
+	uint32_t readFcReg(uint32_t const fcId, uint32_t const address) const noexcept {
 		return fcRegs_[fcId - 1].find(address) != fcRegs_[fcId - 1].end() ? fcRegs_[fcId - 1].at(address) : 0xFFFFFFFF;
 	}
 

@@ -56,7 +56,7 @@ private:
 	void initializeStateMachine() noexcept;
 	Configuration6991 model() const noexcept;
 	void showError(QString const&) noexcept;
-	int id() const noexcept;
+	uint32_t id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
 public:

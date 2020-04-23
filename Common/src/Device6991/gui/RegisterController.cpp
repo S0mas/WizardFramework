@@ -64,7 +64,7 @@ TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelect
 	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), parentCommandSelector_(parentCommandSelector) {
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
-	lineEdit_->setInputMask("\\0\\xHHHHHHHH;0");
+	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setEnabled(false);
 
 	checkBox_->setChecked(false);
@@ -77,7 +77,7 @@ TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelect
 	createConnections();
 }
 
-void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept {
+void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept {
 	if (isEnabled() && checkBox_->isChecked()) {
 		if (cmd == Commands1Enum::READ) {
 			if (auto reg = deviceIF_->readFecRegister(index_, address); reg)
@@ -151,7 +151,7 @@ RegisterController6991::RegisterController6991(AbstractHardwareConnector* hwConn
 	: QGroupBox("Register Controller", parent) {
 	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
-	lineEdit_->setInputMask("\\0\\xHHHHHHHH;0");
+	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setEnabled(false);
 	auto dataGroup = new QGroupBox("Data", this);
 	auto hLayout = new QHBoxLayout;

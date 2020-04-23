@@ -7,7 +7,7 @@
 #include <QDateTime>
 #include <QTime>
 
-inline QString toHex(uint32_t const value, int const width = 2) noexcept {
+inline QString toHex(uint32_t const value, uint32_t const width = 2) noexcept {
 	return QString("0x%1").arg(value, width, 16, QLatin1Char('0'));
 }
 
@@ -133,7 +133,6 @@ struct ScanRateUnitsEnum {
 	}
 };
 
-
 struct ScanRateModel {
 	uint32_t value_;
 	ScanRateUnitsEnum::Type units_;
@@ -147,15 +146,15 @@ struct ScanRateModel {
 };
 
 struct PtpTime {
-	int32_t seconds_;
-	int32_t nanoseconds_;
+	int64_t seconds_;
+	int64_t nanoseconds_;
 	QString toString() const noexcept {
 		return QString("%1,%2").arg(seconds_).arg(nanoseconds_);
 	}
 
 	static PtpTime fromString(QString const& str) noexcept {
 		auto list = str.split(',');
-		return { list[0].toInt(), list[1].toInt() };
+		return { list[0].toUInt(), list[1].toUInt() };
 	}
 };
 
@@ -271,30 +270,73 @@ struct Commands2Enum {
 struct RegistersEnum {
 	RegistersEnum() = default;
 	enum Type {
+		FC_WR_QUEUE_EMP = 0x0010,
+		PCI_ERR_STCTRL = 0x0014,
+		PREF_ERR_ADDR = 0x0018,
+		BOARD_ID_reg = 0x4400,
+		HW_REV_reg = 0x4404,
+		BOARD_CSR1_reg = 0x4408,
+		LED_CSR_reg = 0x4418,
+		CL0_SPI_DATA_reg = 0x4480,
+		CL1_SPI_DATA_reg = 0x4484,
 		CL_SPI_CSR_reg = 0x4488,
 		CL_SPI_TLCNT_reg = 0x44A0,
 		CL0_SPI_TLERR_reg = 0x44A4,
 		CL1_SPI_TLERR_reg = 0x44A8,
 		DL_SPI_CSR1_reg = 0x4500,
+		DL_SPI_CSR2_reg = 0x4504,
+		DL_SPI_CSR3_reg = 0x4508,
+		DL0_DWORD_EN_reg = 0x4510,
+		DL1_DWORD_EN_reg = 0x4518,
 		DL0_SPI_TMCNT_reg = 0x4520,
 		DL0_SPI_TMERR_reg = 0x4524,
 		DL1_SPI_TMCNT_reg = 0x4528,
 		DL1_SPI_TMERR_reg = 0x452C,
+		SYS_TMR_CSR_reg = 0x4580,
+		SYS_TMR_L_reg = 0x4584,
+		SYS_TMR_H_reg = 0x4586,
+		EVENT_LOG_CSR_reg = 0x4600,
+		EVENT_STAMP_L_reg = 0x4608,
+		EVENT_STAMP_H_reg = 0x460C,
+		EVENT_CAUSE_reg = 0x4610,
 		DEBUG_CSR_reg = 0x4620,
 		DEBUG_CLK_RATE_reg = 0x4624,
 		ACQ_CSR_reg = 0x4680,
+		ACQ_RATE_reg = 0x4684,
+		ACQ_ALARM_L_reg = 0x4688,
+		ACQ_ALARM_H_reg = 0x468C,
 		DFIFO_CSR_reg = 0x4700,
 		DFIFO_PFLAG_THR_reg = 0x4704,
+		DFIFO_WR_reg = 0x4708,
 		DFIFO = 0x10000,
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 15> TYPES = { CL_SPI_CSR_reg, CL_SPI_TLCNT_reg, CL0_SPI_TLERR_reg,
-		CL1_SPI_TLERR_reg, DL_SPI_CSR1_reg, DL0_SPI_TMCNT_reg, DL0_SPI_TMERR_reg, DL1_SPI_TMCNT_reg, DL1_SPI_TMERR_reg,
-		DEBUG_CSR_reg, DEBUG_CLK_RATE_reg, ACQ_CSR_reg, DFIFO_CSR_reg, DFIFO_PFLAG_THR_reg, DFIFO };
+	inline constexpr static std::array<Type, 39> TYPES = { FC_WR_QUEUE_EMP, PCI_ERR_STCTRL, PREF_ERR_ADDR, BOARD_ID_reg, HW_REV_reg, BOARD_CSR1_reg, LED_CSR_reg,
+		CL_SPI_CSR_reg, CL_SPI_TLCNT_reg, CL0_SPI_TLERR_reg, CL1_SPI_TLERR_reg, DL_SPI_CSR1_reg, DL0_SPI_TMCNT_reg, DL0_SPI_TMERR_reg, DL1_SPI_TMCNT_reg, DL1_SPI_TMERR_reg,
+		SYS_TMR_CSR_reg, SYS_TMR_L_reg, SYS_TMR_H_reg, EVENT_LOG_CSR_reg, EVENT_STAMP_L_reg, EVENT_STAMP_H_reg, EVENT_CAUSE_reg, DEBUG_CSR_reg, DEBUG_CLK_RATE_reg,
+		ACQ_CSR_reg, ACQ_RATE_reg, ACQ_ALARM_L_reg, ACQ_ALARM_H_reg,  DFIFO_CSR_reg, DFIFO_PFLAG_THR_reg, DFIFO_WR_reg, DFIFO };
 
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
+		case FC_WR_QUEUE_EMP:
+			return "FC_WR_QUEUE_EMP";
+		case PCI_ERR_STCTRL:
+			return "PCI_ERR_STCTRL";
+		case PREF_ERR_ADDR:
+			return "PREF_ERR_ADDR";
+		case BOARD_ID_reg:
+			return "BOARD_ID_reg";
+		case HW_REV_reg:
+			return "HW_REV_reg";
+		case BOARD_CSR1_reg:
+			return "BOARD_CSR1_reg";
+		case LED_CSR_reg:
+			return "LED_CSR_reg";
+		case CL0_SPI_DATA_reg:
+			return "CL0_SPI_DATA_reg";
+		case CL1_SPI_DATA_reg:
+			return "CL1_SPI_DATA_reg";
 		case CL_SPI_CSR_reg:
 			return "CL_SPI_CSR_reg";
 		case CL_SPI_TLCNT_reg:
@@ -305,6 +347,14 @@ struct RegistersEnum {
 			return "CL1_SPI_TLERR_reg";
 		case DL_SPI_CSR1_reg:
 			return "DL_SPI_CSR1_reg";
+		case DL_SPI_CSR2_reg:
+			return "DL_SPI_CSR2_reg";
+		case DL_SPI_CSR3_reg:
+			return "DL_SPI_CSR3_reg";
+		case DL0_DWORD_EN_reg:
+			return "DL0_DWORD_EN_reg";
+		case DL1_DWORD_EN_reg:
+			return "DL1_DWORD_EN_reg";
 		case DL0_SPI_TMCNT_reg:
 			return "DL0_SPI_TMCNT_reg";
 		case DL0_SPI_TMERR_reg:
@@ -313,6 +363,20 @@ struct RegistersEnum {
 			return "DL1_SPI_TMCNT_reg";
 		case DL1_SPI_TMERR_reg:
 			return "DL1_SPI_TMERR_reg";
+		case SYS_TMR_CSR_reg:
+			return "SYS_TMR_CSR_reg";
+		case SYS_TMR_L_reg:
+			return "SYS_TMR_L_reg";
+		case SYS_TMR_H_reg:
+			return "SYS_TMR_H_reg";
+		case EVENT_LOG_CSR_reg:
+			return "EVENT_LOG_CSR_reg";
+		case EVENT_STAMP_L_reg:
+			return "EVENT_STAMP_L_reg";
+		case EVENT_STAMP_H_reg:
+			return "EVENT_STAMP_H_reg";
+		case EVENT_CAUSE_reg:
+			return "EVENT_CAUSE_reg";
 		case DEBUG_CSR_reg:
 			return "DEBUG_CSR_reg";
 		case DEBUG_CLK_RATE_reg:
@@ -321,8 +385,16 @@ struct RegistersEnum {
 			return "DFIFO_CSR_reg";
 		case ACQ_CSR_reg:
 			return "ACQ_CSR_reg";
+		case ACQ_RATE_reg:
+			return "ACQ_RATE_reg";
+		case ACQ_ALARM_L_reg:
+			return "ACQ_ALARM_L_reg";
+		case ACQ_ALARM_H_reg:
+			return "ACQ_ALARM_H_reg";
 		case DFIFO_PFLAG_THR_reg:
 			return "DFIFO_PFLAG_THR_reg";
+		case DFIFO_WR_reg:
+			return "DFIFO_WR_reg";
 		case DFIFO:
 			return "DFIFO";
 		default:
@@ -331,42 +403,90 @@ struct RegistersEnum {
 	}
 
 	static Type fromString(QString const& mode) noexcept {
+		if (mode == "FC_WR_QUEUE_EMP")
+			return FC_WR_QUEUE_EMP;
+		if (mode == "PCI_ERR_STCTRL")
+			return PCI_ERR_STCTRL;
+		if (mode == "PREF_ERR_ADDR")
+			return PREF_ERR_ADDR;
+		if (mode == "BOARD_ID_reg")
+			return BOARD_ID_reg;
+		if (mode == "HW_REV_reg")
+			return HW_REV_reg;
+		if (mode == "BOARD_CSR1_reg")
+			return BOARD_CSR1_reg;
+		if (mode == "LED_CSR_reg")
+			return LED_CSR_reg;
+		if (mode == "CL0_SPI_DATA_reg")
+			return CL0_SPI_DATA_reg;
+		if (mode == "CL1_SPI_DATA_reg")
+			return CL1_SPI_DATA_reg;
 		if (mode == "CL_SPI_CSR_reg")
 			return CL_SPI_CSR_reg;
-		else if (mode == "CL_SPI_TLCNT_reg")
+		if (mode == "CL_SPI_TLCNT_reg")
 			return CL_SPI_TLCNT_reg;
-		else if (mode == "CL0_SPI_TLERR_reg")
+		if (mode == "CL0_SPI_TLERR_reg")
 			return CL0_SPI_TLERR_reg;
 		if (mode == "CL1_SPI_TLERR_reg")
 			return CL1_SPI_TLERR_reg;
-		else if (mode == "DL_SPI_CSR1_reg")
+		if (mode == "DL_SPI_CSR1_reg")
 			return DL_SPI_CSR1_reg;
-		else if (mode == "DL0_SPI_TMCNT_reg")
+		if (mode == "DL_SPI_CSR2_reg")
+			return DL_SPI_CSR2_reg;
+		if (mode == "DL_SPI_CSR3_reg")
+			return DL_SPI_CSR3_reg;
+		if (mode == "DL0_DWORD_EN_reg")
+			return DL0_DWORD_EN_reg;
+		if (mode == "DL1_DWORD_EN_reg")
+			return DL1_DWORD_EN_reg;
+		if (mode == "DL0_SPI_TMCNT_reg")
 			return DL0_SPI_TMCNT_reg;
 		if (mode == "DL0_SPI_TMERR_reg")
 			return DL0_SPI_TMERR_reg;
-		else if (mode == "DL1_SPI_TMCNT_reg")
+		if (mode == "DL1_SPI_TMCNT_reg")
 			return DL1_SPI_TMCNT_reg;
-		else if (mode == "DL1_SPI_TMERR_reg")
+		if (mode == "DL1_SPI_TMERR_reg")
 			return DL1_SPI_TMERR_reg;
-		else if (mode == "DEBUG_CSR_reg")
+		if (mode == "SYS_TMR_CSR_reg")
+			return SYS_TMR_CSR_reg;
+		if (mode == "SYS_TMR_L_reg")
+			return SYS_TMR_L_reg;
+		if (mode == "SYS_TMR_H_reg")
+			return SYS_TMR_H_reg;
+		if (mode == "EVENT_LOG_CSR_reg")
+			return EVENT_LOG_CSR_reg;
+		if (mode == "EVENT_STAMP_L_reg")
+			return EVENT_STAMP_L_reg;
+		if (mode == "EVENT_STAMP_H_reg")
+			return EVENT_STAMP_H_reg;
+		if (mode == "EVENT_CAUSE_reg")
+			return EVENT_CAUSE_reg;
+		if (mode == "DEBUG_CSR_reg")
 			return DEBUG_CSR_reg;
-		else if (mode == "DEBUG_CLK_RATE_reg")
+		if (mode == "DEBUG_CLK_RATE_reg")
 			return DEBUG_CLK_RATE_reg;
-		else if (mode == "DFIFO_CSR_reg")
+		if (mode == "DFIFO_CSR_reg")
 			return DFIFO_CSR_reg;
-		else if (mode == "ACQ_CSR_reg")
+		if (mode == "ACQ_CSR_reg")
 			return ACQ_CSR_reg;
-		else if (mode == "DFIFO_PFLAG_THR_reg")
+		if (mode == "ACQ_RATE_reg")
+			return ACQ_RATE_reg;
+		if (mode == "ACQ_ALARM_L_reg")
+			return ACQ_ALARM_L_reg;
+		if (mode == "ACQ_ALARM_H_reg")
+			return ACQ_ALARM_H_reg;
+		if (mode == "DFIFO_PFLAG_THR_reg")
 			return DFIFO_PFLAG_THR_reg;
-		else if (mode == "DFIFO")
+		if (mode == "DFIFO_WR_reg")
+			return DFIFO_WR_reg;
+		if (mode == "DFIFO")
 			return DFIFO;
 		return INVALID;
 	}
 };
 
 struct Temperature {
-	int temperature_;
+	uint32_t temperature_;
 	TemperaturesEnum::Type source_;
 };
 
@@ -490,7 +610,7 @@ struct DeviceStateEnum {
 class DeviceState {
 	std::bitset<32> data_;
 	DeviceStateEnum::Type state_;
-	std::optional<int> controllerId_;
+	std::optional<uint32_t> controllerId_;
 public:
 	std::array<bool, 4> linksConnectionStatus() const noexcept {
 		return { data_[28], data_[29], data_[30], data_[31] };
@@ -503,7 +623,7 @@ public:
 		data_[28] = linksStatus[0];
 	}
 
-	bool linksConnectionStatus(int const linkIndex) const noexcept {
+	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
 		return data_[28 + linkIndex];
 	}
 
@@ -531,25 +651,25 @@ public:
 		data_[16] = state;
 	}
 
-	unsigned int numberOfScansInFifo() const noexcept {
+	uint32_t numberOfScansInFifo() const noexcept {
 		return data_.to_ulong() & 0xFFF;
 	}
 
-	void setNumberOfScansInFifo(unsigned int const numbersOfScansInFifo) noexcept {
+	void setNumberOfScansInFifo(uint32_t const numbersOfScansInFifo) noexcept {
 		data_ &= 0xFFFFF000;
 		data_ |= (numbersOfScansInFifo & 0xFFF);
 	}
 
 	void set(QString const& hexString) noexcept {
 		bool conversionStatus;
-		unsigned int data = hexString.toUInt(&conversionStatus, 16);
+		uint32_t data = hexString.toUInt(&conversionStatus, 16);
 		if (!conversionStatus)
 			qDebug() << "Conversion Error";
 		else
 			data_ = data;
 	}
 
-	void set(unsigned int const data) noexcept {
+	void set(uint32_t const data) noexcept {
 		data_ = data;
 	}
 
@@ -565,11 +685,11 @@ public:
 		return data_.to_ulong();
 	}
 
-	void setControllerId(std::optional<int> const& controllerId) noexcept {
+	void setControllerId(std::optional<uint32_t> const& controllerId) noexcept {
 		controllerId_ = controllerId;
 	}
 
-	std::optional<int> controllerId() const noexcept {
+	std::optional<uint32_t> controllerId() const noexcept {
 		return controllerId_;
 	}
 };
@@ -581,7 +701,7 @@ struct StatusPart {
 		return { bits[31], bits[30], bits[29], bits[28] };
 	}
 
-	bool linksConnectionStatus(int const linkIndex) const noexcept {
+	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
 		std::bitset<32> bits(data_);
 		return bits[28 + linkIndex];
 	}
@@ -616,7 +736,7 @@ struct AcquisitionStartModeModel {
 };
 
 struct AcquisitionStopModeModel {
-	std::optional<int> scansThreshold_;
+	std::optional<uint32_t> scansThreshold_;
 	std::optional<bool> stopOnError_;
 };
 
@@ -628,7 +748,7 @@ struct Configuration6991 {
 	std::optional<PtpTime> ptpTime_;
 	AcquisitionStartModeModel startMode_;
 	AcquisitionStopModeModel stopMode_;
-	std::optional<int> scansPerDirectReadPacket_;
+	std::optional<uint32_t> scansPerDirectReadPacket_;
 	std::optional<bool> timestamps_;
 };
 
@@ -678,8 +798,8 @@ struct TestTypeEnum {
 };
 
 struct Result {
-	std::optional<int> count_;
-	std::optional<int> errors_;
+	std::optional<uint32_t> count_;
+	std::optional<uint32_t> errors_;
 };
 
 using TestsResultModel = std::map<TestTypeEnum::Type, Result>;

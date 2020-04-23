@@ -113,7 +113,7 @@ void Controller6991::showError(QString const& msg) noexcept {
 	QMessageBox::critical(this, "Error", QString("Error Occured: %1").arg(msg));
 }
 
-int Controller6991::id() const noexcept {
+uint32_t Controller6991::id() const noexcept {
 	return idEdit_->value();
 }
 

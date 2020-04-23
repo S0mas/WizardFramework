@@ -16,7 +16,7 @@ class EnumSelector : public QWidget {
 	bool isCustomSelected() const noexcept;
 public:
 	template<typename T>
-	EnumSelector(T const& t, QString const& name, bool const cutomEnabled = false, int const inputwidth = 8, QWidget* parent = nullptr)
+	EnumSelector(T const& t, QString const& name, bool const cutomEnabled = false, uint32_t const inputwidth = 8, QWidget* parent = nullptr)
 		: QWidget(parent), label_(new QLabel(name)), cutomEnabled_(cutomEnabled) {
 		for (auto concreteEnum : T::TYPES)
 			comboBox_->addItem(T::toString(concreteEnum), concreteEnum);
@@ -38,7 +38,7 @@ public:
 		setLayout(layout);
 		createConnections();
 	}
-	unsigned int value() const noexcept;
+	uint32_t value() const noexcept;
 signals:
-	void enumChanged(int const concreteEnum) const;
+	void enumChanged(uint32_t const concreteEnum) const;
 };

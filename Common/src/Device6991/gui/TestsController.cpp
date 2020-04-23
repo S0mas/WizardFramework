@@ -13,7 +13,7 @@ Result TestsResultView::ResultView::model() const noexcept {
 	return { count_->text().toInt(), errors_->text().toInt() };
 }
 
-void TestsResultView::addResult(TestTypeEnum::Type const type, QGridLayout * layout, int const row) noexcept {
+void TestsResultView::addResult(TestTypeEnum::Type const type, QGridLayout * layout, uint32_t const row) noexcept {
 	auto resultView = new ResultView(type);
 	layout->addWidget(resultView->testName_, row, 0, Qt::AlignLeft | Qt::AlignVCenter);
 	layout->addWidget(resultView->count_, row, 1, Qt::AlignCenter);

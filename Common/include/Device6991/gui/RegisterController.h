@@ -33,7 +33,7 @@ public:
 	TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, int const index, QWidget* parent = nullptr);
 	QLineEdit* lineEdit_ = new QLineEdit;
 public slots:
-	void sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept;
+	void sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept;
 };
 
 class RegisterControllerFrontend : public QGroupBox {

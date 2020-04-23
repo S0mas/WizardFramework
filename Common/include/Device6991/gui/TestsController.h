@@ -44,7 +44,7 @@ class TestsResultView : public QGroupBox {
 	};
 	std::vector<ResultView*> resultViews_;
 	QStringList resultLabels = { "Count", "Errors" };
-	void addResult(TestTypeEnum::Type const type, QGridLayout * layout, int const row) noexcept;
+	void addResult(TestTypeEnum::Type const type, QGridLayout * layout, uint32_t const row) noexcept;
 public:
 	TestsResultView(QWidget* parent = nullptr);
 	TestsResultModel model() const noexcept;

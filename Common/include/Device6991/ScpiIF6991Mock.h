@@ -303,7 +303,7 @@ public:
 		arg.set<double>(0);
 		ScpiArgsParser::addMnemonic("OFF", arg);
 	}
-	int read(int const vi, unsigned char* dataPtr, int size, unsigned long* ret) const noexcept override {
+	int read(uint32_t const vi, unsigned char* dataPtr, uint32_t size, unsigned long* ret) const noexcept override {
 		*ret = 1;
 		for (auto c : responseContainer_) {
 			*dataPtr = c.toLatin1();
@@ -312,7 +312,7 @@ public:
 		}
 		return 0;
 	}
-	int write(int const vi, unsigned char* dataPtr, int size, unsigned long* ret) const noexcept override {
+	int write(uint32_t const vi, unsigned char* dataPtr, uint32_t size, unsigned long* ret) const noexcept override {
 		auto code = exec_->parseAndExecuteCommand(reinterpret_cast<char*>(dataPtr));
 		return code;
 	}

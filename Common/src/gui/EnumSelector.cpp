@@ -18,6 +18,6 @@ bool EnumSelector::isCustomSelected() const noexcept {
 	return cutomEnabled_ && comboBox_->currentText() == "CUSTOM";
 }
 
-unsigned int EnumSelector::value() const noexcept {
-	return isCustomSelected() ? lineEdit_->text().toUInt(nullptr, 16) : comboBox_->currentData().toInt();
+uint32_t EnumSelector::value() const noexcept {
+	return isCustomSelected() ? lineEdit_->text().toUInt(nullptr, 16) : comboBox_->currentData().toUInt();
 }

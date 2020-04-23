@@ -13,11 +13,29 @@ bool Register::writeHw() const noexcept {
 	return deviceIF->writeFpgaRegister(address_, data_.to_ulong());
 }
 
-Register::Register(int const address, Device6991* deviceIF) : address_(address), deviceIF(deviceIF) {}
+Register::Register(uint32_t address, Device6991* deviceIF) : address_(address), deviceIF(deviceIF) {}
 
 std::optional<uint32_t> Register::value() noexcept {
 	return readHw() ? std::optional{ data_.to_ulong() } : std::nullopt;
 }
+
+FC_WR_QUEUE_EMP::FC_WR_QUEUE_EMP(Device6991* deviceIF) : Register(RegistersEnum::FC_WR_QUEUE_EMP, deviceIF) {}
+
+PCI_ERR_STCTRL::PCI_ERR_STCTRL(Device6991* deviceIF) : Register(RegistersEnum::PCI_ERR_STCTRL, deviceIF) {}
+
+PREF_ERR_ADDR::PREF_ERR_ADDR(Device6991* deviceIF) : Register(RegistersEnum::PREF_ERR_ADDR, deviceIF) {}
+
+BOARD_ID_reg::BOARD_ID_reg(Device6991* deviceIF) : Register(RegistersEnum::BOARD_ID_reg, deviceIF) {}
+
+HW_REV_reg::HW_REV_reg(Device6991* deviceIF) : Register(RegistersEnum::HW_REV_reg, deviceIF) {}
+
+BOARD_CSR1_reg::BOARD_CSR1_reg(Device6991* deviceIF) : Register(RegistersEnum::BOARD_CSR1_reg, deviceIF) {}
+
+LED_CSR_reg::LED_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::LED_CSR_reg, deviceIF) {}
+
+CL0_SPI_DATA_reg::CL0_SPI_DATA_reg(Device6991* deviceIF) : Register(RegistersEnum::CL0_SPI_DATA_reg, deviceIF) {}
+
+CL1_SPI_DATA_reg::CL1_SPI_DATA_reg(Device6991* deviceIF) : Register(RegistersEnum::CL1_SPI_DATA_reg, deviceIF) {}
 
 bool CL_SPI_CSR_reg::isBusy() noexcept {
 	return data_.test(CL_START_CL_BUSY);
@@ -71,6 +89,12 @@ std::optional<bool> CL_SPI_CSR_reg::isTestRunning(TestTypeEnum::Type const type)
 		//return readHw() ? std::optional{ data_.test(CL_TEST_LOOP) && (data_.test(CL0_SEL) || data_.test(CL1_SEL)) } : std::nullopt;
 }
 
+CL_SPI_TLCNT_reg::CL_SPI_TLCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::CL_SPI_TLCNT_reg, deviceIF) {}
+
+CL0_SPI_TLERR_reg::CL0_SPI_TLERR_reg(Device6991* deviceIF) : Register(RegistersEnum::CL0_SPI_TLERR_reg, deviceIF) {}
+
+CL1_SPI_TLERR_reg::CL1_SPI_TLERR_reg(Device6991* deviceIF) : Register(RegistersEnum::CL1_SPI_TLERR_reg, deviceIF) {}
+
 DL_SPI_CSR1_reg::DL_SPI_CSR1_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR1_reg, deviceIF) {}
 
 bool DL_SPI_CSR1_reg::startTests(bool const DL0, bool const DL1) noexcept {
@@ -79,6 +103,7 @@ bool DL_SPI_CSR1_reg::startTests(bool const DL0, bool const DL1) noexcept {
 		data_.set(DL0_TEST_MODE, DL0);
 		data_.set(DL1_TEST_MODE, DL1);
 		data_.set(DL_EN);
+		///start test
 		return writeHw();
 	}
 	return false;
@@ -86,6 +111,7 @@ bool DL_SPI_CSR1_reg::startTests(bool const DL0, bool const DL1) noexcept {
 
 bool DL_SPI_CSR1_reg::stopTests() noexcept {
 	if (readHw()) {
+		///stop test
 		data_.reset(DL0_TEST_MODE);
 		data_.reset(DL1_TEST_MODE);
 		data_.reset(DL_EN);
@@ -97,6 +123,80 @@ bool DL_SPI_CSR1_reg::stopTests() noexcept {
 std::optional<bool> DL_SPI_CSR1_reg::isTestRunning() noexcept {
 	return readHw() ? std::optional{ data_.test(DL_EN) && (data_.test(DL0_TEST_MODE) || data_.test(DL1_TEST_MODE)) } : std::nullopt;
 }
+
+DL_SPI_CSR2_reg::DL_SPI_CSR2_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR2_reg, deviceIF) {}
+
+DL_SPI_CSR3_reg::DL_SPI_CSR3_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR3_reg, deviceIF) {}
+
+DL0_DWORD_EN_reg::DL0_DWORD_EN_reg(Device6991* deviceIF) : Register(RegistersEnum::DL0_DWORD_EN_reg, deviceIF) {}
+
+DL1_DWORD_EN_reg::DL1_DWORD_EN_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_DWORD_EN_reg, deviceIF) {}
+
+DL0_SPI_TMCNT_reg::DL0_SPI_TMCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::DL0_SPI_TMCNT_reg, deviceIF) {}
+
+DL0_SPI_TMERR_reg::DL0_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersEnum::DL0_SPI_TMERR_reg, deviceIF) {}
+
+DL1_SPI_TMCNT_reg::DL1_SPI_TMCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMCNT_reg, deviceIF) {}
+
+DL1_SPI_TMERR_reg::DL1_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMERR_reg, deviceIF) {}
+
+SYS_TMR_CSR_reg::SYS_TMR_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::SYS_TMR_CSR_reg, deviceIF) {}
+
+SYS_TMR_L_reg::SYS_TMR_L_reg(Device6991* deviceIF) : Register(RegistersEnum::SYS_TMR_L_reg, deviceIF) {}
+
+SYS_TMR_H_reg::SYS_TMR_H_reg(Device6991* deviceIF) : Register(RegistersEnum::SYS_TMR_H_reg, deviceIF) {}
+
+EVENT_LOG_CSR_reg::EVENT_LOG_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::EVENT_LOG_CSR_reg, deviceIF) {}
+
+EVENT_STAMP_L_reg::EVENT_STAMP_L_reg(Device6991* deviceIF) : Register(RegistersEnum::EVENT_STAMP_L_reg, deviceIF) {}
+
+EVENT_STAMP_H_reg::EVENT_STAMP_H_reg(Device6991* deviceIF) : Register(RegistersEnum::EVENT_STAMP_H_reg, deviceIF) {}
+
+EVENT_CAUSE_reg::EVENT_CAUSE_reg(Device6991* deviceIF) : Register(RegistersEnum::EVENT_CAUSE_reg, deviceIF) {}
+
+DEBUG_CSR_reg::DEBUG_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::DEBUG_CSR_reg, deviceIF) {}
+
+bool DEBUG_CSR_reg::startClock() noexcept {
+	if (readHw()) {
+		data_.set(DEBUG_CLK_EN);
+		return writeHw();
+	}
+	return false;
+}
+
+bool DEBUG_CSR_reg::stopClock() noexcept {
+	if (readHw()) {
+		data_.reset(DEBUG_CLK_EN);
+		return writeHw();
+	}
+	return false;
+}
+
+DEBUG_CLK_RATE_reg::DEBUG_CLK_RATE_reg(Device6991* deviceIF) : Register(RegistersEnum::DEBUG_CLK_RATE_reg, deviceIF) {}
+
+bool DEBUG_CLK_RATE_reg::setRate(double const rateInNano) noexcept {
+	if (rateInNano > RATE_STEP_NANO_SECS && rateInNano < MAX_RATE_NANO_SECS) {
+		data_ = rateInNano / RATE_STEP_NANO_SECS;
+		return writeHw();
+	}
+	return false;
+}
+
+std::optional<double> DEBUG_CLK_RATE_reg::rate() noexcept {
+	return readHw() ? std::optional{ data_.to_ullong() * RATE_STEP_NANO_SECS } : std::nullopt;
+}
+
+ACQ_CSR_reg::ACQ_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_CSR_reg, deviceIF) {}
+
+std::optional<bool> ACQ_CSR_reg::isAcqActive() noexcept {
+	return readHw() ? std::optional{ data_.test(ACQ_ON) } : std::nullopt;
+}
+
+ACQ_RATE_reg::ACQ_RATE_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_RATE_reg, deviceIF) {}
+
+ACQ_ALARM_L_reg::ACQ_ALARM_L_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_ALARM_L_reg, deviceIF) {}
+
+ACQ_ALARM_H_reg::ACQ_ALARM_H_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_ALARM_H_reg, deviceIF) {}
 
 DFIFO_CSR_reg::DFIFO_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::DFIFO_CSR_reg, deviceIF) {}
 
@@ -143,7 +243,7 @@ bool DFIFO_CSR_reg::setBlockSize(uint32_t const blockSize) noexcept {
 }
 
 std::optional<int> DFIFO_CSR_reg::blockSize() noexcept {
-	return readHw() ? std::optional{ (data_.to_ulong() & 0x7F0000)>>16 } : std::nullopt;
+	return readHw() ? std::optional{ (data_.to_ulong() & 0x7F0000) >> 16 } : std::nullopt;
 }
 
 std::optional<int> DFIFO_CSR_reg::samplesInFifo() noexcept {
@@ -170,60 +270,7 @@ std::optional<bool> DFIFO_CSR_reg::overflowHappened() noexcept {
 	return readHw() ? std::optional{ data_.test(DFIFO_OVF_FLAG) } : std::nullopt;
 }
 
-CL_SPI_TLCNT_reg::CL_SPI_TLCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::CL_SPI_TLCNT_reg, deviceIF) {}
-
-CL0_SPI_TLERR_reg::CL0_SPI_TLERR_reg(Device6991* deviceIF) : Register(RegistersEnum::CL0_SPI_TLERR_reg, deviceIF) {}
-
-CL1_SPI_TLERR_reg::CL1_SPI_TLERR_reg(Device6991* deviceIF) : Register(RegistersEnum::CL1_SPI_TLERR_reg, deviceIF) {}
-
-DL0_SPI_TMCNT_reg::DL0_SPI_TMCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::DL0_SPI_TMCNT_reg, deviceIF) {}
-
-DL0_SPI_TMERR_reg::DL0_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersEnum::DL0_SPI_TMERR_reg, deviceIF) {}
-
-DL1_SPI_TMCNT_reg::DL1_SPI_TMCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMCNT_reg, deviceIF) {}
-
-DL1_SPI_TMERR_reg::DL1_SPI_TMERR_reg(Device6991* deviceIF) : Register(RegistersEnum::DL1_SPI_TMERR_reg, deviceIF) {}
-
-ACQ_CSR_reg::ACQ_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_CSR_reg, deviceIF) {}
-
-std::optional<bool> ACQ_CSR_reg::isAcqActive() noexcept {
-	return readHw() ? std::optional{ data_.test(ACQ_ON) } : std::nullopt;
-}
-
-DEBUG_CSR_reg::DEBUG_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::DEBUG_CSR_reg, deviceIF) {}
-
-bool DEBUG_CSR_reg::startClock() noexcept {
-	if (readHw()) {
-		data_.set(DEBUG_CLK_EN);
-		return writeHw();
-	}
-	return false;
-}
-
-bool DEBUG_CSR_reg::stopClock() noexcept {
-	if (readHw()) {
-		data_.reset(DEBUG_CLK_EN);
-		return writeHw();
-	}
-	return false;
-}
-
-DEBUG_CLK_RATE_reg::DEBUG_CLK_RATE_reg(Device6991* deviceIF) : Register(RegistersEnum::DEBUG_CLK_RATE_reg, deviceIF) {}
-
-bool DEBUG_CLK_RATE_reg::setRate(double const rateInNano) noexcept {
-	if (rateInNano > RATE_STEP_NANO_SECS && rateInNano < MAX_RATE_NANO_SECS) {
-		data_ = rateInNano / RATE_STEP_NANO_SECS;
-		return writeHw();
-	}
-	return false;
-}
-
-std::optional<double> DEBUG_CLK_RATE_reg::rate() noexcept {
-	return readHw() ? std::optional{ data_.to_ullong() * RATE_STEP_NANO_SECS } : std::nullopt;
-}
-
 DFIFO_PFLAG_THR_reg::DFIFO_PFLAG_THR_reg(Device6991* deviceIF) : Register(RegistersEnum::DFIFO_PFLAG_THR_reg, deviceIF) {}
-
 
 bool DFIFO_PFLAG_THR_reg::setThreshold(uint32_t const threshold) noexcept {
 	if (readHw() && threshold >= 0 && threshold < 8192) {
@@ -237,5 +284,7 @@ bool DFIFO_PFLAG_THR_reg::setThreshold(uint32_t const threshold) noexcept {
 std::optional<uint32_t> DFIFO_PFLAG_THR_reg::threshold() noexcept {
 	return readHw() ? std::optional{ data_.to_ullong() & 0x1FFF } : std::nullopt;
 }
+
+DFIFO_WR_reg::DFIFO_WR_reg(Device6991* deviceIF) : Register(RegistersEnum::DFIFO_WR_reg, deviceIF) {}
 
 DFIFO::DFIFO(Device6991* deviceIF) : Register(RegistersEnum::DFIFO, deviceIF) {}
