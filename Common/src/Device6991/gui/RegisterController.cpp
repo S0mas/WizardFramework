@@ -65,6 +65,7 @@ TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelect
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
+	lineEdit_->setText("0x00000000");
 	lineEdit_->setEnabled(false);
 
 	checkBox_->setChecked(false);
@@ -152,6 +153,7 @@ RegisterController6991::RegisterController6991(AbstractHardwareConnector* hwConn
 	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
+	lineEdit_->setText("0x00000000");
 	lineEdit_->setEnabled(false);
 	auto dataGroup = new QGroupBox("Data", this);
 	auto hLayout = new QHBoxLayout;
