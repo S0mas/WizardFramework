@@ -655,7 +655,7 @@ public slots:
 
 	bool checkIfDlReceiverStateIsIdle() noexcept {
 		if (auto fifoFsmStatus = DL_SPI_CSR1_reg_.dlFifoFsmStatus(); fifoFsmStatus) {
-			if (auto fsmStatus = DL_SPI_CSR1_reg_.dlFsmStatus; fsmStatus) {
+			if (auto fsmStatus = DL_SPI_CSR1_reg_.dlFsmStatus(); fsmStatus) {
 				if (*fifoFsmStatus != 0) {
 					emit reportError("FifoFsmStatus is not 0.");
 					return false;
