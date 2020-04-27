@@ -485,6 +485,46 @@ struct RegistersEnum {
 	}
 };
 
+struct FecRegistersEnum {
+	FecRegistersEnum() = default;
+	enum Type {
+		FE_ID_reg = 0x0001,
+		BOARD_CSR_reg = 0x0002,
+		CMD_reg = 0x0003,
+		DL_CSR_reg = 0x0004,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { FE_ID_reg, BOARD_CSR_reg, CMD_reg, DL_CSR_reg };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case FE_ID_reg:
+			return "FE_ID_reg";
+		case BOARD_CSR_reg:
+			return "BOARD_CSR_reg";
+		case CMD_reg:
+			return "CMD_reg";
+		case DL_CSR_reg:
+			return "DL_CSR_reg";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "FE_ID_reg")
+			return FE_ID_reg;
+		if (mode == "BOARD_CSR_reg")
+			return BOARD_CSR_reg;
+		if (mode == "CMD_reg")
+			return CMD_reg;
+		if (mode == "DL_CSR_reg")
+			return DL_CSR_reg;
+		return INVALID;
+	}
+};
+
 struct Temperature {
 	uint32_t temperature_;
 	TemperaturesEnum::Type source_;
@@ -827,4 +867,425 @@ struct StartTestsRequest {
 struct TestsStatus {
 	TestsResultModel model;
 	FifoTestModel fifoTestModel_;
+};
+
+struct DlFrameRateType {
+	enum Type {
+		BU6111_BU6171 = 0x4,
+		BU6132 = 0x10,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 2> TYPES = { BU6111_BU6171, BU6132 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case BU6111_BU6171:
+			return "BU6111_BU6171";
+		case BU6132:
+			return "BU6132";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "BU6111_BU6171")
+			return BU6111_BU6171;
+		else if (mode == "BU6132")
+			return BU6132;
+		return INVALID;
+	}
+};
+
+struct DlSclkFreqType {
+	enum Type {
+		_1Mhz = 0x0,
+		_2Mhz = 0x1,
+		_4Mhz = 0x2,
+		_5Mhz = 0x3,
+		_10Mhz = 0x4,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type,5> TYPES = { _1Mhz, _2Mhz, _4Mhz, _5Mhz, _10Mhz };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case _1Mhz:
+			return "1Mhz";
+		case _2Mhz:
+			return "2Mhz";
+		case _4Mhz:
+			return "4Mhz";
+		case _5Mhz:
+			return "5Mhz";
+		case _10Mhz:
+			return "10Mhz";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "1Mhz")
+			return _1Mhz;
+		if (mode == "2Mhz")
+			return _2Mhz;
+		if (mode == "4Mhz")
+			return _4Mhz;
+		if (mode == "5Mhz")
+			return _5Mhz;
+		if (mode == "10Mhz")
+			return _10Mhz;
+		return INVALID;
+	}
+};
+
+struct FecCmdsType6111 {
+	enum Type {
+		ACQ_START = 0xEA01,
+		ACQ_STOP = 0xEA02,
+		DI_LATCH = 0xEA11,
+		DL_TEST_START = 0xEA81,
+		DL_TEST_STOP = 0xEA82,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 5> TYPES = { ACQ_START, ACQ_STOP, DI_LATCH, DL_TEST_START, DL_TEST_STOP };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case ACQ_START:
+			return "ACQ_START";
+		case ACQ_STOP:
+			return "ACQ_STOP";
+		case DI_LATCH:
+			return "DI_LATCH";
+		case DL_TEST_START:
+			return "DL_TEST_START";
+		case DL_TEST_STOP:
+			return "DL_TEST_STOP";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "ACQ_START")
+			return ACQ_START;
+		if (mode == "ACQ_STOP")
+			return ACQ_STOP;
+		if (mode == "DI_LATCH")
+			return DI_LATCH;
+		if (mode == "DL_TEST_START")
+			return DL_TEST_START;
+		if (mode == "DL_TEST_STOP")
+			return DL_TEST_STOP;
+		return INVALID;
+	}
+};
+
+struct FecCmdsType6132 {
+	enum Type {
+		ACQ_START = 0xEA01,
+		ACQ_STOP = 0xEA02,
+		ADC_INIT = 0xEA11,
+		ADC_SETUP = 0xEA12,
+		ADC_CONVERT = 0xEA13,
+		ADC_REG_ACCESS = 0xEA14,
+		ADC_TEST_START = 0xEA81,
+		ADC_TEST_STOP = 0xEA82,
+		DL_TEST_START = 0xEA83,
+		DL_TEST_STOP = 0xEA84,
+		COMBO_TEST_START = 0xEA85,
+		COMBO_TEST_STOP = 0xEA86,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 12> TYPES = { ACQ_START, ACQ_STOP, ADC_INIT, ADC_SETUP, ADC_CONVERT, ADC_REG_ACCESS, ADC_TEST_START, ADC_TEST_STOP,
+		DL_TEST_START, DL_TEST_STOP, COMBO_TEST_START, COMBO_TEST_STOP };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case ACQ_START:
+			return "ACQ_START";
+		case ACQ_STOP:
+			return "ACQ_STOP";
+		case ADC_INIT:
+			return "ADC_INIT";
+		case ADC_SETUP:
+			return "ADC_SETUP";
+		case ADC_CONVERT:
+			return "ADC_CONVERT";
+		case ADC_REG_ACCESS:
+			return "ADC_REG_ACCESS";
+		case ADC_TEST_START:
+			return "ADC_TEST_START";
+		case ADC_TEST_STOP:
+			return "ADC_TEST_STOP";
+		case DL_TEST_START:
+			return "DL_TEST_START";
+		case DL_TEST_STOP:
+			return "DL_TEST_STOP";
+		case COMBO_TEST_START:
+			return "COMBO_TEST_START";
+		case COMBO_TEST_STOP:
+			return "COMBO_TEST_STOP";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "ACQ_START")
+			return ACQ_START;
+		if (mode == "ACQ_STOP")
+			return ACQ_STOP;
+		if (mode == "ADC_INIT")
+			return ADC_INIT;
+		if (mode == "ADC_SETUP")
+			return ADC_SETUP;
+		if (mode == "ADC_CONVERT")
+			return ADC_CONVERT;
+		if (mode == "ADC_REG_ACCESS")
+			return ADC_REG_ACCESS;
+		if (mode == "ADC_TEST_START")
+			return ADC_TEST_START;
+		if (mode == "ADC_TEST_STOP")
+			return ADC_TEST_STOP;
+		if (mode == "DL_TEST_START")
+			return DL_TEST_START;
+		if (mode == "DL_TEST_STOP")
+			return DL_TEST_STOP;
+		if (mode == "COMBO_TEST_START")
+			return COMBO_TEST_START;
+		if (mode == "COMBO_TEST_STOP")
+			return COMBO_TEST_STOP;
+		return INVALID;
+	}
+};
+struct FecStatusType6111 {
+	enum Type {
+		INIT = 0x00,
+		IDLE = 0x01,
+		ACQUISITION = 0x11,
+		DL_TEST = 0x21,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { INIT, IDLE, ACQUISITION, DL_TEST };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case INIT:
+			return "INIT";
+		case IDLE:
+			return "IDLE";
+		case ACQUISITION:
+			return "ACQUISITION";
+		case DL_TEST:
+			return "DL_TEST";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "INIT")
+			return INIT;
+		if (mode == "IDLE")
+			return IDLE;
+		if (mode == "ACQUISITION")
+			return ACQUISITION;
+		if (mode == "DL_TEST")
+			return DL_TEST;
+		return INVALID;
+	}
+};struct FecStatusType6132 {
+	enum Type {
+		PON = 0x00,
+		PONADC = 0x01,
+		PONW4R = 0x02,
+		IDLE = 0x03,
+		ADC_INI = 0x04,
+		ADC_SET = 0x05,
+		ADC_REG = 0x06,
+		ADC_CONV = 0x07,
+		GAIN_SET = 0x08,
+		ACQ_INI = 0x09,
+		ACQ = 0x0A,
+		ACQ_END = 0x0B,
+		ADC_TEST_INI = 0x0C,
+		ADC_TEST = 0x0D,
+		ADC_TEST_END = 0x0E,
+		DL_TEST = 0x0F,
+		DL_TEST_END = 0x10,
+		COMBO_TEST_INI = 0x11,
+		COMBO_TEST = 0x12,
+		COMBO_TEST_END1 = 0x13,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 20> TYPES = { PON, PONADC, PONW4R, IDLE, ADC_INI, ADC_SET, ADC_REG, ADC_CONV,
+		GAIN_SET, ACQ_INI, ACQ, ACQ_END, ADC_TEST_INI, ADC_TEST, ADC_TEST_END, DL_TEST, DL_TEST_END, COMBO_TEST_INI, COMBO_TEST, COMBO_TEST_END1 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case PON:
+			return "PON";
+		case PONADC:
+			return "PONADC";
+		case PONW4R:
+			return "PONW4R";
+		case IDLE:
+			return "IDLE";
+		case ADC_INI:
+			return "ADC_INI";
+		case ADC_SET:
+			return "ADC_SET";
+		case ADC_REG:
+			return "ADC_REG";
+		case ADC_CONV:
+			return "ADC_CONV";
+		case GAIN_SET:
+			return "GAIN_SET";
+		case ACQ_INI:
+			return "ACQ_INI";
+		case ACQ:
+			return "ACQ";
+		case ACQ_END:
+			return "ACQ_END";
+		case ADC_TEST_INI:
+			return "ADC_TEST_INI";
+		case ADC_TEST:
+			return "ADC_TEST";
+		case ADC_TEST_END:
+			return "ADC_TEST_END";
+		case DL_TEST:
+			return "DL_TEST";
+		case DL_TEST_END:
+			return "DL_TEST_END";
+		case COMBO_TEST_INI:
+			return "COMBO_TEST_INI";
+		case COMBO_TEST:
+			return "COMBO_TEST";
+		case COMBO_TEST_END1:
+			return "COMBO_TEST_END1";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "PON")
+			return PON;
+		if (mode == "PONADC")
+			return PONADC;
+		if (mode == "PONW4R")
+			return PONW4R;
+		if (mode == "IDLE")
+			return IDLE;
+		if (mode == "ADC_INI")
+			return ADC_INI;
+		if (mode == "ADC_SET")
+			return ADC_SET;
+		if (mode == "ADC_REG")
+			return ADC_REG;
+		if (mode == "ADC_CONV")
+			return ADC_CONV;
+		if (mode == "GAIN_SET")
+			return GAIN_SET;
+		if (mode == "ACQ_INI")
+			return ACQ_INI;
+		if (mode == "ACQ")
+			return ACQ;
+		if (mode == "ACQ_END")
+			return ACQ_END;
+		if (mode == "ADC_TEST_INI")
+			return ADC_TEST_INI;
+		if (mode == "ADC_TEST")
+			return ADC_TEST;
+		if (mode == "ADC_TEST_END")
+			return ADC_TEST_END;
+		if (mode == "DL_TEST")
+			return DL_TEST;
+		if (mode == "DL_TEST_END")
+			return DL_TEST_END;
+		if (mode == "COMBO_TEST_INI")
+			return COMBO_TEST_INI;
+		if (mode == "COMBO_TEST")
+			return COMBO_TEST;
+		if (mode == "COMBO_TEST_END1")
+			return COMBO_TEST_END1;
+		return INVALID;
+	}
+};
+
+struct FecType {
+	enum Type {
+		_6111 = 0x6111,
+		_6132 = 0x6132,
+		_6171 = 0x6171,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 3> TYPES = { _6111, _6132, _6171 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case _6111:
+			return "6111";
+		case _6132:
+			return "6132";
+		case _6171:
+			return "6171";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "6111")
+			return _6111;
+		if (mode == "6132")
+			return _6132;
+		if (mode == "6171")
+			return _6171;
+		return INVALID;
+	}
+};
+
+struct FecIdType {
+	enum Type {
+		BOTH = 0,
+		_1 = 1,
+		_2 = 2,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { BOTH, _1, _2 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case BOTH:
+			return "BOTH";
+		case _1:
+			return "1";
+		case _2:
+			return "2";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "BOTH")
+			return BOTH;
+		if (mode == "1")
+			return _1;
+		if (mode == "2")
+			return _2;
+		return INVALID;
+	}
 };

@@ -67,6 +67,12 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	DFIFO_PFLAG_THR_reg DFIFO_PFLAG_THR_reg_{ this };
 	DFIFO_WR_reg DFIFO_WR_reg_{ this };
 	DFIFO DFIFO_{ this };
+
+	//FEC REGS
+	FE_ID_reg FE_ID_reg_{ this };
+	BOARD_CSR_reg BOARD_CSR_reg_{ this };
+	CMD_reg CMD_reg_{ this };
+	DL_CSR_reg DL_CSR_reg_{ this };
 	
 	QTcpSocket tcpSocket_;
 	QDataStream in_;
@@ -144,7 +150,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	void startFifoTest(FifoTestModel::Configuration const& config) noexcept {
-		if (DL_SPI_CSR1_reg_.stopTests() && configureFifoTest(config) && DEBUG_CSR_reg_.startClock() && DFIFO_CSR_reg_.startTests())
+		if (DL_SPI_CSR1_reg_.disableTestMode() && configureFifoTest(config) && DEBUG_CSR_reg_.startClock() && DFIFO_CSR_reg_.startTests())
 			future = std::async(std::launch::async, [this]() { fifoTest(); });
 	}
 
@@ -465,11 +471,23 @@ public slots:
 			setClockSource(*config.clockSource_);
 	}
 
+	FecIdType::Type dlTestsTargetFecId(bool const dl0, bool const dl1) const noexcept {
+		if (dl0 && dl1)
+			return FecIdType::BOTH;
+		if (dl0)
+			return FecIdType::_1;
+		if (dl1)
+			return FecIdType::_2;
+		return FecIdType::INVALID;
+	}
+
 	void startTestsRequest(StartTestsRequest const& request) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
 				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
-				DL_SPI_CSR1_reg_.startTests(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
+				auto dlTestsTarget = dlTestsTargetFecId(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
+				if (dlTestsTarget != FecIdType::INVALID)
+					startDlTests(dlTestsTarget, /*TODO: INPUT DBG CLK FREQ*/DlSclkFreqType::_2Mhz);
 				if (request.model.at(TestTypeEnum::FIFO))
 					startFifoTest(request.fifoTestConfig_);						
 				emit testsStarted();
@@ -485,7 +503,7 @@ public slots:
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
 				CL_SPI_CSR_reg_.stopTests();	
-				DL_SPI_CSR1_reg_.stopTests();
+				stopDlTests();
 				DFIFO_CSR_reg_.stopTests();
 				invokeCmd("*DBG 0");
 			}
@@ -540,15 +558,15 @@ public slots:
 	}
 
 	bool writeFpgaRegister(uint32_t const address, uint32_t const data) const noexcept {
-		return invokeCmd(QString("*HW:FPGA #h%1,#h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
+		return invokeCmd(QString("*HW:FPGA #h%1, #h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
 	bool writeFecRegister(uint32_t const fcId, uint32_t const address, uint32_t const data) const noexcept {
-		return invokeCmd(QString("*HW:FEC %1,#h%2,#h%3").arg(fcId).arg(toHex(address, 8)).arg(toHex(data, 8)));
+		return invokeCmd(QString("*HW:FEC %1, #h%2, #h%3").arg(fcId).arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
 	bool writeCpuRegister(uint32_t const address, uint32_t const data) const noexcept {
-		return invokeCmd(QString("*HW:REG #h%1,#h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
+		return invokeCmd(QString("*HW:REG #h%1, #h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 	}
 
 	std::optional<uint32_t> readFpgaRegister(uint32_t const address) const noexcept {
@@ -556,11 +574,11 @@ public slots:
 	}
 
 	std::optional<uint32_t> readFecRegister(uint32_t const fcId, uint32_t const address) const noexcept {
-		return invokeCmd(QString("*HW:FEC? %1,#h%2").arg(fcId).arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
+		return invokeCmd(QString("*HW:FEC? %1, #h%2").arg(fcId).arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
 	std::optional<std::pair<uint32_t, uint32_t>> readBothFecRegisters(uint32_t const address) const noexcept {
-		auto success = invokeCmd(QString("*HW:FEC? %1,#h%2").arg(0).arg(toHex(address, 8)));
+		auto success = invokeCmd(QString("*HW:FEC? 0, %1, #h%2").arg(0).arg(toHex(address, 8)));
 		if (success) {
 			auto list = response_.split(';');
 			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };
@@ -582,39 +600,109 @@ public slots:
 		storeData_ = state;
 	}
 
-	bool testReg(std::function<std::optional<uint32_t>()> const readFunction, uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+	bool testReg(std::function<std::optional<uint32_t>()> const readFunction, uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
 		auto value = readFunction();
 		bool result = value ? ((*value)&mask) == expected : false;
 		if (result)
 			return true;
 		else if (value && verbose)
-			qDebug() << QString("ERR: Value different than expected. Address: %1 Expected: %2, Read:%3, Mask:%4")
-			.arg(QString::number(address, 16)).arg(QString::number(expected, 16)).arg(QString::number(*value, 16)).arg(QString::number(mask, 16));
+			emit reportError(QString("Value different than expected. Address: %1 Expected: %2, Read:%3, Mask:%4")
+			.arg(QString::number(address, 16)).arg(QString::number(expected, 16)).arg(QString::number(*value, 16)).arg(QString::number(mask, 16)));
 		else if(verbose)
-			qDebug() << QString("ERR: Couldnt read register. Address: %1").arg(QString::number(address, 16));
+			emit reportError(QString("Couldnt read register. Address: %1").arg(QString::number(address, 16)));
 		return false;
 	}
 
-	bool testFpgaReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+	bool testFpgaReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
 		return testReg([this, address]() { return readFpgaRegister(address); }, address, expected, mask, verbose);
 	}
 
-	bool testFecReg(uint32_t const fcId, int32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+	bool testFecReg(uint32_t const fcId, int32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
 		return testReg([this, fcId, address]() {
 			auto result = readFecRegister(fcId, address);
 			if(!result)
-				qDebug() << "ERR: FROM FC ID:" << fcId;
+				emit reportError(QString("FROM FC ID: %1").arg(fcId));
 			return result;
 		}
 		, address, expected, mask, verbose);
 	}
 
-	bool testCpuReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) {
+	bool testCpuReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
 		return testReg([this, address]() { return readCpuRegister(address); }, address, expected, mask, verbose);
 	}
 
-	void enableScpiCommandsPrints(bool const enable) {
+	bool testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds = 0x7FFFFFFF, uint32_t const breakTimeInMilliseconds = 0) {
+		QTime startTime;
+		startTime.start();
+		while (startTime.elapsed() < timeoutInMilliseconds) {
+			if (functionCondition()) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(breakTimeInMilliseconds));
+				return true;
+			}
+		}
+		reportError("Timeout.");
+		return false;
+	}
+
+	void enableScpiCommandsPrints(bool const enable) noexcept {
 		enablePrint_ = enable;
+	}
+
+	bool checkFfDlTransmitterStateIsIdle(FecType::Type const type, FecIdType::Type const fcId) noexcept {
+		uint32_t expectedVal = type == FecType::_6111 ? FecStatusType6111::IDLE : FecStatusType6132::IDLE;
+		return BOARD_CSR_reg_.testStatus(fcId, type, expectedVal);
+	}
+
+	bool checkIfDlReceiverStateIsIdle() noexcept {
+		if (auto fifoFsmStatus = DL_SPI_CSR1_reg_.dlFifoFsmStatus(); fifoFsmStatus) {
+			if (auto fsmStatus = DL_SPI_CSR1_reg_.dlFsmStatus; fsmStatus) {
+				if (*fifoFsmStatus != 0) {
+					emit reportError("FifoFsmStatus is not 0.");
+					return false;
+				}
+				if (*fsmStatus != 0) {
+					emit reportError("FsmStatus is not 0.");
+					return false;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	std::optional<FecType::Type> readFecType(FecIdType::Type const fcId) noexcept {
+		auto read = FE_ID_reg_.fecType(fcId);
+		if (read.first && fcId == FecIdType::BOTH || fcId == FecIdType::_1)
+			return static_cast<FecType::Type>(*read.first);
+		if (read.second && fcId == FecIdType::BOTH || fcId == FecIdType::_2)
+			return static_cast<FecType::Type>(*read.second);
+		return std::nullopt;
+	}
+
+	bool startDlTests(FecIdType::Type const fcId, DlSclkFreqType::Type const freq) noexcept {
+		if (auto fecType = readFecType(fcId); fecType) {
+			return checkFfDlTransmitterStateIsIdle(*fecType, fcId) &&
+				checkIfDlReceiverStateIsIdle() &&
+				DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fcId) &&
+				DL_SPI_CSR1_reg_.enableTestMode(fcId) &&
+				DL_CSR_reg_.setDlSclkFreqType(fcId, freq) &&
+				CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_START : FecCmdsType6132::DL_TEST_START);	
+		}
+		return false;
+	}
+
+	bool stopDlTests() noexcept {
+		if (auto runningTests = DL_SPI_CSR1_reg_.runningTests(); runningTests) {
+			auto fcId = dlTestsTargetFecId((*runningTests).first, (*runningTests).second);
+			if (auto fecType = readFecType(fcId); fecType) {
+				return fcId != FecIdType::INVALID &&
+					CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_STOP : FecCmdsType6132::DL_TEST_STOP) &&
+					testWithTimeout([this, type = *fecType, fcId]() { return checkFfDlTransmitterStateIsIdle(type, fcId); }, 100, 25) &&
+					DL_SPI_CSR1_reg_.disableTestMode() &&
+					testWithTimeout([this]() { return checkIfDlReceiverStateIsIdle(); }, 100, 25);
+			}
+		}
+		return false;
 	}
 signals:
 	void actualControllerKey(uint32_t const id) const;

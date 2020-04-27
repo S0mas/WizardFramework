@@ -1,22 +1,59 @@
 #include "../../include/Device6991/Registers6991.h"
 #include "../../include/Device6991/Device6991.h"
 
-bool Register::readHw() noexcept {
+bool Register::readHw(uint32_t const mask) noexcept {
 	if (auto reg = deviceIF->readFpgaRegister(address_); reg) {
-		data_ = *reg;
+		data_ = *reg & mask;
 		return true;
 	}
+	deviceIF->reportError(QString("Faild to read register. Reg address: %1").arg(toHex(address_, 8)));
 	return false;
 }
 
 bool Register::writeHw() const noexcept {
-	return deviceIF->writeFpgaRegister(address_, data_.to_ulong());
+	auto result = deviceIF->writeFpgaRegister(address_, data_.to_ulong());
+	if(!result)
+		deviceIF->reportError(QString("Faild to write register. Reg address: %1").arg(toHex(address_, 8)));
+	return result;
 }
 
 Register::Register(uint32_t address, Device6991* deviceIF) : address_(address), deviceIF(deviceIF) {}
 
 std::optional<uint32_t> Register::value() noexcept {
 	return readHw() ? std::optional{ data_.to_ulong() } : std::nullopt;
+}
+
+bool RegisterFeCard::readHw(FecIdType::Type const fcId, uint32_t const mask) noexcept {
+	if (auto reg = deviceIF->readFecRegister(fcId, address_); reg) {
+		data_ = *reg & mask;
+		return true;
+	}
+	return false;
+}
+
+bool RegisterFeCard::writeHw(FecIdType::Type const fcId) const noexcept {
+	return deviceIF->writeFecRegister(fcId, address_, data_.to_ulong());
+}
+
+bool RegisterFeCard::readBoth(uint32_t const mask) noexcept {
+	if (auto reg = deviceIF->readBothFecRegisters(address_); reg) {
+		dataBoth_ = { (*reg).first & mask, (*reg).second & mask };
+		data_ = (*reg).first & mask;
+		return true;
+	}
+	return false;
+}
+
+RegisterFeCard::RegisterFeCard(uint32_t address, Device6991* deviceIF) : Register(address, deviceIF) {}
+
+std::pair<std::optional<uint32_t>, std::optional<uint32_t>> RegisterFeCard::value(FecIdType::Type const fcId, uint32_t const mask) noexcept {
+	if(fcId == FecIdType::BOTH)
+		return readBoth() ? std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{dataBoth_.first.to_ulong(), dataBoth_.second.to_ulong()} : std::pair{std::nullopt, std::nullopt};
+	else {
+		if (auto read = readHw(fcId); read)
+			return fcId == FecIdType::_1 ? std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{data_.to_ulong(), std::nullopt} : std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{ std::nullopt, data_.to_ulong() };
+		return std::pair{ std::nullopt, std::nullopt };
+	}
 }
 
 FC_WR_QUEUE_EMP::FC_WR_QUEUE_EMP(Device6991* deviceIF) : Register(RegistersEnum::FC_WR_QUEUE_EMP, deviceIF) {}
@@ -97,21 +134,18 @@ CL1_SPI_TLERR_reg::CL1_SPI_TLERR_reg(Device6991* deviceIF) : Register(RegistersE
 
 DL_SPI_CSR1_reg::DL_SPI_CSR1_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR1_reg, deviceIF) {}
 
-bool DL_SPI_CSR1_reg::startTests(bool const DL0, bool const DL1) noexcept {
-	if (DL0 || DL1) {
-		readHw();
-		data_.set(DL0_TEST_MODE, DL0);
-		data_.set(DL1_TEST_MODE, DL1);
+bool DL_SPI_CSR1_reg::enableTestMode(FecIdType::Type const fcId) noexcept {
+	if (readHw()) {	
+		data_.set(DL0_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_1);
+		data_.set(DL1_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_2);
 		data_.set(DL_EN);
-		///start test
 		return writeHw();
 	}
 	return false;
 }
 
-bool DL_SPI_CSR1_reg::stopTests() noexcept {
+bool DL_SPI_CSR1_reg::disableTestMode() noexcept {
 	if (readHw()) {
-		///stop test
 		data_.reset(DL0_TEST_MODE);
 		data_.reset(DL1_TEST_MODE);
 		data_.reset(DL_EN);
@@ -122,6 +156,10 @@ bool DL_SPI_CSR1_reg::stopTests() noexcept {
 
 std::optional<bool> DL_SPI_CSR1_reg::isTestRunning() noexcept {
 	return readHw() ? std::optional{ data_.test(DL_EN) && (data_.test(DL0_TEST_MODE) || data_.test(DL1_TEST_MODE)) } : std::nullopt;
+}
+
+std::optional<std::pair<bool, bool>> DL_SPI_CSR1_reg::runningTests() noexcept {
+	return readHw() ? std::optional{ std::pair{data_.test(DL0_TEST_MODE), data_.test(DL1_TEST_MODE)} } : std::nullopt;
 }
 
 DL_SPI_CSR2_reg::DL_SPI_CSR2_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR2_reg, deviceIF) {}

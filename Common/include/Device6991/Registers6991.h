@@ -5,11 +5,11 @@
 
 class Device6991;
 class Register {
+protected:
 	uint32_t address_;
 	Device6991* deviceIF;
-protected:
 	std::bitset<32> data_;
-	bool readHw() noexcept;
+	bool readHw(uint32_t const mask = 0xFFFFFFFF) noexcept;
 	bool writeHw() const noexcept;
 public:
 	Register(uint32_t const, Device6991*);
@@ -156,15 +156,66 @@ class DL_SPI_CSR1_reg : public Register {
 	const int DL_EN = 31;
 public:
 	DL_SPI_CSR1_reg(Device6991*);
-	bool startTests(bool const DL0, bool const DL1) noexcept;
-	bool stopTests() noexcept;
+	bool enableTestMode(FecIdType::Type const fcId) noexcept;
+	bool disableTestMode() noexcept;
 	std::optional<bool> isTestRunning() noexcept;
+	std::optional<std::pair<bool, bool>> runningTests() noexcept;
+	std::optional<uint32_t> dlFsmStatus() noexcept {
+		return value() ? std::optional{ static_cast<DlSclkFreqType::Type>(data_.to_ulong() & 0xF00) } : std::nullopt;
+	}
+
+	std::optional<uint32_t> dlFifoFsmStatus() noexcept {
+		return value() ? std::optional{ static_cast<DlSclkFreqType::Type>(data_.to_ulong() & 0xF0) } : std::nullopt;
+	}
 };
 
 class DL_SPI_CSR2_reg : public Register {
-
 public:
 	DL_SPI_CSR2_reg(Device6991*);
+
+	bool setDl0FrameLength(DlFrameRateType::Type const frameType) noexcept {
+		if (value()) {
+			data_ &= 0xFFFFFFE0;
+			data_ |= frameType;
+			return writeHw();
+		}
+		return false;
+	}
+
+	bool setDl1FrameLength(DlFrameRateType::Type const frameType) noexcept {	
+		if (value()) {
+			data_ &= 0xFFE0FFFF;
+			data_ |= frameType << 16;
+			return writeHw();
+		}
+		return false;
+	}
+
+	bool setDlFrameLength(FecType::Type const cardType, FecIdType::Type const fcId) noexcept {
+		DlFrameRateType::Type rateType = DlFrameRateType::INVALID;
+		if (cardType == FecType::_6111 || cardType == FecType::_6171)
+			rateType = DlFrameRateType::BU6111_BU6171;
+		else if (cardType == FecType::_6132)
+			rateType = DlFrameRateType::BU6132;
+		switch (fcId) {
+		case FecIdType::BOTH:
+			return setDl0FrameLength(rateType) && setDl1FrameLength(rateType);
+		case FecIdType::_1:
+			return setDl0FrameLength(rateType);
+		case FecIdType::_2:
+			return setDl0FrameLength(rateType);
+		default:
+			return false;
+		}
+	}
+
+	std::optional<DlFrameRateType::Type> dl0FrameLength() noexcept {
+		return value() ? std::optional{ static_cast<DlFrameRateType::Type>(data_.to_ulong() & 0x1F) } : std::nullopt;
+	}
+
+	std::optional<DlFrameRateType::Type> dl1FrameLength() noexcept {
+		return value() ? std::optional{ static_cast<DlFrameRateType::Type>((data_.to_ulong() & 0x1F0000) >> 16) } : std::nullopt;
+	}
 };
 
 class DL_SPI_CSR3_reg : public Register {
@@ -337,4 +388,89 @@ public:
 class DFIFO : public Register {
 public:
 	DFIFO(Device6991*);
+};
+
+class RegisterFeCard : public Register {
+protected:
+	bool readHw(FecIdType::Type const fcId, uint32_t const mask = 0xFFFFFFFF) noexcept;
+	bool writeHw(FecIdType::Type const fcId) const noexcept;
+	bool readBoth(uint32_t const mask = 0xFFFFFFFF) noexcept;
+	std::pair<std::bitset<32>, std::bitset<32>> dataBoth_;
+public:
+	RegisterFeCard(uint32_t const, Device6991*);
+	std::pair<std::optional<uint32_t>, std::optional<uint32_t>> value(FecIdType::Type const fcId, uint32_t const mask = 0xFFFFFFFF) noexcept;
+};
+
+class FE_ID_reg : public RegisterFeCard {
+public:
+	FE_ID_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::FE_ID_reg, devIF) {}
+
+	auto fecType(FecIdType::Type const fcId) noexcept {
+		return value(fcId, 0xFFFF);
+	}
+};
+
+class BOARD_CSR_reg : public RegisterFeCard {
+public:
+	BOARD_CSR_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::BOARD_CSR_reg, devIF) {}
+
+	auto status6111(FecIdType::Type const fcId) {
+		return value(fcId, 0x3F);
+	}
+
+	auto status6132(FecIdType::Type const fcId) {
+		return value(fcId, 0x1F);
+	}
+
+	auto status(FecIdType::Type const fcId, FecType::Type const type) {
+		return type == FecType::_6111 ? status6111(fcId) : status6132(fcId);
+	}
+
+	bool testStatus(FecIdType::Type const fcId, FecType::Type const type, uint32_t const expectedStatus) {
+		auto sts = status(fcId, type);
+		switch (fcId) {
+		case FecIdType::BOTH:
+			return sts.first && sts.second ? *sts.first == expectedStatus && *sts.second == expectedStatus : false;
+		case FecIdType::_1:
+			return sts.first ? *sts.first == expectedStatus : false;
+		case FecIdType::_2:
+			return sts.second ? *sts.second == expectedStatus : false;
+		default:
+			return false;
+		}
+	}
+};
+
+class CMD_reg : public RegisterFeCard {
+public:
+	CMD_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CMD_reg, devIF) {}
+
+	bool setCmd(FecIdType::Type const fcId, uint32_t const cmd) noexcept {
+		auto read = value(fcId);
+		if (read.first || read.second) {
+			data_ &= 0xFFFF0000;
+			data_ |= cmd;
+			return writeHw(fcId);
+		}
+		return false;
+	}
+};
+
+class DL_CSR_reg : public RegisterFeCard {
+public:
+	DL_CSR_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::DL_CSR_reg, devIF) {}
+
+	bool setDlSclkFreqType(FecIdType::Type const fcId, DlSclkFreqType::Type const freq) noexcept {
+		auto read = value(fcId);
+		if (read.first || read.second) {
+			data_ &= 0xFFFFFFF0;
+			data_ |= freq;
+			return writeHw(fcId);
+		}
+		return false;
+	}
+
+	auto dlSclkFreqType(FecIdType::Type const fcId) noexcept {
+		return value(fcId, 0xF);
+	}
 };
