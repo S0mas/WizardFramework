@@ -17,7 +17,7 @@ public:
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("MEASure"));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("*STB?", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.stb());
+				responseContainer_ = QString::number(devMock_.stb(), 16);
 				return 0;
 			}
 		)));

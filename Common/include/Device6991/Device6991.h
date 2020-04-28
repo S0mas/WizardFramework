@@ -168,7 +168,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	bool succeeded() const noexcept {
 		response_ = readResponse();
 		scpiCmd("*STB?");
-		std::bitset<8> stb = readResponse().toUInt();//TODO CHECK IF IT SHOULDNT BE INTERPRETED AS HEX
+		std::bitset<8> stb = readResponse().toUInt(nullptr, 16);//TODO CHECK IF IT SHOULDNT BE INTERPRETED AS HEX
 		bool eva = stb[2];
 		if (eva) {
 			auto error = readError();
