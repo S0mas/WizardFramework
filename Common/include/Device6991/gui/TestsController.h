@@ -9,6 +9,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
 #include <QStateMachine>
@@ -31,6 +32,20 @@ public:
 	FifoTestModel::Configuration config() const noexcept;
 	void setModel(FifoTestModel const& model) noexcept;
 };
+
+class DlTestView : public QGroupBox {
+	QRadioButton* freq1_ = new QRadioButton(DlSclkFreqType::toString(DlSclkFreqType::_1Mhz));
+	QRadioButton* freq2_ = new QRadioButton(DlSclkFreqType::toString(DlSclkFreqType::_2Mhz));
+	QRadioButton* freq4_ = new QRadioButton(DlSclkFreqType::toString(DlSclkFreqType::_4Mhz));
+	QRadioButton* freq5_ = new QRadioButton(DlSclkFreqType::toString(DlSclkFreqType::_5Mhz));
+	QRadioButton* freq10_ = new QRadioButton(DlSclkFreqType::toString(DlSclkFreqType::_10Mhz));
+public:
+	DlTestView(QWidget* parent = nullptr);
+	void removeSelection() noexcept;
+	void defaultSelection() noexcept;
+	DlSclkFreqType::Type selected() const noexcept;
+};
+
 class TestsResultView : public QGroupBox {
 	Q_OBJECT
 	struct ResultView {
@@ -67,6 +82,7 @@ public:
 	TestsSelectionModel model() const noexcept;
 signals:
 	void fifoSelected(bool const selected) const;
+	void dlSelected(bool const selected) const;
 };
 
 class TestsController : public QGroupBox {
@@ -75,10 +91,11 @@ class TestsController : public QGroupBox {
 	TestSelectionView* selectionView_ = new TestSelectionView;
 	QLabel* testElapsedTimeLabel_ = new QLabel("Time elapsed:");
 	Device6991* deviceIF_;
-	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { deviceIF_->startTestsRequest({ selectionView_->model(), fifoTestView_->config() }); }, "Stop", [this]() {deviceIF_->stopTestsRequest(); });
+	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { deviceIF_->startTestsRequest({ selectionView_->model(), fifoTestView_->config(), dlTestView_->selected() }); }, "Stop", [this]() {deviceIF_->stopTestsRequest(); });
 	QStateMachine sm_;
 	QTime time_;
 	FifoTestView* fifoTestView_ = new FifoTestView;
+	DlTestView* dlTestView_ = new DlTestView;
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;

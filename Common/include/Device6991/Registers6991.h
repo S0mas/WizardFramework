@@ -82,17 +82,24 @@ public:
 	std::optional<bool> isAuxPresent() noexcept {
 		return value() ? std::optional{ data_.test(AUX_PRESENT) } : std::nullopt;
 	}
-	std::optional<bool> isFe1Present() {
+	std::optional<bool> isFec1Present() {
 		return value() ? std::optional{ data_.test(FE1_PRESENT) } : std::nullopt;
 	}
-	std::optional<bool> isFe2Present() {
+	std::optional<bool> isFec2Present() {
 		return value() ? std::optional{ data_.test(FE2_PRESENT) } : std::nullopt;
 	}
-	std::optional<bool> isFe1Ready() {
+	std::optional<bool> isFec1Ready() {
 		return value() ? std::optional{ data_.test(FE1_READY) } : std::nullopt;
 	}
-	std::optional<bool> isFe2Ready() {
+	std::optional<bool> isFec2Ready() {
 		return value() ? std::optional{ data_.test(FE2_READY) } : std::nullopt;
+	}
+
+	std::optional<bool> isFecReady(FecIdType::Type const fecId) {
+		return fecId == FecIdType::_1 ? isFec1Ready() : isFec2Ready();
+	}
+	std::optional<bool> isFecPresent(FecIdType::Type const fecId) {
+		return fecId == FecIdType::_1 ? isFec1Present() : isFec2Present();
 	}
 };
 

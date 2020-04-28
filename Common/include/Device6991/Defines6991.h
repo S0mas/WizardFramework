@@ -837,6 +837,50 @@ struct TestTypeEnum {
 	}
 };
 
+struct DlSclkFreqType {
+	enum Type {
+		_1Mhz = 0x0,
+		_2Mhz = 0x1,
+		_4Mhz = 0x2,
+		_5Mhz = 0x3,
+		_10Mhz = 0x4,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 5> TYPES = { _1Mhz, _2Mhz, _4Mhz, _5Mhz, _10Mhz };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case _1Mhz:
+			return "1Mhz";
+		case _2Mhz:
+			return "2Mhz";
+		case _4Mhz:
+			return "4Mhz";
+		case _5Mhz:
+			return "5Mhz";
+		case _10Mhz:
+			return "10Mhz";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "1Mhz")
+			return _1Mhz;
+		if (mode == "2Mhz")
+			return _2Mhz;
+		if (mode == "4Mhz")
+			return _4Mhz;
+		if (mode == "5Mhz")
+			return _5Mhz;
+		if (mode == "10Mhz")
+			return _10Mhz;
+		return INVALID;
+	}
+};
+
 struct Result {
 	std::optional<uint32_t> count_;
 	std::optional<uint32_t> errors_;
@@ -862,6 +906,7 @@ struct FifoTestModel {
 struct StartTestsRequest {
 	TestsSelectionModel model;
 	FifoTestModel::Configuration fifoTestConfig_;
+	DlSclkFreqType::Type clockFreq_;
 };
 
 struct TestsStatus {
@@ -894,50 +939,6 @@ struct DlFrameRateType {
 			return BU6111_BU6171;
 		else if (mode == "BU6132")
 			return BU6132;
-		return INVALID;
-	}
-};
-
-struct DlSclkFreqType {
-	enum Type {
-		_1Mhz = 0x0,
-		_2Mhz = 0x1,
-		_4Mhz = 0x2,
-		_5Mhz = 0x3,
-		_10Mhz = 0x4,
-		INVALID = -1
-	};
-
-	inline constexpr static std::array<Type,5> TYPES = { _1Mhz, _2Mhz, _4Mhz, _5Mhz, _10Mhz };
-
-	static QString toString(Type const mode) noexcept {
-		switch (mode) {
-		case _1Mhz:
-			return "1Mhz";
-		case _2Mhz:
-			return "2Mhz";
-		case _4Mhz:
-			return "4Mhz";
-		case _5Mhz:
-			return "5Mhz";
-		case _10Mhz:
-			return "10Mhz";
-		default:
-			return "invalid";
-		}
-	}
-
-	static Type fromString(QString const& mode) noexcept {
-		if (mode == "1Mhz")
-			return _1Mhz;
-		if (mode == "2Mhz")
-			return _2Mhz;
-		if (mode == "4Mhz")
-			return _4Mhz;
-		if (mode == "5Mhz")
-			return _5Mhz;
-		if (mode == "10Mhz")
-			return _10Mhz;
 		return INVALID;
 	}
 };
@@ -1065,7 +1066,8 @@ struct FecCmdsType6132 {
 		return INVALID;
 	}
 };
-struct FecStatusType6111 {
+
+struct FecStatusType6111 {
 	enum Type {
 		INIT = 0x00,
 		IDLE = 0x01,
@@ -1102,7 +1104,9 @@ struct FecCmdsType6132 {
 			return DL_TEST;
 		return INVALID;
 	}
-};struct FecStatusType6132 {
+};
+
+struct FecStatusType6132 {
 	enum Type {
 		PON = 0x00,
 		PONADC = 0x01,

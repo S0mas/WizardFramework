@@ -36,39 +36,39 @@ public:
 		)));
 		navigator = root->findCmd(std::vector<std::string>({ "*HW" }));
 
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FPGA", ScpiFunction::getScpiFunction<double, double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FPGA", ScpiFunction::getScpiFunction<unsigned long long, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.writeFpgaReg(args[0].get<double>(), args[1].get<double>());
+				devMock_.writeFpgaReg(args[0].get<unsigned long long>(), args[1].get<unsigned long long>());
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FPGA?", ScpiFunction::getScpiFunction<double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FPGA?", ScpiFunction::getScpiFunction<unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.readFpgaReg(args[0].get<double>()));
+				responseContainer_ = QString::number(devMock_.readFpgaReg(args[0].get<unsigned long long>()), 16);
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("REG", ScpiFunction::getScpiFunction<double, double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("REG", ScpiFunction::getScpiFunction<unsigned long long, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.writeCpuReg(args[0].get<double>(), args[1].get<double>());
+				devMock_.writeCpuReg(args[0].get<unsigned long long>(), args[1].get<unsigned long long>());
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("REG?", ScpiFunction::getScpiFunction<double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("REG?", ScpiFunction::getScpiFunction<unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.readCpuReg(args[0].get<double>()));
+				responseContainer_ = QString::number(devMock_.readCpuReg(args[0].get<unsigned long long>()), 16);
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FC", ScpiFunction::getScpiFunction<double, double, double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FEC", ScpiFunction::getScpiFunction<double, unsigned long long, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.writeFcReg(args[0].get<double>(), args[1].get<double>(), args[2].get<double>());
+				devMock_.writeFcReg(args[0].get<double>(), args[1].get<unsigned long long>(), args[2].get<unsigned long long>());
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FC?", ScpiFunction::getScpiFunction<double, double>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FEC?", ScpiFunction::getScpiFunction<double, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.readFcReg(args[0].get<double>(), args[1].get<double>()));
+				responseContainer_ = QString::number(devMock_.readFcReg(args[0].get<double>(), args[1].get<unsigned long long>()), 16);
 				return 0;
 			}
 		)));

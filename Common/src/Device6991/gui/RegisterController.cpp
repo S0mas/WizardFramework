@@ -60,7 +60,7 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 	sm_.start();
 }
 
-TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, int const index, QWidget* parent)
+TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, FecIdType::Type const index, QWidget* parent)
 	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), parentCommandSelector_(parentCommandSelector) {
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
 	lineEdit_->setMaximumWidth(70);
@@ -106,7 +106,7 @@ void RegisterControllerFrontend::createConnections() noexcept {
 }
 
 RegisterControllerFrontend::RegisterControllerFrontend(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
-	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, 1)), frontend2_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, 2)){
+	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, FecIdType::_2)){
 	auto frontendsLayout = new QHBoxLayout;
 	frontendsLayout->addWidget(frontend1_);
 	frontendsLayout->addWidget(frontend2_);

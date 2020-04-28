@@ -23,14 +23,14 @@ class TargetFrontendCardView : public QGroupBox {
 	QCheckBox* checkBox_ = new QCheckBox;
 	QStateMachine sm_;
 	Device6991* deviceIF_;
-	int index_;
+	FecIdType::Type index_;
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
 	EnumSelector* parentCommandSelector_;
 signals:
 	void stateReq() const;
 public:
-	TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, int const index, QWidget* parent = nullptr);
+	TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, FecIdType::Type const index, QWidget* parent = nullptr);
 	QLineEdit* lineEdit_ = new QLineEdit;
 public slots:
 	void sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept;

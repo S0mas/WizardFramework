@@ -487,7 +487,7 @@ public slots:
 				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
 				auto dlTestsTarget = dlTestsTargetFecId(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
 				if (dlTestsTarget != FecIdType::INVALID)
-					startDlTests(dlTestsTarget, /*TODO: INPUT DBG CLK FREQ*/DlSclkFreqType::_2Mhz);
+					startDlTests(dlTestsTarget, request.clockFreq_);
 				if (request.model.at(TestTypeEnum::FIFO))
 					startFifoTest(request.fifoTestConfig_);						
 				emit testsStarted();
@@ -590,10 +590,11 @@ public slots:
 		return invokeCmd(QString("*HW:REG? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
-	void fcCardStateRequest(uint32_t const fcId) const noexcept {
-		//todo
-		bool enabled = true;
-		enabled ? emit fcCardEnabled(fcId) : emit fcCardDisabled(fcId);
+	void fcCardStateRequest(FecIdType::Type const fecId) noexcept {
+		if (auto present = BOARD_CSR1_reg_.isFecPresent(fecId); present && *present)
+			emit fcCardEnabled(fecId);
+		else
+			emit fcCardDisabled(fecId);
 	}
 
 	void setStoreData(bool const state) noexcept {

@@ -73,21 +73,29 @@ TestSelectionView::TestSelectionView(QWidget * parent) : QGroupBox("Selection", 
 				dl0CheckBox->checkBox_->setChecked(false);
 				dl1CheckBox->checkBox_->setChecked(false);
 			}
-			emit fifoSelected(state == Qt::Checked);
+			emit fifoSelected(state == Qt::Checked);		
 		}
 	);
 
 	connect(dl0CheckBox->checkBox_, &QCheckBox::stateChanged,
-		[fifoCheckBox](int const state) {
-			if (state == Qt::Checked)
+		[this, fifoCheckBox, dl1CheckBox](int const state) {
+			if (state == Qt::Checked) {
 				fifoCheckBox->checkBox_->setChecked(false);
+				emit dlSelected(true);
+			}
+			else if (!dl1CheckBox->checkBox_->isChecked())
+				emit dlSelected(false);
 		}
 	);
 
 	connect(dl1CheckBox->checkBox_, &QCheckBox::stateChanged,
-		[fifoCheckBox](int const state) {
-			if (state == Qt::Checked)
+		[this, fifoCheckBox, dl0CheckBox](int const state) {
+			if (state == Qt::Checked) {
 				fifoCheckBox->checkBox_->setChecked(false);
+				emit dlSelected(true);
+			}
+			else if (!dl0CheckBox->checkBox_->isChecked())
+				emit dlSelected(false);
 		}
 	);
 	///////////////////////////////////////////////
@@ -113,6 +121,13 @@ void TestsController::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
 	connect(deviceIF_, &Device6991::testCounters, [this](TestsStatus const& status) { resultView_->setModel(status.model); if(selectionView_->model().at(TestTypeEnum::FIFO))fifoTestView_->setModel(status.fifoTestModel_); });
 	connect(selectionView_, &TestSelectionView::fifoSelected, fifoTestView_, &FifoTestView::setEnabled);
+	connect(selectionView_, &TestSelectionView::dlSelected,
+		[this](bool const state) {
+			dlTestView_->setEnabled(state);
+			if(!state)
+				dlTestView_->defaultSelection();
+		}
+	);
 	initializeStateMachine();
 }
 
@@ -167,6 +182,7 @@ TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF*
 	auto layout = new QVBoxLayout;
 	layout->addLayout(hlayout);
 	layout->addWidget(fifoTestView_);
+	layout->addWidget(dlTestView_);
 
 	hlayout = new QHBoxLayout;
 	hlayout->addWidget(startStopTestsButton_, 1, Qt::AlignRight);
@@ -271,4 +287,45 @@ void FifoTestView::setModel(FifoTestModel const & model) noexcept {
 	overflowCounter_->setText(QString::number(model.overflows_));
 	dataError_->setText(QString::number(model.dataErrorsCount_));
 	passThresholdCounter_->setText(QString::number(model.passTresholdCount_));
+}
+
+DlTestView::DlTestView(QWidget * parent) : QGroupBox("DL Clock Frequency", parent) {
+	auto layout = new QHBoxLayout;
+	layout->addWidget(freq1_);
+	layout->addWidget(freq2_);
+	layout->addWidget(freq4_);
+	layout->addWidget(freq5_);
+	layout->addWidget(freq10_);
+
+	setEnabled(false);
+	defaultSelection();
+	setLayout(layout);
+}
+
+void DlTestView::removeSelection() noexcept {
+	freq1_->setChecked(false);
+	freq2_->setChecked(false);
+	freq4_->setChecked(false);
+	freq5_->setChecked(false);
+	freq10_->setChecked(false);
+}
+
+void DlTestView::defaultSelection() noexcept {
+	removeSelection();
+	freq2_->setChecked(true);
+}
+
+DlSclkFreqType::Type DlTestView::selected() const noexcept {
+	QRadioButton* selectedButton;
+	if (freq1_->isChecked())
+		selectedButton = freq1_;
+	else if (freq2_->isChecked())
+		selectedButton = freq2_;
+	else if (freq4_->isChecked())
+		selectedButton = freq4_;
+	else if (freq5_->isChecked())
+		selectedButton = freq5_;
+	else if (freq10_->isChecked())
+		selectedButton = freq10_;
+	return DlSclkFreqType::fromString(selectedButton->text());
 }

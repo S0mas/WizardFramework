@@ -159,6 +159,7 @@ public:
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
 		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 8191;
 		fpgaRegs_[RegistersEnum::ACQ_CSR_reg] = 0;
+		fpgaRegs_[RegistersEnum::BOARD_CSR1_reg] = 0x0000001F;
 		checkTestsRegsTimer->start(500);
 		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
