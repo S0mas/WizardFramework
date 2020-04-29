@@ -206,9 +206,9 @@ FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
 	tresholdEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
 	tresholdEdit_->setMaximumWidth(40);
 
-	rateEdit_->setMaximum(4294967295);
-	rateEdit_->setMinimum(1);
-	rateEdit_->setDecimals(0);
+	rateEdit_->setMaximum(35791392693.34424);
+	rateEdit_->setMinimum(8.333333);
+	rateEdit_->setDecimals(6);
 	rateEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
 	rateEdit_->setMaximumWidth(80);
 

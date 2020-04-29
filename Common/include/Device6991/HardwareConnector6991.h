@@ -11,6 +11,7 @@ class HardwareConnector6991 : public AbstractHardwareConnector {
 	std::shared_ptr<AbstractDataResource> ipResource;
 	unsigned long rmVi_ = 0;
 	std::string resource() const noexcept {
+		ipResource->load();
 		return QString("TCPIP::%1::INSTR").arg(ipResource->value()).toStdString();
 	}
 	bool isConnectionPossible() const override { 
@@ -24,7 +25,10 @@ class HardwareConnector6991 : public AbstractHardwareConnector {
 		return result;
 	}	
 	void connectImpl() noexcept override {
-		innerCall(viOpenDefaultRM, "viOpenDefaultRM", &rmVi_) >= 0 && innerCall(viOpen, "viOpen", rmVi_, resource().data(), 0, 0, &vi_) >= 0;
+		logMsg(QString("Device resource: %1").arg(QString::fromStdString(resource())));
+		qDebug() << viOpenDefaultRM(&rmVi_);
+		qDebug() << viOpen(rmVi_, resource().data(), 0, 0, &vi_);
+		///innerCall(viOpenDefaultRM, "viOpenDefaultRM", &rmVi_) >= 0 && innerCall(viOpen, "viOpen", rmVi_, resource().data(), 0, 0, &vi_) >= 0;
 	}
 	void disconnectImpl() noexcept override {
 		innerCall(viClose, "viClose", vi_);
@@ -45,7 +49,8 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	HardwareConnector6991(const QString& nameId, QObject* parent = nullptr) noexcept {
-		errorChecker = std::make_unique<ErrorChecker>([](auto a, auto b, auto c) { return 0; } );
+		ipResource = std::make_shared<QSettingsResource>("ip" + nameId, nameId + " IP", Enums::GUI_Type::TYPE_1, std::make_unique<IPContentValidation>());
+		errorChecker = std::make_unique<ErrorChecker>(&viStatusDesc);
 	}
 	~HardwareConnector6991() override = default;
 	std::vector<std::shared_ptr<AbstractDataResource>> resources() const noexcept override {

@@ -35,7 +35,7 @@ class Controller6991 : public QGroupBox {
 	QPushButton* setModeButton_ = new QPushButton("Set");
 	QWidget* dataStreamGroup_ = new QGroupBox("Data Stream");
 	QComboBox* dataStreamComboBox_ = new QComboBox;
-	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { deviceIF_->connectDataStreamRequest(dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { deviceIF_->disconnectDataStreamRequest(); });
+	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { deviceIF_->connectDataStreamRequest(16100+dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { deviceIF_->disconnectDataStreamRequest(); });
 	TwoStateButton* acqStartStopButton_ = new TwoStateButton("Start", [this]() { deviceIF_->configurateDeviceRequest(model()); deviceIF_->startAcquisitionRequest(); }, "Stop", [this]() { deviceIF_->stopAcquisitionRequest(); });
 	ScanRateView* scanRateView_ = new ScanRateView;
 	QWidget* clockSourceGroup_ = new QGroupBox("Clock Source");

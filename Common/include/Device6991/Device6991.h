@@ -74,7 +74,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	CMD_reg CMD_reg_{ this };
 	DL_CSR_reg DL_CSR_reg_{ this };
 	
-	QTcpSocket tcpSocket_;
+	QTcpSocket* tcpSocket_ = new QTcpSocket(this);
 	QDataStream in_;
 	mutable QString response_;
 	bool isAcqActive_ = false;
@@ -306,11 +306,11 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	void openSocketConnection(QString const& addresss, uint32_t const port) noexcept {
-		tcpSocket_.connectToHost(addresss, port);
+		tcpSocket_->connectToHost(addresss, port);
 	}
 
 	void closeSocketConnection() noexcept {
-		tcpSocket_.disconnectFromHost();
+		tcpSocket_->disconnectFromHost();
 	}
 
 	void storeData(std::string const& data) noexcept {		
@@ -321,12 +321,12 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 private slots:
 	void displayError(QAbstractSocket::SocketError socketError) noexcept {
-		emit reportError(QString(tcpSocket_.errorString()));
+		emit reportError(QString(tcpSocket_->errorString()));
 		closeSocketConnection();
 	}
 	void readData() noexcept {
 		in_.startTransaction();
-		auto bytes = tcpSocket_.bytesAvailable();
+		auto bytes = tcpSocket_->bytesAvailable();
 		std::string data;
 		data.resize(bytes);
 		in_.readRawData(data.data(), bytes);
@@ -357,13 +357,12 @@ public:
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, uint32_t const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
 		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
 		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
-		connect();
-		in_.setDevice(&tcpSocket_);
+		in_.setDevice(tcpSocket_);
 		in_.setVersion(QDataStream::Qt_5_14);
-		QObject::connect(&tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
-		QObject::connect(&tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
-		QObject::connect(&tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
-		QObject::connect(&tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
+		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
+		QObject::connect(tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
 	}
 	~Device6991() override {
 		//exiting = true;
@@ -502,9 +501,12 @@ public slots:
 	void stopTestsRequest() noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			if (invokeCmd("*DBG 1")) {
-				CL_SPI_CSR_reg_.stopTests();	
-				stopDlTests();
-				DFIFO_CSR_reg_.stopTests();
+				if (auto isRunning = CL_SPI_CSR_reg_.isTestRunning(); isRunning && *isRunning)
+					CL_SPI_CSR_reg_.stopTests();
+				if(auto isRunning = DL_SPI_CSR1_reg_.isTestRunning(); isRunning && *isRunning)
+					stopDlTests();
+				if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning)
+					DFIFO_CSR_reg_.stopTests();
 				invokeCmd("*DBG 0");
 			}
 		}
@@ -578,7 +580,7 @@ public slots:
 	}
 
 	std::optional<std::pair<uint32_t, uint32_t>> readBothFecRegisters(uint32_t const address) const noexcept {
-		auto success = invokeCmd(QString("*HW:FEC? 0, %1, #h%2").arg(0).arg(toHex(address, 8)));
+		auto success = invokeCmd(QString("*HW:FEC? 0, #h%2").arg(toHex(address, 8)));
 		if (success) {
 			auto list = response_.split(';');
 			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };

@@ -213,7 +213,7 @@ bool DEBUG_CSR_reg::stopClock() noexcept {
 DEBUG_CLK_RATE_reg::DEBUG_CLK_RATE_reg(Device6991* deviceIF) : Register(RegistersEnum::DEBUG_CLK_RATE_reg, deviceIF) {}
 
 bool DEBUG_CLK_RATE_reg::setRate(double const rateInNano) noexcept {
-	if (rateInNano > RATE_STEP_NANO_SECS && rateInNano < MAX_RATE_NANO_SECS) {
+	if (rateInNano >= RATE_STEP_NANO_SECS && rateInNano <= MAX_RATE_NANO_SECS) {
 		data_ = rateInNano / RATE_STEP_NANO_SECS;
 		return writeHw();
 	}
@@ -221,7 +221,7 @@ bool DEBUG_CLK_RATE_reg::setRate(double const rateInNano) noexcept {
 }
 
 std::optional<double> DEBUG_CLK_RATE_reg::rate() noexcept {
-	return readHw() ? std::optional{ data_.to_ullong() * RATE_STEP_NANO_SECS } : std::nullopt;
+	return readHw() ? std::optional{ static_cast<double>(data_.to_ullong()) * RATE_STEP_NANO_SECS } : std::nullopt;
 }
 
 ACQ_CSR_reg::ACQ_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::ACQ_CSR_reg, deviceIF) {}

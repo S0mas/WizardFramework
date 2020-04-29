@@ -421,7 +421,12 @@ public:
 		fpgaRegs_[RegistersEnum::DL0_SPI_TMERR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL1_SPI_TMCNT_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL1_SPI_TMERR_reg] = 0;
+		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
 		fpgaRegs_[RegistersEnum::DFIFO] = 0;
+		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0x6111;
+		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0x6111;
+		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::BOARD_CSR_reg] = 0x1;
+		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::BOARD_CSR_reg] = 0x1;
 		timer_->start(1000);
 		areTestsRunning = true; 
 		std::bitset<32> reg = fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg];

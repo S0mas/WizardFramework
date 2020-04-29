@@ -306,7 +306,6 @@ public:
 };
 
 class EVENT_CAUSE_reg : public Register {
-
 public:
 	EVENT_CAUSE_reg(Device6991*);
 };
@@ -320,7 +319,7 @@ public:
 };
 
 class DEBUG_CLK_RATE_reg : public Register {
-	const double MAX_RATE_NANO_SECS = 35791392693.34424;
+	const double MAX_RATE_NANO_SECS = 35791392693.344235;
 	const double RATE_STEP_NANO_SECS = 8.333333;
 public:
 	DEBUG_CLK_RATE_reg(Device6991*);

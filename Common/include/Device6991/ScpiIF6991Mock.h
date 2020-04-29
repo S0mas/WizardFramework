@@ -62,13 +62,23 @@ public:
 		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FEC", ScpiFunction::getScpiFunction<double, unsigned long long, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.writeFcReg(args[0].get<double>(), args[1].get<unsigned long long>(), args[2].get<unsigned long long>());
+				int fcId = args[0].get<double>();
+				if (fcId != 0)
+					devMock_.writeFcReg(fcId, args[1].get<unsigned long long>(), args[2].get<unsigned long long>());
+				else {
+					devMock_.writeFcReg(1, args[1].get<unsigned long long>(), args[2].get<unsigned long long>());
+					devMock_.writeFcReg(2, args[1].get<unsigned long long>(), args[2].get<unsigned long long>());
+				}
 				return 0;
 			}
 		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FEC?", ScpiFunction::getScpiFunction<double, unsigned long long>(
 			[this](std::vector<ScpiArg> const& args) {
-				responseContainer_ = QString::number(devMock_.readFcReg(args[0].get<double>(), args[1].get<unsigned long long>()), 16);
+				int fcId = args[0].get<double>();
+				if (fcId != 0)
+					responseContainer_ = QString::number(devMock_.readFcReg(fcId, args[1].get<unsigned long long>()), 16);
+				else
+					responseContainer_ = QString("%1;%2").arg(QString::number(devMock_.readFcReg(1, args[1].get<unsigned long long>()), 16)).arg(QString::number(devMock_.readFcReg(2, args[1].get<unsigned long long>()), 16));
 				return 0;
 			}
 		)));

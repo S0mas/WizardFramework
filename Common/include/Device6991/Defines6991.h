@@ -891,7 +891,7 @@ using TestsSelectionModel = std::map<TestTypeEnum::Type, bool>;
 struct FifoTestModel {
 	struct Configuration {
 		std::optional<uint32_t> blockSize_;
-		std::optional<uint32_t> rate_;
+		std::optional<double> rate_;
 		std::optional<uint32_t> treshold_;
 	};
 
