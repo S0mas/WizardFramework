@@ -341,24 +341,11 @@ private slots:
 	}
 public:
 	using DataType = QVector<bool>;
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// @fn	Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, uint32_t const channelsNo,  QObject* parent = nullptr) noexcept;
-	///
-	/// @brief	Constructor
-	///
-	/// @author	Krzysztof Sommerfeld
-	/// @date	06.02.2020
-	///
-	/// @param 		   	nameId	The name identifier.
-	/// @param [in]	parent	(Optional) If not null - will be set as constructed object parent. In the
-	/// 					QObject tree.
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, uint32_t const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
 		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
 		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
 		in_.setDevice(tcpSocket_);
-		in_.setVersion(QDataStream::Qt_5_14);
+		in_.setVersion(QDataStream::Qt_5_12);
 		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
 		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
 		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
@@ -651,7 +638,7 @@ public slots:
 		enablePrint_ = enable;
 	}
 
-	bool checkFfDlTransmitterStateIsIdle(FecType::Type const type, FecIdType::Type const fcId) noexcept {
+	bool isFecIdle(FecType::Type const type, FecIdType::Type const fcId) noexcept {
 		uint32_t expectedVal = type == FecType::_6111 ? FecStatusType6111::IDLE : FecStatusType6132::IDLE;
 		return BOARD_CSR_reg_.testStatus(fcId, type, expectedVal);
 	}
@@ -684,7 +671,7 @@ public slots:
 
 	bool startDlTests(FecIdType::Type const fcId, DlSclkFreqType::Type const freq) noexcept {
 		if (auto fecType = readFecType(fcId); fecType) {
-			return checkFfDlTransmitterStateIsIdle(*fecType, fcId) &&
+			return isFecIdle(*fecType, fcId) &&
 				checkIfDlReceiverStateIsIdle() &&
 				DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fcId) &&
 				DL_SPI_CSR1_reg_.enableTestMode(fcId) &&
@@ -700,7 +687,7 @@ public slots:
 			if (auto fecType = readFecType(fcId); fecType) {
 				return fcId != FecIdType::INVALID &&
 					CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_STOP : FecCmdsType6132::DL_TEST_STOP) &&
-					testWithTimeout([this, type = *fecType, fcId]() { return checkFfDlTransmitterStateIsIdle(type, fcId); }, 100, 25) &&
+					testWithTimeout([this, type = *fecType, fcId]() { return isFecIdle(type, fcId); }, 100, 25) &&
 					DL_SPI_CSR1_reg_.disableTestMode() &&
 					testWithTimeout([this]() { return checkIfDlReceiverStateIsIdle(); }, 100, 25);
 			}

@@ -480,3 +480,77 @@ public:
 		return value(fcId, 0xF);
 	}
 };
+
+class CHN_FILTER_reg : public RegisterFeCard {
+
+public:
+	CHN_FILTER_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CHN_FILTER_reg, devIF) {}
+
+	bool setFilter(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds, FilterType6132::Type const filter) noexcept {
+		auto read = value(fcId);
+		if (read.first || read.second) {
+			for (auto id : channelIds) {
+				data_ &= 0xFFFFFFFF & !(0x3 << (id - 1));
+				data_ |= filter << (id - 1);
+			}
+			return writeHw(fcId);
+		}
+		return false;
+	}
+
+	std::optional<FilterType6132::Type> filter(const FecIdType::Type fcId, uint32_t const channelId) noexcept {
+		uint32_t mask = 0x3 << (channelId - 1);
+		auto result = fcId == FecIdType::_1 ? value(fcId, mask).first : value(fcId, mask).second;
+		return result ? std::optional{ static_cast<FilterType6132::Type>(*result) } : std::nullopt;
+	}
+};
+
+class CHN_GAIN_reg : public RegisterFeCard {
+
+public:
+	CHN_GAIN_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CHN_GAIN_reg, devIF) {}
+
+	bool setGain(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds, GainType6132::Type const gain) noexcept {
+		auto read = value(fcId);
+		if (read.first || read.second) {
+			for (auto id : channelIds) {
+				data_ &= 0xFFFFFFFF & !(0x3 << (id-1));
+				data_ |= gain << (id - 1);
+			}
+			return writeHw(fcId);
+		}
+		return false;
+	}
+
+	std::optional<GainType6132::Type> gain(const FecIdType::Type fcId, uint32_t const channelId) noexcept {
+		uint32_t mask = 0x3 << (channelId - 1);
+		auto result = fcId == FecIdType::_1 ? value(fcId, mask).first : value(fcId, mask).second;
+		return result ? std::optional{ static_cast<GainType6132::Type>(*result) } : std::nullopt;
+	}
+};
+
+class ADC_SEL_reg : public RegisterFeCard {
+
+public:
+	ADC_SEL_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::ADC_SEL_reg, devIF) {}
+
+	bool selectChannels(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds) noexcept {
+		data_ = 0;
+		for (auto id : channelIds)
+			data_ |= 1 << (id - 1);
+		return writeHw(fcId);
+	}
+};
+
+class CHNX_RAW_SAMPLE_reg : public RegisterFeCard {
+public:
+	CHNX_RAW_SAMPLE_reg(uint32_t const channelId = 1, Device6991* devIF = nullptr) : RegisterFeCard(FecRegistersEnum::CHN1_RAW_SAMPLE_reg + channelId - 1, devIF) {}
+
+	std::optional<uint16_t> rawData(const FecIdType::Type fcId) noexcept {
+		return fcId == FecIdType::_1 ? value(fcId, 0xFFFF).first : value(fcId, 0xFFFF).second;
+	}
+
+	std::optional<uint16_t> flags(const FecIdType::Type fcId) noexcept {
+		return fcId == FecIdType::_1 ? value(fcId, 0xFFFF0000).first : value(fcId, 0xFFFF0000).second;
+	}
+};

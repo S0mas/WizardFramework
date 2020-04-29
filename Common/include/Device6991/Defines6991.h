@@ -492,10 +492,14 @@ struct FecRegistersEnum {
 		BOARD_CSR_reg = 0x0002,
 		CMD_reg = 0x0003,
 		DL_CSR_reg = 0x0004,
+		CHN_FILTER_reg = 0x0100,
+		CHN_GAIN_reg = 0x0101,
+		ADC_SEL_reg = 0x0103,
+		CHN1_RAW_SAMPLE_reg = 0x3000,
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 4> TYPES = { FE_ID_reg, BOARD_CSR_reg, CMD_reg, DL_CSR_reg };
+	inline constexpr static std::array<Type, 8> TYPES = { FE_ID_reg, BOARD_CSR_reg, CMD_reg, DL_CSR_reg, CHN_FILTER_reg, CHN_GAIN_reg, ADC_SEL_reg, CHN1_RAW_SAMPLE_reg };
 
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
@@ -507,6 +511,14 @@ struct FecRegistersEnum {
 			return "CMD_reg";
 		case DL_CSR_reg:
 			return "DL_CSR_reg";
+		case CHN_FILTER_reg:
+			return "CHN_FILTER_reg";
+		case CHN_GAIN_reg:
+			return "CHN_GAIN_reg";
+		case ADC_SEL_reg:
+			return "ADC_SEL_reg";
+		case CHN1_RAW_SAMPLE_reg:
+			return "CHN1_RAW_SAMPLE_reg";
 		default:
 			return "invalid";
 		}
@@ -521,6 +533,14 @@ struct FecRegistersEnum {
 			return CMD_reg;
 		if (mode == "DL_CSR_reg")
 			return DL_CSR_reg;
+		if (mode == "CHN_FILTER_reg")
+			return CHN_FILTER_reg;
+		if (mode == "CHN_GAIN_reg")
+			return CHN_GAIN_reg;
+		if (mode == "ADC_SEL_reg")
+			return ADC_SEL_reg;
+		if (mode == "CHN1_RAW_SAMPLE_reg")
+			return CHN1_RAW_SAMPLE_reg;
 		return INVALID;
 	}
 };
@@ -995,6 +1015,7 @@ struct FecCmdsType6132 {
 		ADC_SETUP = 0xEA12,
 		ADC_CONVERT = 0xEA13,
 		ADC_REG_ACCESS = 0xEA14,
+		GAIN_SETUP = 0xEA15,
 		ADC_TEST_START = 0xEA81,
 		ADC_TEST_STOP = 0xEA82,
 		DL_TEST_START = 0xEA83,
@@ -1004,7 +1025,7 @@ struct FecCmdsType6132 {
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 12> TYPES = { ACQ_START, ACQ_STOP, ADC_INIT, ADC_SETUP, ADC_CONVERT, ADC_REG_ACCESS, ADC_TEST_START, ADC_TEST_STOP,
+	inline constexpr static std::array<Type, 13> TYPES = { ACQ_START, ACQ_STOP, ADC_INIT, ADC_SETUP, ADC_CONVERT, ADC_REG_ACCESS, GAIN_SETUP, ADC_TEST_START, ADC_TEST_STOP,
 		DL_TEST_START, DL_TEST_STOP, COMBO_TEST_START, COMBO_TEST_STOP };
 
 	static QString toString(Type const mode) noexcept {
@@ -1021,6 +1042,8 @@ struct FecCmdsType6132 {
 			return "ADC_CONVERT";
 		case ADC_REG_ACCESS:
 			return "ADC_REG_ACCESS";
+		case GAIN_SETUP:
+			return "GAIN_SETUP";
 		case ADC_TEST_START:
 			return "ADC_TEST_START";
 		case ADC_TEST_STOP:
@@ -1051,6 +1074,8 @@ struct FecCmdsType6132 {
 			return ADC_CONVERT;
 		if (mode == "ADC_REG_ACCESS")
 			return ADC_REG_ACCESS;
+		if (mode == "GAIN_SETUP")
+			return GAIN_SETUP;
 		if (mode == "ADC_TEST_START")
 			return ADC_TEST_START;
 		if (mode == "ADC_TEST_STOP")
@@ -1290,6 +1315,133 @@ struct FecIdType {
 			return _1;
 		if (mode == "2")
 			return _2;
+		return INVALID;
+	}
+};
+
+struct GainType6132 {
+	enum Type {
+		_1 = 0,
+		_2 = 1,
+		_4 = 2,
+		_8 = 3,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { _1, _2, _4, _8 };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case _1:
+			return "1";
+		case _2:
+			return "2";
+		case _4:
+			return "4";
+		case _8:
+			return "8";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "1")
+			return _1;
+		if (mode == "2")
+			return _2;
+		if (mode == "4")
+			return _4;
+		if (mode == "8")
+			return _8;
+		return INVALID;
+	}
+};
+
+struct FilterType6132 {
+	enum Type {
+		_10Hz = 0,
+		_100Hz = 1,
+		_1000Hz = 2,
+		BYPASS = 3,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 4> TYPES = { _10Hz, _100Hz, _1000Hz, BYPASS };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case _10Hz:
+			return "10Hz";
+		case _100Hz:
+			return "100Hz";
+		case _1000Hz:
+			return "1000Hz";
+		case BYPASS:
+			return "BYPASS";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "10Hz")
+			return _10Hz;
+		if (mode == "100Hz")
+			return _100Hz;
+		if (mode == "1000Hz")
+			return _1000Hz;
+		if (mode == "BYPASS")
+			return BYPASS;
+		return INVALID;
+	}
+};
+
+struct AdcCmdType {
+	enum Type {
+		ADC_INIT = 0x00,
+		ADC_SETUP = 0x01,
+		ADC_CONVERT = 0x11,
+		ADC_REG_ACCESS = 0x21,
+		ADC_TEST_START = 0x33,
+		GAIN_SETUP = 0x44,
+		INVALID = -1
+	};
+
+	inline constexpr static std::array<Type, 6> TYPES = { ADC_INIT, ADC_SETUP, ADC_CONVERT, ADC_REG_ACCESS, ADC_TEST_START, GAIN_SETUP };
+
+	static QString toString(Type const mode) noexcept {
+		switch (mode) {
+		case ADC_INIT:
+			return "ADC_INIT";
+		case ADC_SETUP:
+			return "ADC_SETUP";
+		case ADC_CONVERT:
+			return "ADC_CONVERT";
+		case ADC_REG_ACCESS:
+			return "ADC_REG_ACCESS";
+		case ADC_TEST_START:
+			return "ADC_TEST_START";
+		case GAIN_SETUP:
+			return "GAIN_SETUP";
+		default:
+			return "invalid";
+		}
+	}
+
+	static Type fromString(QString const& mode) noexcept {
+		if (mode == "ADC_INIT")
+			return ADC_INIT;
+		if (mode == "ADC_SETUP")
+			return ADC_SETUP;
+		if (mode == "ADC_CONVERT")
+			return ADC_CONVERT;
+		if (mode == "ADC_REG_ACCESS")
+			return ADC_REG_ACCESS;
+		if (mode == "ADC_TEST_START")
+			return ADC_TEST_START;
+		if (mode == "GAIN_SETUP")
+			return GAIN_SETUP;
 		return INVALID;
 	}
 };
