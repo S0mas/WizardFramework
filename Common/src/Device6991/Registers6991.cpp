@@ -1,9 +1,12 @@
 #include "../../include/Device6991/Registers6991.h"
 #include "../../include/Device6991/Device6991.h"
 
-bool Register::readHw(uint32_t const mask) noexcept {
+bool Register::readHw(uint32_t const mask, uint32_t const shiftRight) noexcept {
 	if (auto reg = deviceIF->readFpgaRegister(address_); reg) {
-		data_ = *reg & mask;
+		if(shiftRight >= 0)
+			data_ = (*reg & mask) >> shiftRight;
+		else
+			data_ = (*reg & mask) << -shiftRight;
 		return true;
 	}
 	deviceIF->reportError(QString("Faild to read register. Reg address: %1").arg(toHex(address_, 8)));
@@ -19,13 +22,16 @@ bool Register::writeHw() const noexcept {
 
 Register::Register(uint32_t address, Device6991* deviceIF) : address_(address), deviceIF(deviceIF) {}
 
-std::optional<uint32_t> Register::value() noexcept {
-	return readHw() ? std::optional{ data_.to_ulong() } : std::nullopt;
+std::optional<uint32_t> Register::value(uint32_t const mask, uint32_t const shiftRight) noexcept {
+	return readHw(mask, shiftRight) ? std::optional{ data_.to_ulong() } : std::nullopt;
 }
 
-bool RegisterFeCard::readHw(FecIdType::Type const fcId, uint32_t const mask) noexcept {
+bool RegisterFeCard::readHw(FecIdType::Type const fcId, uint32_t const mask, uint32_t const shiftRight) noexcept {
 	if (auto reg = deviceIF->readFecRegister(fcId, address_); reg) {
-		data_ = *reg & mask;
+		if (shiftRight >= 0)
+			data_ = (*reg & mask) >> shiftRight;
+		else
+			data_ = (*reg & mask) << -shiftRight;
 		return true;
 	}
 	return false;
@@ -35,10 +41,12 @@ bool RegisterFeCard::writeHw(FecIdType::Type const fcId) const noexcept {
 	return deviceIF->writeFecRegister(fcId, address_, data_.to_ulong());
 }
 
-bool RegisterFeCard::readBoth(uint32_t const mask) noexcept {
-	if (auto reg = deviceIF->readBothFecRegisters(address_); reg) {
-		dataBoth_ = { (*reg).first & mask, (*reg).second & mask };
-		data_ = (*reg).first & mask;
+bool RegisterFeCard::readBoth(uint32_t const mask, uint32_t const shiftRight) noexcept {
+	if (auto reg = deviceIF->readBothFecRegisters(address_); reg) {	
+		if (shiftRight >= 0) 
+			dataBoth_ = { ((*reg).first & mask) >> shiftRight, ((*reg).second & mask) >> shiftRight };		
+		else 
+			dataBoth_ = { ((*reg).first & mask) << -shiftRight, ((*reg).second & mask) << -shiftRight };
 		return true;
 	}
 	return false;
@@ -46,11 +54,11 @@ bool RegisterFeCard::readBoth(uint32_t const mask) noexcept {
 
 RegisterFeCard::RegisterFeCard(uint32_t address, Device6991* deviceIF) : Register(address, deviceIF) {}
 
-std::pair<std::optional<uint32_t>, std::optional<uint32_t>> RegisterFeCard::value(FecIdType::Type const fcId, uint32_t const mask) noexcept {
+std::pair<std::optional<uint32_t>, std::optional<uint32_t>> RegisterFeCard::value(FecIdType::Type const fcId, uint32_t const mask, uint32_t const shiftRight) noexcept {
 	if(fcId == FecIdType::BOTH)
-		return readBoth() ? std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{dataBoth_.first.to_ulong(), dataBoth_.second.to_ulong()} : std::pair{std::nullopt, std::nullopt};
+		return readBoth(mask, shiftRight) ? std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{dataBoth_.first.to_ulong(), dataBoth_.second.to_ulong()} : std::pair{std::nullopt, std::nullopt};
 	else {
-		if (auto read = readHw(fcId); read)
+		if (auto read = readHw(fcId, mask, shiftRight); read)
 			return fcId == FecIdType::_1 ? std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{data_.to_ulong(), std::nullopt} : std::pair<std::optional<uint32_t>, std::optional<uint32_t>>{ std::nullopt, data_.to_ulong() };
 		return std::pair{ std::nullopt, std::nullopt };
 	}

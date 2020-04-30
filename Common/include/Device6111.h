@@ -1,7 +1,7 @@
 #pragma once
 #include "Device6991/Device6991.h"
 
-class Device6111 {
+class Device6111 : public QObject {
 	Q_OBJECT
 	FecIdType::Type id_;
 	Device6991* devIF_;

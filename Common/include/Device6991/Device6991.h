@@ -167,6 +167,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 	bool succeeded() const noexcept {
 		response_ = readResponse();
+		if (enablePrint_)
+			qDebug() << "Response:" << response_;
 		scpiCmd("*STB?");
 		std::bitset<8> stb = readResponse().toUInt(nullptr, 16);//TODO CHECK IF IT SHOULDNT BE INTERPRETED AS HEX
 		bool eva = stb[2];
@@ -662,8 +664,8 @@ public slots:
 
 	std::optional<FecType::Type> readFecType(FecIdType::Type const fcId) noexcept {
 		auto read = FE_ID_reg_.fecType(fcId);
-		if (read.first && fcId == FecIdType::BOTH || fcId == FecIdType::_1)
-			return static_cast<FecType::Type>(*read.first);
+		if (read.first && fcId == FecIdType::BOTH || fcId == FecIdType::_1) 
+			return static_cast<FecType::Type>(*read.first);	
 		if (read.second && fcId == FecIdType::BOTH || fcId == FecIdType::_2)
 			return static_cast<FecType::Type>(*read.second);
 		return std::nullopt;

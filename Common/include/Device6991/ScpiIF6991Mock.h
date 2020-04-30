@@ -1,5 +1,5 @@
 #pragma once
-#include "scpiExec.h"
+#include "../../../../ScpiInterpreter/scpiExec.h"
 #include <QString>
 #include "HardwareMock6991.h"
 #include "../ScpiIF.h"

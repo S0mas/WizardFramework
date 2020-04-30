@@ -20,12 +20,13 @@ class Device6132 : public QObject {
 
 	double calculateVoltage(uint16_t const rawData) noexcept {
 		double neutralZero = 0x8000;
-		double value = static_cast<double>(rawData) - neutralZero;
+		int16_t value =  static_cast<double>(rawData) - neutralZero;
 		double lsb = 312.5; //microvolts
-		return (value - neutralZero) * lsb;
+		double result = value * lsb;
+		return result / 1000'000; //volts;
 	}
 public:
-	Device6132(const FecIdType::Type& fcId, Device6991* dev6991, QObject* parent = nullptr) noexcept : devIF_(dev6991) {
+	Device6132(const FecIdType::Type& fcId, Device6991* dev6991, QObject* parent = nullptr) noexcept : id_(fcId), devIF_(dev6991) {
 		CHN_FILTER_reg_ = CHN_FILTER_reg(devIF_);
 		CHN_GAIN_reg_ = CHN_GAIN_reg(devIF_);
 		CMD_reg_ = CMD_reg(devIF_);
@@ -56,12 +57,11 @@ public:
 			ADC_SEL_reg_.selectChannels(id_, channelIds) &&
 			CMD_reg_.setCmd(id_, FecCmdsType6132::ADC_CONVERT) &&
 			devIF_->testWithTimeout([this]() { return devIF_->isFecIdle(FecType::_6132, id_); }, 500)) {
-			std::vector<std::optional<double>> results;
+			std::vector<std::optional<double>> results(16, std::nullopt);
 			for (auto id : channelIds) {
-				if (auto rawData = channelsRegs_[id - 1].rawData(id_); rawData)
-					results.push_back(calculateVoltage(*rawData));
-				else
-					results.push_back(std::nullopt);
+				auto g = gain(id);
+				if (auto rawData = channelsRegs_[id - 1].rawData(id_); rawData && g)
+					results[id-1] = calculateVoltage(*rawData) / GainType6132::toMeaningValue(*g);
 			}
 			return results;
 		}

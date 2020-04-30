@@ -26,9 +26,7 @@ class HardwareConnector6991 : public AbstractHardwareConnector {
 	}	
 	void connectImpl() noexcept override {
 		logMsg(QString("Device resource: %1").arg(QString::fromStdString(resource())));
-		qDebug() << viOpenDefaultRM(&rmVi_);
-		qDebug() << viOpen(rmVi_, resource().data(), 0, 0, &vi_);
-		///innerCall(viOpenDefaultRM, "viOpenDefaultRM", &rmVi_) >= 0 && innerCall(viOpen, "viOpen", rmVi_, resource().data(), 0, 0, &vi_) >= 0;
+		innerCall(viOpenDefaultRM, "viOpenDefaultRM", &rmVi_) >= 0 && innerCall(viOpen, "viOpen", rmVi_, resource().data(), 0, 0, &vi_) >= 0;
 	}
 	void disconnectImpl() noexcept override {
 		innerCall(viClose, "viClose", vi_);

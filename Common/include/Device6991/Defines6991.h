@@ -488,7 +488,7 @@ struct RegistersEnum {
 struct FecRegistersEnum {
 	FecRegistersEnum() = default;
 	enum Type {
-		FE_ID_reg = 0x0001,
+		FE_ID_reg = 0x0000,
 		BOARD_CSR_reg = 0x0002,
 		CMD_reg = 0x0003,
 		DL_CSR_reg = 0x0004,
@@ -1330,8 +1330,8 @@ struct GainType6132 {
 
 	inline constexpr static std::array<Type, 4> TYPES = { _1, _2, _4, _8 };
 
-	static QString toString(Type const mode) noexcept {
-		switch (mode) {
+	static QString toString(Type const gain) noexcept {
+		switch (gain) {
 		case _1:
 			return "1";
 		case _2:
@@ -1345,16 +1345,27 @@ struct GainType6132 {
 		}
 	}
 
-	static Type fromString(QString const& mode) noexcept {
-		if (mode == "1")
+	static Type fromString(QString const& gain) noexcept {
+		if (gain == "1")
 			return _1;
-		if (mode == "2")
+		if (gain == "2")
 			return _2;
-		if (mode == "4")
+		if (gain == "4")
 			return _4;
-		if (mode == "8")
+		if (gain == "8")
 			return _8;
 		return INVALID;
+	}
+
+	static uint32_t toMeaningValue(GainType6132::Type const& gain) noexcept {
+		if(gain == _1) 
+			return 1;
+		else if (gain == _2)
+			return 2;
+		else if (gain == _4)
+			return 4;
+		else
+			return 8;
 	}
 };
 
