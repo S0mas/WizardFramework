@@ -22,10 +22,12 @@ unsigned long AbstractHardwareConnector::vi() const noexcept {
 	return vi_;
 }
 
-void AbstractHardwareConnector::connect() noexcept {
+bool AbstractHardwareConnector::connect() noexcept {
 	disconnect();
 	connectImpl();
-	isSessionAvailable() ? logMsg(QString("Connection established, viSession: %1").arg(vi())) : logMsg("FAILED");
+	bool result = isSessionAvailable();
+	result ? logMsg(QString("Connection established, viSession: %1").arg(vi())) : logMsg("FAILED");
+	return result;
 }
 
 void AbstractHardwareConnector::disconnect() noexcept {

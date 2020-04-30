@@ -95,7 +95,7 @@ public:
 	QString nameId() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// @fn	void AbstractDevice::connect() const noexcept;
+	/// @fn	bool AbstractDevice::connect() const noexcept;
 	///
 	/// @brief	Connects this device.
 	///
@@ -103,7 +103,7 @@ public:
 	/// @date	04.02.2020
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void connect() const noexcept;
+	bool connect() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// @fn	auto AbstractDevice::inputResources() const noexcept
@@ -116,7 +116,7 @@ public:
 	/// @returns	The vector of input resources.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	auto AbstractDevice::inputResources() const noexcept {
+	auto inputResources() const noexcept {
 		return connector_->resources();
 	}
 signals:
