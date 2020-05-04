@@ -364,8 +364,8 @@ class DFIFO_CSR_reg : public Register {
 	const int DFIFO_TEST_MODE = 23;
 public:
 	DFIFO_CSR_reg(Device6991* deviceIF);
-	bool startTests() noexcept;
-	bool stopTests() noexcept;
+	bool enableTestMode() noexcept;
+	bool disableTestMode() noexcept;
 	bool clearOverflow() noexcept;
 	bool resetFifo() noexcept;
 	bool setBlockSize(uint32_t const blockSize) noexcept;
