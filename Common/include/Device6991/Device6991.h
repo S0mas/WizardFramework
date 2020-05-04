@@ -74,7 +74,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	CMD_reg CMD_reg_{ this };
 	DL_CSR_reg DL_CSR_reg_{ this };
 	
-	QTcpSocket* tcpSocket_ = new QTcpSocket(this);
+	QTcpSocket* tcpSocket_ = nullptr;
 	QDataStream in_;
 	mutable QString response_;
 	bool isAcqActive_ = false;
@@ -308,11 +308,19 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	void openSocketConnection(QString const& addresss, uint32_t const port) noexcept {
+		tcpSocket_ = new QTcpSocket(this);
+		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
+		QObject::connect(tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
+		in_.setDevice(tcpSocket_);
+		in_.setVersion(QDataStream::Qt_5_12);
 		tcpSocket_->connectToHost(addresss, port);
 	}
 
 	void closeSocketConnection() noexcept {
 		tcpSocket_->disconnectFromHost();
+		delete tcpSocket_;
 	}
 
 	void storeData(std::string const& data) noexcept {		
@@ -329,9 +337,11 @@ private slots:
 	void readData() noexcept {
 		in_.startTransaction();
 		auto bytes = tcpSocket_->bytesAvailable();
+		qDebug() << "BYTES IN STREAM: " << bytes;
 		std::string data;
 		data.resize(bytes);
 		in_.readRawData(data.data(), bytes);
+		return;
 		if (!in_.commitTransaction()) {
 			emit reportError("Reading data from socket error.");
 			return;
@@ -346,12 +356,6 @@ public:
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, uint32_t const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
 		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
 		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
-		in_.setDevice(tcpSocket_);
-		in_.setVersion(QDataStream::Qt_5_12);
-		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
-		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
-		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
-		QObject::connect(tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
 	}
 	~Device6991() override {
 		//exiting = true;
@@ -471,13 +475,13 @@ public slots:
 
 	void startTestsRequest(StartTestsRequest const& request) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			if (invokeCmd("*DBG 1")) {
-				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
+			if (invokeCmd("*DBG 1")) {			
 				auto dlTestsTarget = dlTestsTargetFecId(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
 				if (dlTestsTarget != FecIdType::INVALID)
 					startDlTests(dlTestsTarget, request.clockFreq_);
 				if (request.model.at(TestTypeEnum::FIFO))
-					startFifoTest(request.fifoTestConfig_);						
+					startFifoTest(request.fifoTestConfig_);			
+				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
 				emit testsStarted();
 				invokeCmd("*DBG 0");
 			}
@@ -514,26 +518,31 @@ public slots:
 		Result result_DL0;
 		Result result_DL1;
 		Result result_FIFO;
+
+		std::optional<bool> cl0Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0);
+		std::optional<bool> cl1Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL1);
+		std::optional<bool> dl0Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::DL0);
+		std::optional<bool> dl1Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::DL1);
 	
 		if (auto count = CL_SPI_TLCNT_reg_.value(); count) {
-			if(auto regCL0 = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0); regCL0 && *regCL0)
+			if(cl0Running && *cl0Running)
 				result_CL0.count_ = count;
-			if(auto regCL1 = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL1); regCL1 && *regCL1)
+			if(cl1Running && *cl1Running)
 				result_CL1.count_ = count;
-		}			
-		if (auto errors = CL0_SPI_TLERR_reg_.value(); errors)
+		}
+		if(CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0))
+		if (auto errors = CL0_SPI_TLERR_reg_.value(); errors && cl0Running && *cl0Running)
 			result_CL0.errors_ = errors;
-		if (auto errors = CL1_SPI_TLERR_reg_.value(); errors)
+		if (auto errors = CL1_SPI_TLERR_reg_.value(); errors && cl1Running && *cl1Running)
 			result_CL1.errors_ = errors;
-		if (auto count = DL0_SPI_TMCNT_reg_.value(); count)
+		if (auto count = DL0_SPI_TMCNT_reg_.value(); count && dl0Running && *dl0Running)
 			result_DL0.count_ = count;
-		if (auto errors = DL0_SPI_TMERR_reg_.value(); errors)
+		if (auto errors = DL0_SPI_TMERR_reg_.value(); errors && dl0Running && *dl0Running)
 			result_DL0.errors_ = errors;
-		if (auto count = DL1_SPI_TMCNT_reg_.value(); count)
+		if (auto count = DL1_SPI_TMCNT_reg_.value(); count && dl1Running && *dl1Running)
 			result_DL1.count_ = count;
-		if (auto errors = DL1_SPI_TMERR_reg_.value(); errors)
+		if (auto errors = DL1_SPI_TMERR_reg_.value(); errors && dl1Running && *dl1Running)
 			result_DL1.errors_ = errors;
-		//TODO add counters read for FIFO test
 
 		TestsResultModel result;
 		result[TestTypeEnum::CL0] = result_CL0;

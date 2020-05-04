@@ -1,7 +1,7 @@
 #pragma once
 #include "ScpiIF.h"
 
-#include "../../../visa/include/visa.h"
+#include "../../../trunk/visa/include/visa.h"
 
 class ScpiIFVisa : public ScpiIF {
 public:
