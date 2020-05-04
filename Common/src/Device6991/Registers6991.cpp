@@ -246,7 +246,7 @@ ACQ_ALARM_H_reg::ACQ_ALARM_H_reg(Device6991* deviceIF) : Register(RegistersEnum:
 
 DFIFO_CSR_reg::DFIFO_CSR_reg(Device6991* deviceIF) : Register(RegistersEnum::DFIFO_CSR_reg, deviceIF) {}
 
-bool DFIFO_CSR_reg::startTests() noexcept {
+bool DFIFO_CSR_reg::enableTestMode() noexcept {
 	if (readHw()) {
 		data_.set(DFIFO_TEST_MODE);
 		return writeHw();
@@ -254,7 +254,7 @@ bool DFIFO_CSR_reg::startTests() noexcept {
 	return false;
 }
 
-bool DFIFO_CSR_reg::stopTests() noexcept {
+bool DFIFO_CSR_reg::disableTestMode() noexcept {
 	if (readHw()) {
 		data_.reset(DFIFO_TEST_MODE);
 		return writeHw();

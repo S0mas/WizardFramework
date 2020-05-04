@@ -91,10 +91,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		return DFIFO_.value();
 	}
 
-	void restartTest() noexcept {
-		//TODO
-	}
-
 	FifoTestModel fillFifoStatus() noexcept {
 		FifoTestModel fifoTestModel_;
 		auto count = DFIFO_CSR_reg_.samplesInFifo();
@@ -149,9 +145,21 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		return rateChangeStatus && blockSizeChangeStatus && thresholdChangeStatus;
 	}
 
-	void startFifoTest(FifoTestModel::Configuration const& config) noexcept {
-		if (DL_SPI_CSR1_reg_.disableTestMode() && configureFifoTest(config) && DEBUG_CSR_reg_.startClock() && DFIFO_CSR_reg_.startTests())
-			future = std::async(std::launch::async, [this]() { fifoTest(); });
+	bool startFifoTest(FifoTestModel::Configuration const& config) noexcept {
+		return DL_SPI_CSR1_reg_.disableTestMode() &&
+			DFIFO_CSR_reg_.resetFifo() &&
+			DFIFO_CSR_reg_.isFifoEmpty() &&
+			DFIFO_CSR_reg_.enableTestMode() &&
+			configureFifoTest(config) &&
+			DEBUG_CSR_reg_.startClock();
+	}
+
+	bool stopFifoTest() noexcept {
+		auto dbgClkStopped = DEBUG_CSR_reg_.stopClock();
+		if (!dbgClkStopped)
+			return false;
+		//TODO: read the rest of data in fifo
+		return DFIFO_CSR_reg_.disableTestMode();
 	}
 
 	std::optional<bool> isTestsRunning() noexcept {
@@ -495,7 +503,7 @@ public slots:
 				if(auto isRunning = DL_SPI_CSR1_reg_.isTestRunning(); isRunning && *isRunning)
 					stopDlTests();
 				if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning)
-					DFIFO_CSR_reg_.stopTests();
+					stopFifoTest();
 				invokeCmd("*DBG 0");
 			}
 		}
