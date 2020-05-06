@@ -78,18 +78,16 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	QDataStream in_;
 	mutable QString response_;
 	bool isAcqActive_ = false;
-	std::future<void> future;
-	std::atomic<uint32_t> dataErrors_;
 	std::atomic<uint32_t> lastSample_;
 	bool exiting = false;
 	mutable std::mutex hwAccess_;
 	bool storeData_ = false;
 	QFile* dataFile_ = new QFile("data6991.txt");
 	bool enablePrint_ = true;
-
-	std::optional<uint32_t> readFifo() noexcept {
-		return DFIFO_.value();
-	}
+	bool fifoTestRunning_ = false;
+	QTcpSocket* fifoTestTcpSocket_ = nullptr;
+	uint64_t expectedSampleValue_ = 0;
+	uint64_t fifoTestDataError_ = 0;
 
 	FifoTestModel fillFifoStatus() noexcept {
 		FifoTestModel fifoTestModel_;
@@ -106,29 +104,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		if (count)
 			fifoTestModel_.samplesCount_ = count;
 		fifoTestModel_.lastSample_ = lastSample_;
-		fifoTestModel_.dataErrorsCount_ = dataErrors_;
+		fifoTestModel_.dataErrorsCount_ = fifoTestDataError_;
 		return fifoTestModel_;
-	}
-
-	void fifoTest() {
-		auto isRunning = DFIFO_CSR_reg_.isTestRunning();
-		uint32_t expectedData = 0;
-		dataErrors_ = 0;
-		lastSample_ = 0;
-		while (isRunning && *isRunning && !exiting) {
-			auto reg = DFIFO_CSR_reg_.samplesInFifo();
-			auto samplesNo = reg ? *reg : 0;
-			for (auto i = 0; i < samplesNo; ++i) {
-				auto read = readFifo();
-				if (!read)
-					//connection error
-					continue;
-				lastSample_ = *read;
-				if (lastSample_ != expectedData++)
-					dataErrors_++;
-			}
-			isRunning = DFIFO_CSR_reg_.isTestRunning();
-		}
 	}
 
 	bool configureFifoTest(FifoTestModel::Configuration const& config) noexcept {
@@ -146,7 +123,11 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	}
 
 	bool startFifoTest(FifoTestModel::Configuration const& config) noexcept {
-		return DL_SPI_CSR1_reg_.disableTestMode() &&
+		expectedSampleValue_ = 0;
+		fifoTestDataError_ = 0;
+		fifoTestRunning_ = true;
+		openSocketConnection(inputResources().back()->load(), 16101);
+		return  tcpSocket_->isOpen() && DL_SPI_CSR1_reg_.disableTestMode() &&
 			DFIFO_CSR_reg_.resetFifo() &&
 			DFIFO_CSR_reg_.isFifoEmpty() &&
 			DFIFO_CSR_reg_.enableTestMode() &&
@@ -158,7 +139,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		auto dbgClkStopped = DEBUG_CSR_reg_.stopClock();
 		if (!dbgClkStopped)
 			return false;
-		//TODO: read the rest of data in fifo
+		closeSocketConnection();
+		fifoTestRunning_ = false;
 		return DFIFO_CSR_reg_.disableTestMode();
 	}
 
@@ -337,27 +319,46 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		QTextStream out(dataFile_);
 		out << data.data();
 	}
+
+	void validateData(std::vector<uint32_t> const& data) {
+		for (auto const& sample : data)
+			if (expectedSampleValue_++ != sample)
+				++fifoTestDataError_;
+	}
+
 private slots:
 	void displayError(QAbstractSocket::SocketError socketError) noexcept {
 		emit reportError(QString(tcpSocket_->errorString()));
 		closeSocketConnection();
 	}
+
 	void readData() noexcept {
 		in_.startTransaction();
 		auto bytes = tcpSocket_->bytesAvailable();
-		qDebug() << "BYTES IN STREAM: " << bytes;
-		std::string data;
-		data.resize(bytes);
-		in_.readRawData(data.data(), bytes);
-		return;
+
+		HeaderPart header;
+		in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(&header)), sizeof(header));
+		
 		if (!in_.commitTransaction()) {
 			emit reportError("Reading data from socket error.");
 			return;
 		}
-			
-		qDebug() << "I read: " << QString::fromStdString(data);
-		if (storeData_)
-			storeData(data);
+
+		AcquisitionPacket acqPacket(header.dataSize_/4);
+		acqPacket.header_ = header;
+		in_.startTransaction();
+		in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(acqPacket.data_.samples_.data())), header.dataSize_);
+
+		if (fifoTestRunning_)
+			validateData(acqPacket.data_.samples_);
+
+		if (!in_.commitTransaction()) {
+			emit reportError("Reading data from socket error.");
+			return;
+		}
+
+		//if (storeData_)
+			//storeData()
 	}
 public:
 	using DataType = QVector<bool>;
@@ -366,7 +367,7 @@ public:
 		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
 	}
 	~Device6991() override {
-		//exiting = true;
+		exiting = true;
 	}
 
 	void saveSubtype(const QString& str) const override {}
@@ -483,7 +484,8 @@ public slots:
 
 	void startTestsRequest(StartTestsRequest const& request) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			if (invokeCmd("*DBG 1")) {			
+			if (invokeCmd("*DBG 4")) {
+				setScansNoPerDirectReadPacket(10);
 				auto dlTestsTarget = dlTestsTargetFecId(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
 				if (dlTestsTarget != FecIdType::INVALID)
 					startDlTests(dlTestsTarget, request.clockFreq_);
@@ -491,28 +493,23 @@ public slots:
 					startFifoTest(request.fifoTestConfig_);			
 				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
 				emit testsStarted();
-				invokeCmd("*DBG 0");
 			}
-			else {
-				invokeCmd("SYSTem:LOCK 0");
-			}
+			invokeCmd("SYSTem:LOCK 0");
 		}
 	}
 
 	void stopTestsRequest() noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			if (invokeCmd("*DBG 1")) {
+			if (invokeCmd("*DBG 0")) {
 				if (auto isRunning = CL_SPI_CSR_reg_.isTestRunning(); isRunning && *isRunning)
 					CL_SPI_CSR_reg_.stopTests();
 				if(auto isRunning = DL_SPI_CSR1_reg_.isTestRunning(); isRunning && *isRunning)
 					stopDlTests();
 				if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning)
 					stopFifoTest();
-				invokeCmd("*DBG 0");
 			}
-		}
-		else
 			invokeCmd("SYSTem:LOCK 0");
+		}		
 	}
 
 	void testCountersRequest() noexcept {
@@ -526,6 +523,8 @@ public slots:
 		Result result_DL0;
 		Result result_DL1;
 		Result result_FIFO;
+		result_FIFO.errors_ = fifoTestDataError_;
+		result_FIFO.count_ = expectedSampleValue_;
 
 		std::optional<bool> cl0Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0);
 		std::optional<bool> cl1Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL1);

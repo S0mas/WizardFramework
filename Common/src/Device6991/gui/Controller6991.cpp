@@ -102,6 +102,7 @@ Configuration6991 Controller6991::model() const noexcept {
 	config.startMode_ = startModeView_->model();
 	config.stopMode_ = stopModeView_->model(*config.scanRate_);
 	config.clockSource_ = static_cast<ClockSourceEnum::Type>(clockSourceComboBox->currentData().toInt());
+	config.scansPerDirectReadPacket_ = 10;
 	//TODO
 	//config.timestamps_ =
 	//config.scansPerDirectReadPacket_ = 
@@ -137,7 +138,7 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 
 Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("Controller", parent) {
 	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
-
+	deviceIF_->enableScpiCommandsPrints(false);
 	comboBoxMode_->setMaximumWidth(100);
 	for (auto mode : ControlModeEnum::TYPES)
 		comboBoxMode_->addItem(ControlModeEnum::toString(mode), mode);
