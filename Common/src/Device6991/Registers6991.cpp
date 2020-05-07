@@ -117,21 +117,15 @@ bool CL_SPI_CSR_reg::stopTests() noexcept {
 }
 
 std::optional<bool> CL_SPI_CSR_reg::isTestRunning(TestTypeEnum::Type const type) noexcept {
-	if(type == TestTypeEnum::CL0)
-		return readHw() ? std::optional{ data_.test(CL_TEST_LOOP) && data_.test(CL0_SEL) } : std::nullopt;
-	else if(type == TestTypeEnum::CL1)
-		return readHw() ? std::optional{ data_.test(CL_TEST_LOOP) && data_.test(CL1_SEL) } : std::nullopt;
-	else {
-		if (readHw()) {
-			auto c1 = data_.test(CL_TEST_LOOP);
-			auto c2 = data_.test(CL0_SEL);
-			auto c3 = data_.test(CL1_SEL);
-			return std::optional{ c1 && (c2 || c3) };
-		}
+	if (readHw()) {
+		if (type == TestTypeEnum::DL0)
+			return data_.test(CL_TEST_LOOP) && data_.test(CL0_SEL);
+		else if (type == TestTypeEnum::DL1)
+			return data_.test(CL_TEST_LOOP) && data_.test(CL1_SEL);
 		else
-			return std::nullopt;
+			return data_.test(CL_TEST_LOOP) && (data_.test(CL0_SEL) || data_.test(CL1_SEL));
 	}
-		//return readHw() ? std::optional{ data_.test(CL_TEST_LOOP) && (data_.test(CL0_SEL) || data_.test(CL1_SEL)) } : std::nullopt;
+	return std::nullopt;
 }
 
 CL_SPI_TLCNT_reg::CL_SPI_TLCNT_reg(Device6991* deviceIF) : Register(RegistersEnum::CL_SPI_TLCNT_reg, deviceIF) {}
@@ -162,12 +156,16 @@ bool DL_SPI_CSR1_reg::disableTestMode() noexcept {
 	return false;
 }
 
-std::optional<bool> DL_SPI_CSR1_reg::isTestRunning() noexcept {
-	return readHw() ? std::optional{ data_.test(DL_EN) && (data_.test(DL0_TEST_MODE) || data_.test(DL1_TEST_MODE)) } : std::nullopt;
-}
-
-std::optional<std::pair<bool, bool>> DL_SPI_CSR1_reg::runningTests() noexcept {
-	return readHw() ? std::optional{ std::pair{data_.test(DL0_TEST_MODE), data_.test(DL1_TEST_MODE)} } : std::nullopt;
+std::optional<bool> DL_SPI_CSR1_reg::isTestRunning(TestTypeEnum::Type const type) noexcept {
+	if (readHw()) {
+		if (type == TestTypeEnum::DL0)
+			return data_.test(DL_EN) && data_.test(DL0_TEST_MODE);
+		else if (type == TestTypeEnum::DL1)
+			return data_.test(DL_EN) && data_.test(DL1_TEST_MODE);
+		else 
+			return data_.test(DL_EN) && (data_.test(DL0_TEST_MODE) || data_.test(DL1_TEST_MODE));
+	}
+	return std::nullopt;
 }
 
 DL_SPI_CSR2_reg::DL_SPI_CSR2_reg(Device6991* deviceIF) : Register(RegistersEnum::DL_SPI_CSR2_reg, deviceIF) {}

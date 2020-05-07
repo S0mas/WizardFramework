@@ -4,6 +4,9 @@
 #include "../DeviceIdentityResourcesIF.h"
 #include "../DeviceIdentityResourcesIF.h"
 #include "Defines6991.h"
+#include "FifoTest.h"
+#include "ClTest.h"
+#include "DlTest.h"
 #include "Registers6991.h"
 #include <QTcpSocket>
 #include <QTextStream>
@@ -17,6 +20,8 @@
 #include <bitset>
 #include <optional>
 
+class Device6991;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @class	Device6991
 ///
@@ -28,6 +33,9 @@
 
 class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public ChannelsIF {
 	Q_OBJECT
+	friend class FifoTest;
+	friend class DlTests;
+	friend class ClTests;
 	FC_WR_QUEUE_EMP FC_WR_QUEUE_EMP_{ this };
 	PCI_ERR_STCTRL PCI_ERR_STCTRL_{ this };
 	PREF_ERR_ADDR PREF_ERR_ADDR_{ this };
@@ -73,88 +81,31 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 	BOARD_CSR_reg BOARD_CSR_reg_{ this };
 	CMD_reg CMD_reg_{ this };
 	DL_CSR_reg DL_CSR_reg_{ this };
+
+	FifoTest fifoTest_{ this };
+	DlTests dlTest_{ this };
+	ClTests clTest_{ this };
 	
 	QTcpSocket* tcpSocket_ = nullptr;
 	QDataStream in_;
 	mutable QString response_;
 	bool isAcqActive_ = false;
-	std::atomic<uint32_t> lastSample_;
+
 	bool exiting = false;
 	mutable std::mutex hwAccess_;
 	bool storeData_ = false;
 	QFile* dataFile_ = new QFile("data6991.txt");
 	bool enablePrint_ = true;
-	bool fifoTestRunning_ = false;
-	QTcpSocket* fifoTestTcpSocket_ = nullptr;
-	uint64_t expectedSampleValue_ = 0;
-	uint64_t fifoTestDataError_ = 0;
 
-	FifoTestModel fillFifoStatus() noexcept {
-		FifoTestModel fifoTestModel_;
-		auto count = DFIFO_CSR_reg_.samplesInFifo();
-		auto overflow = DFIFO_CSR_reg_.overflowHappened();
-		auto progThresholdPassed = DFIFO_CSR_reg_.isFifoProgFull();
-		fifoTestModel_.config_.blockSize_ = DFIFO_CSR_reg_.blockSize();
-		fifoTestModel_.config_.rate_ = DEBUG_CLK_RATE_reg_.rate();
-		fifoTestModel_.config_.treshold_ = DFIFO_PFLAG_THR_reg_.threshold();
-		if (overflow && *overflow)
-			fifoTestModel_.overflows_++;
-		if (progThresholdPassed && *progThresholdPassed)
-			fifoTestModel_.passTresholdCount_++;
-		if (count)
-			fifoTestModel_.samplesCount_ = count;
-		fifoTestModel_.lastSample_ = lastSample_;
-		fifoTestModel_.dataErrorsCount_ = fifoTestDataError_;
-		return fifoTestModel_;
-	}
-
-	bool configureFifoTest(FifoTestModel::Configuration const& config) noexcept {
-		bool rateChangeStatus = true;
-		bool blockSizeChangeStatus = true;
-		bool thresholdChangeStatus = true;
-		if(config.rate_)
-			rateChangeStatus = DEBUG_CLK_RATE_reg_.setRate(*config.rate_);
-		if (config.blockSize_)
-			blockSizeChangeStatus = DFIFO_CSR_reg_.setBlockSize(*config.blockSize_);
-		if (config.treshold_)
-			thresholdChangeStatus = DFIFO_PFLAG_THR_reg_.setThreshold(*config.treshold_);
-
-		return rateChangeStatus && blockSizeChangeStatus && thresholdChangeStatus;
-	}
-
-	bool startFifoTest(FifoTestModel::Configuration const& config) noexcept {
-		expectedSampleValue_ = 0;
-		fifoTestDataError_ = 0;
-		fifoTestRunning_ = true;
-		openSocketConnection(inputResources().back()->load(), 16101);
-		return  tcpSocket_->isOpen() && DL_SPI_CSR1_reg_.disableTestMode() &&
-			DFIFO_CSR_reg_.resetFifo() &&
-			DFIFO_CSR_reg_.isFifoEmpty() &&
-			DFIFO_CSR_reg_.enableTestMode() &&
-			configureFifoTest(config) &&
-			DEBUG_CSR_reg_.startClock();
-	}
-
-	bool stopFifoTest() noexcept {
-		auto dbgClkStopped = DEBUG_CSR_reg_.stopClock();
-		if (!dbgClkStopped)
-			return false;
-		closeSocketConnection();
-		fifoTestRunning_ = false;
-		return DFIFO_CSR_reg_.disableTestMode();
-	}
-
-	std::optional<bool> isTestsRunning() noexcept {
-		auto clTests = CL_SPI_CSR_reg_.isTestRunning();
-		auto dlTests = DL_SPI_CSR1_reg_.isTestRunning();
-		auto fifoTests = DFIFO_CSR_reg_.isTestRunning();
-		return clTests && dlTests && fifoTests ? std::optional(*clTests || *dlTests || *fifoTests) : std::nullopt;
+	bool isAnyTestRunning() noexcept {
+		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
 	}
 
 	QString readError() const noexcept {
 		scpiCmd("SYSTem:ERR?");
 		return readResponse();
 	}
+
 	bool succeeded() const noexcept {
 		response_ = readResponse();
 		if (enablePrint_)
@@ -320,11 +271,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public C
 		out << data.data();
 	}
 
-	void validateData(std::vector<uint32_t> const& data) {
-		for (auto const& sample : data)
-			if (expectedSampleValue_++ != sample)
-				++fifoTestDataError_;
-	}
 
 private slots:
 	void displayError(QAbstractSocket::SocketError socketError) noexcept {
@@ -349,8 +295,8 @@ private slots:
 		in_.startTransaction();
 		in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(acqPacket.data_.samples_.data())), header.dataSize_);
 
-		if (fifoTestRunning_)
-			validateData(acqPacket.data_.samples_);
+		if (fifoTest_.isRunning())
+			fifoTest_.validateData(acqPacket.data_.samples_);
 
 		if (!in_.commitTransaction()) {
 			emit reportError("Reading data from socket error.");
@@ -472,48 +418,29 @@ public slots:
 			setClockSource(*config.clockSource_);
 	}
 
-	FecIdType::Type dlTestsTargetFecId(bool const dl0, bool const dl1) const noexcept {
-		if (dl0 && dl1)
-			return FecIdType::BOTH;
-		if (dl0)
-			return FecIdType::_1;
-		if (dl1)
-			return FecIdType::_2;
-		return FecIdType::INVALID;
-	}
-
 	void startTestsRequest(StartTestsRequest const& request) noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			if (invokeCmd("*DBG 4")) {
-				setScansNoPerDirectReadPacket(10);
-				auto dlTestsTarget = dlTestsTargetFecId(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1));
-				if (dlTestsTarget != FecIdType::INVALID)
-					startDlTests(dlTestsTarget, request.clockFreq_);
-				if (request.model.at(TestTypeEnum::FIFO))
-					startFifoTest(request.fifoTestConfig_);			
-				CL_SPI_CSR_reg_.startTests(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
-				emit testsStarted();
-			}
+			setScansNoPerDirectReadPacket(10);
+			dlTest_.startTest(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1), request.clockFreq_);
+			if (request.model.at(TestTypeEnum::FIFO))
+				fifoTest_.startTest(request.fifoTestConfig_);
+			clTest_.startTest(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
+			emit testsStarted();
 			invokeCmd("SYSTem:LOCK 0");
 		}
 	}
 
 	void stopTestsRequest() noexcept {
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			if (invokeCmd("*DBG 0")) {
-				if (auto isRunning = CL_SPI_CSR_reg_.isTestRunning(); isRunning && *isRunning)
-					CL_SPI_CSR_reg_.stopTests();
-				if(auto isRunning = DL_SPI_CSR1_reg_.isTestRunning(); isRunning && *isRunning)
-					stopDlTests();
-				if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning)
-					stopFifoTest();
-			}
+			clTest_.stopTest();
+			dlTest_.stopTest();
+			fifoTest_.stopTest();
 			invokeCmd("SYSTem:LOCK 0");
 		}		
 	}
 
 	void testCountersRequest() noexcept {
-		if (auto testsRunning = isTestsRunning(); testsRunning && (!*testsRunning)) {
+		if (!isAnyTestRunning()) {
 			emit testsStopped();
 			return;
 		}
@@ -523,32 +450,32 @@ public slots:
 		Result result_DL0;
 		Result result_DL1;
 		Result result_FIFO;
-		result_FIFO.errors_ = fifoTestDataError_;
-		result_FIFO.count_ = expectedSampleValue_;
+		result_FIFO.errors_ = fifoTest_.errors();
+		result_FIFO.count_ = fifoTest_.count();
 
-		std::optional<bool> cl0Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0);
-		std::optional<bool> cl1Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL1);
-		std::optional<bool> dl0Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::DL0);
-		std::optional<bool> dl1Running = CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::DL1);
+		bool cl0Running = clTest_.isRunning(TestTypeEnum::CL0);
+		bool cl1Running = clTest_.isRunning(TestTypeEnum::CL1);
+		bool dl0Running = dlTest_.isRunning(TestTypeEnum::DL0);
+		bool dl1Running = dlTest_.isRunning(TestTypeEnum::DL1);
 	
-		if (auto count = CL_SPI_TLCNT_reg_.value(); count) {
-			if(cl0Running && *cl0Running)
+		if (auto count = clTest_.count(); count) {
+			if(cl0Running)
 				result_CL0.count_ = count;
-			if(cl1Running && *cl1Running)
+			if(cl1Running)
 				result_CL1.count_ = count;
 		}
-		if(CL_SPI_CSR_reg_.isTestRunning(TestTypeEnum::CL0))
-		if (auto errors = CL0_SPI_TLERR_reg_.value(); errors && cl0Running && *cl0Running)
+
+		if (auto errors = clTest_.errors(TestTypeEnum::CL0); errors && cl0Running)
 			result_CL0.errors_ = errors;
-		if (auto errors = CL1_SPI_TLERR_reg_.value(); errors && cl1Running && *cl1Running)
+		if (auto errors = clTest_.errors(TestTypeEnum::CL1); errors && cl1Running)
 			result_CL1.errors_ = errors;
-		if (auto count = DL0_SPI_TMCNT_reg_.value(); count && dl0Running && *dl0Running)
+		if (auto count = dlTest_.count(TestTypeEnum::DL0); count && dl0Running)
 			result_DL0.count_ = count;
-		if (auto errors = DL0_SPI_TMERR_reg_.value(); errors && dl0Running && *dl0Running)
+		if (auto errors = dlTest_.errors(TestTypeEnum::DL0); errors && dl0Running)
 			result_DL0.errors_ = errors;
-		if (auto count = DL1_SPI_TMCNT_reg_.value(); count && dl1Running && *dl1Running)
+		if (auto count = dlTest_.count(TestTypeEnum::DL1); count && dl1Running)
 			result_DL1.count_ = count;
-		if (auto errors = DL1_SPI_TMERR_reg_.value(); errors && dl1Running && *dl1Running)
+		if (auto errors = dlTest_.errors(TestTypeEnum::DL1); errors && dl1Running)
 			result_DL1.errors_ = errors;
 
 		TestsResultModel result;
@@ -559,8 +486,8 @@ public slots:
 		result[TestTypeEnum::FIFO] = result_FIFO;
 		TestsStatus status;
 		status.model = result;
-		if (auto isRunning = DFIFO_CSR_reg_.isTestRunning(); isRunning && *isRunning) 
-			status.fifoTestModel_ = fillFifoStatus();
+		if (fifoTest_.isRunning())
+			status.fifoTestModel_ = fifoTest_.model();
 		emit testCounters(status);
 	}
 
@@ -685,32 +612,6 @@ public slots:
 		if (read.second && fcId == FecIdType::BOTH || fcId == FecIdType::_2)
 			return static_cast<FecType::Type>(*read.second);
 		return std::nullopt;
-	}
-
-	bool startDlTests(FecIdType::Type const fcId, DlSclkFreqType::Type const freq) noexcept {
-		if (auto fecType = readFecType(fcId); fecType) {
-			return isFecIdle(*fecType, fcId) &&
-				checkIfDlReceiverStateIsIdle() &&
-				DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fcId) &&
-				DL_SPI_CSR1_reg_.enableTestMode(fcId) &&
-				DL_CSR_reg_.setDlSclkFreqType(fcId, freq) &&
-				CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_START : FecCmdsType6132::DL_TEST_START);	
-		}
-		return false;
-	}
-
-	bool stopDlTests() noexcept {
-		if (auto runningTests = DL_SPI_CSR1_reg_.runningTests(); runningTests) {
-			auto fcId = dlTestsTargetFecId((*runningTests).first, (*runningTests).second);
-			if (auto fecType = readFecType(fcId); fecType) {
-				return fcId != FecIdType::INVALID &&
-					CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_STOP : FecCmdsType6132::DL_TEST_STOP) &&
-					testWithTimeout([this, type = *fecType, fcId]() { return isFecIdle(type, fcId); }, 100, 25) &&
-					DL_SPI_CSR1_reg_.disableTestMode() &&
-					testWithTimeout([this]() { return checkIfDlReceiverStateIsIdle(); }, 100, 25);
-			}
-		}
-		return false;
 	}
 signals:
 	void actualControllerKey(uint32_t const id) const;

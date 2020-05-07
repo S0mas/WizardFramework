@@ -165,8 +165,7 @@ public:
 	DL_SPI_CSR1_reg(Device6991*);
 	bool enableTestMode(FecIdType::Type const fcId) noexcept;
 	bool disableTestMode() noexcept;
-	std::optional<bool> isTestRunning() noexcept;
-	std::optional<std::pair<bool, bool>> runningTests() noexcept;
+	std::optional<bool> isTestRunning(TestTypeEnum::Type const type = TestTypeEnum::INVALID) noexcept;
 	std::optional<uint32_t> dlFsmStatus() noexcept {
 		return value() ? std::optional{ static_cast<DlSclkFreqType::Type>(data_.to_ulong() & 0xF00) } : std::nullopt;
 	}
