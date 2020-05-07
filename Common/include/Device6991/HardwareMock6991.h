@@ -160,6 +160,8 @@ public:
 		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 8191;
 		fpgaRegs_[RegistersEnum::ACQ_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::BOARD_CSR1_reg] = 0x0000001F;
+		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0x6132;
+		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0x6132;
 		checkTestsRegsTimer->start(500);
 		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
@@ -423,8 +425,6 @@ public:
 		fpgaRegs_[RegistersEnum::DL1_SPI_TMERR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
 		fpgaRegs_[RegistersEnum::DFIFO] = 0;
-		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0x6111;
-		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0x6111;
 		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::BOARD_CSR_reg] = 0x1;
 		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::BOARD_CSR_reg] = 0x1;
 		timer_->start(1000);

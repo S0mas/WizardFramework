@@ -31,7 +31,7 @@ class Device6991;
 /// @date	06.02.2020
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF, public ChannelsIF {
+class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	Q_OBJECT
 	friend class FifoTest;
 	friend class DlTests;
@@ -308,7 +308,7 @@ private slots:
 	}
 public:
 	using DataType = QVector<bool>;
-	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, uint32_t const channelsNo,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(channelsNo) {
+	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
 		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
 		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
 	}

@@ -62,7 +62,7 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 
 TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, FecIdType::Type const index, QWidget* parent)
 	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), parentCommandSelector_(parentCommandSelector) {
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
+	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setText("0x00000000");
@@ -150,7 +150,7 @@ void RegisterController6991::createConnections() noexcept {
 
 RegisterController6991::RegisterController6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
 	: QGroupBox("Register Controller", parent) {
-	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, 256, this);
+	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, this);
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setText("0x00000000");

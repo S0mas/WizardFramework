@@ -23,6 +23,9 @@
 #include "ScanRateView.h"
 #include "StatusView.h"
 
+class ConnectController;
+class Controller6132;
+
 class Controller6991 : public QGroupBox {
 	//TODO
 	// Data Storage implementation
@@ -48,12 +51,16 @@ class Controller6991 : public QGroupBox {
 	QCheckBox* dataStorageCheckBox_ = new QCheckBox("Data Storage");
 	QCheckBox* statusAutoRefreshCheckBox_ = new QCheckBox("Auto Status Refresh");
 	StatusView* statusView_ = new StatusView;
+	ConnectController* connectController_;
+	QWidget* placeHolderForController6132_ = new QWidget;
+	Controller6132* controller6132_;
 	Device6991* deviceIF_;
 
 	QStringList streams = { "1", "2", "3", "4" };
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
+	void addController6132IfNeeded() noexcept;
 	Configuration6991 model() const noexcept;
 	void showError(QString const&) noexcept;
 	uint32_t id() const noexcept;

@@ -39,7 +39,7 @@ public slots:
 class RegisterControllerFrontend : public QGroupBox {
 	Q_OBJECT
 	EnumSelector* commandSelector_ = new EnumSelector(Commands1Enum(), "Command");
-	EnumSelector* addressSelector_ = new EnumSelector(RegistersEnum(), "Address", true, 8);
+	EnumSelector* addressSelector_ = new EnumSelector(FecRegistersEnum(), "Address", true, 8);
 	TargetFrontendCardView* frontend1_;
 	TargetFrontendCardView* frontend2_;
 	QPushButton* refreshButton = new QPushButton("Refresh");

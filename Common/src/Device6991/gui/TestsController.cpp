@@ -174,7 +174,7 @@ void TestsController::updateTime() const noexcept {
 }
 
 TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("", parent) {
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
+	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
 	deviceIF_->enableScpiCommandsPrints(false);
 	auto hlayout = new QHBoxLayout;
 	hlayout->addWidget(selectionView_);

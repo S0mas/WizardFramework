@@ -314,7 +314,7 @@ public:
 		ScpiArgsParser::addMnemonic("OFF", arg);
 	}
 	int read(uint32_t const vi, unsigned char* dataPtr, uint32_t size, unsigned long* ret) const noexcept override {
-		*ret = 1;
+		*ret = 0;
 		for (auto c : responseContainer_) {
 			*dataPtr = c.toLatin1();
 			++dataPtr;

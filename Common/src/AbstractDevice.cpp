@@ -19,7 +19,12 @@ QString AbstractDevice::nameId() const noexcept {
 	return nameId_;
 }
 
-bool AbstractDevice::connect() const noexcept {
+void AbstractDevice::connect() const noexcept {
 	logMsg(QString("Connecting %1..").arg(nameId()));
-	return connector_->connect();
+	connector_->connect();
+}
+
+void AbstractDevice::disconnect() const noexcept {
+	logMsg(QString("Disconnecting %1..").arg(nameId()));
+	connector_->disconnect();
 }

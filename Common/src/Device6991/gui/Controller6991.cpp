@@ -1,4 +1,6 @@
 #include "../../../include/Device6991/gui/Controller6991.h"
+#include "../../../include/gui/ConnectController.h"
+#include "../../../include/gui/Controller6132.h"
 
 void Controller6991::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::acquisitionStarted, acqStartStopButton_, &TwoStateButton::connected);
@@ -40,8 +42,8 @@ void Controller6991::initializeStateMachine() noexcept {
 
 	listener->addTransition(deviceIF_, &Device6991::controlGranted, controller);
 	controller->addTransition(deviceIF_, &Device6991::controlReleased, listener);
-	disconnected->addTransition(deviceIF_, &Device6991::connectedDataStream, listener);
-	connected->addTransition(deviceIF_, &Device6991::disconnectedDataStream, disconnected);
+	disconnected->addTransition(connectController_, &ConnectController::connected, listener);
+	connected->addTransition(connectController_, &ConnectController::disconnected, disconnected);
 
 	sm_.addState(connected);
 	sm_.addState(disconnected);
@@ -62,6 +64,7 @@ void Controller6991::initializeStateMachine() noexcept {
 			dataStorageCheckBox_->setEnabled(false);
 			dataStorageCheckBox_->setChecked(false);
 			idEdit_->setEnabled(true);
+			placeHolderForController6132_->hide();
 		}
 	);
 	connect(connected, &QState::entered,
@@ -72,6 +75,7 @@ void Controller6991::initializeStateMachine() noexcept {
 			statusAutoRefreshCheckBox_->setEnabled(true);
 			dataStreamComboBox_->setEnabled(false);
 			idEdit_->setEnabled(false);
+			addController6132IfNeeded();
 		}
 	);
 	connect(controller, &QState::entered,
@@ -94,6 +98,28 @@ void Controller6991::initializeStateMachine() noexcept {
 	);
 	sm_.setInitialState(disconnected);
 	sm_.start();
+}
+
+void Controller6991::addController6132IfNeeded() noexcept {
+	Device6132* _6132AtFec1 = nullptr;
+	Device6132* _6132AtFec2 = nullptr;
+	if (auto fecType = deviceIF_->readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
+		_6132AtFec1 = new Device6132(FecIdType::_1, deviceIF_);
+	if (auto fecType = deviceIF_->readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
+		_6132AtFec2 = new Device6132(FecIdType::_1, deviceIF_);
+	if (_6132AtFec1 || _6132AtFec2) {
+		auto newController6132 = new Controller6132(_6132AtFec1, _6132AtFec2, this);
+		if (placeHolderForController6132_->layout()->itemAt(0)) {
+			auto item = placeHolderForController6132_->layout()->replaceWidget(controller6132_, newController6132);
+			delete item->widget();
+			delete item;
+		}
+		else
+			placeHolderForController6132_->layout()->addWidget(newController6132);
+
+		placeHolderForController6132_->show();
+		controller6132_ = newController6132;
+	}
 }
 
 Configuration6991 Controller6991::model() const noexcept {
@@ -137,7 +163,12 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 }
 
 Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("Controller", parent) {
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, 256, this);
+	placeHolderForController6132_->hide();
+	auto controller6132Layout = new QVBoxLayout;
+	controller6132Layout->setContentsMargins(0, 0, 0, 0);
+	placeHolderForController6132_->setLayout(controller6132Layout);
+	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
+	connectController_ = new ConnectController(deviceIF_, this);
 	deviceIF_->enableScpiCommandsPrints(false);
 	comboBoxMode_->setMaximumWidth(100);
 	for (auto mode : ControlModeEnum::TYPES)
@@ -187,6 +218,8 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	vlayout->addLayout(hlayout);
 	vlayout->addWidget(startModeView_);
 	vlayout->addWidget(stopModeView_);
+	vlayout->addWidget(placeHolderForController6132_);
+	vlayout->addStretch(0);
 	vlayout->addWidget(dataStorageCheckBox_);
 	vlayout->addWidget(statusAutoRefreshCheckBox_);
 
@@ -195,7 +228,8 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	hButtonslayout->addWidget(acqStartStopButton_, 1, Qt::AlignRight);
 
 	auto layout = new QVBoxLayout;
-	layout->addLayout(vlayout);
+	layout->addWidget(connectController_);
+	layout->addLayout(vlayout);	
 	layout->addWidget(statusView_);
 	layout->addLayout(hButtonslayout);
 	setLayout(layout);
