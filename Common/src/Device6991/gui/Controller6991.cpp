@@ -113,7 +113,7 @@ void Controller6991::addController6132IfNeeded() noexcept {
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
 		_6132AtFec1 = new Device6132(FecIdType::_1, deviceIF_);
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
-		_6132AtFec2 = new Device6132(FecIdType::_1, deviceIF_);
+		_6132AtFec2 = new Device6132(FecIdType::_2, deviceIF_);
 	if (_6132AtFec1 || _6132AtFec2) {
 		auto newController6132 = new Controller6132(_6132AtFec1, _6132AtFec2, this);
 		if (placeHolderForController6132_->layout()->itemAt(0)) {
@@ -169,9 +169,9 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	//	//
 }
 
-Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, bool const dbgMode, QWidget* parent)
+Controller6991::Controller6991(Device6991* devIF, bool const dbgMode, QWidget* parent)
 	: QGroupBox("Controller", parent),
-	deviceIF_(new Device6991("Device6991", hwConnector, scpiIF, this)),
+	deviceIF_(devIF),
 	connectController_(new ConnectController(deviceIF_, this)),
 	dbgMode_(dbgMode) {
 

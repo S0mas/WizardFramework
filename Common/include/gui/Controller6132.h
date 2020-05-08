@@ -76,11 +76,29 @@ public:
 
 		connect(setButton, &QPushButton::clicked,
 			[comboBoxAction, comboBoxValue, this]() {
-				bool result = false;
-				if (comboBoxAction->currentData().toUInt() == SET_GAIN)
-					result = devIF1_->setGain(statuses_.allEnabled(), static_cast<GainType6132::Type>(comboBoxValue->currentData().toUInt()));
-				else if (comboBoxAction->currentData().toUInt() == SET_FILTER)
-					result = devIF1_->setFilter(statuses_.allEnabled(), static_cast<FilterType6132::Type>(comboBoxValue->currentData().toUInt()));
+				bool result = true;
+				std::vector<uint32_t> channelsCtrl1;
+				std::vector<uint32_t> channelsCtrl2;
+				for (auto channelId : statuses_.allEnabled())
+					if (channelId > 16)
+						channelsCtrl2.push_back(channelId - 16);
+					else
+						channelsCtrl1.push_back(channelId);
+				if (!devIF1_ && devIF2_)
+					channelsCtrl2 = channelsCtrl1;
+
+				if (comboBoxAction->currentData().toUInt() == SET_GAIN) {
+					if(devIF1_ && !channelsCtrl1.empty())
+						result = devIF1_->setGain(channelsCtrl1, static_cast<GainType6132::Type>(comboBoxValue->currentData().toUInt()));
+					if(devIF2_ && !channelsCtrl2.empty())
+						result &= devIF2_->setGain(channelsCtrl2, static_cast<GainType6132::Type>(comboBoxValue->currentData().toUInt()));
+				}		
+				else if (comboBoxAction->currentData().toUInt() == SET_FILTER) {
+					if (devIF1_ && !channelsCtrl1.empty())
+						result = devIF1_->setFilter(channelsCtrl1, static_cast<FilterType6132::Type>(comboBoxValue->currentData().toUInt()));
+					if (devIF2_ && !channelsCtrl2.empty())
+						result &= devIF2_->setFilter(channelsCtrl2, static_cast<FilterType6132::Type>(comboBoxValue->currentData().toUInt()));
+				}
 				if (!result)
 					QMessageBox::critical(this, "Error", QString("Faild to %1.").arg(comboBoxAction->currentText()));
 			}

@@ -24,6 +24,7 @@ public:
 				ChannelId id = (groupId - 1) * channelsPerGroup_ + 1 + i;
 				auto button = new ChannelSelectionButton(id, this);
 				connect(button, &ChannelSelectionButton::toggled, [&statuses, id](const bool state) { statuses.set(id, state); });
+				button->setChecked(statuses.status(id));
 				buttons.push_back(button);
 			}
 			

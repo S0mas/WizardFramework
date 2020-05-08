@@ -73,5 +73,5 @@ private:
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
 public:
-	Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, bool const dbgMode = false, QWidget* parent = nullptr);
+	Controller6991(Device6991* devIF, bool const dbgMode = false, QWidget* parent = nullptr);
 };

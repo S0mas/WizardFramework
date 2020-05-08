@@ -30,8 +30,10 @@ public:
 		auto layout = new QVBoxLayout;
 		for (auto const& resource : devIF->inputResources()) {
 			auto descLabel = new QLabel(resource->description());
-			auto lineEdit = new QLineEdit(resource->load());
+			auto lineEdit = new QLineEdit;
 			lineEdit->setValidator(resource->validator());
+			lineEdit->setText(resource->load());
+			connect(lineEdit, &QLineEdit::editingFinished, [resource, lineEdit]() {resource->setValue(lineEdit->text()); resource->save(); });
 			auto hlayout = new QHBoxLayout;
 			hlayout->addWidget(descLabel);
 			hlayout->addWidget(lineEdit);
