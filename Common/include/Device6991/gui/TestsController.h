@@ -101,5 +101,5 @@ private:
 	void initializeStateMachine() noexcept;
 	void updateTime() const noexcept;
 public:
-	TestsController(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
+	TestsController(Device6991* devIF, QWidget* parent = nullptr);
 };

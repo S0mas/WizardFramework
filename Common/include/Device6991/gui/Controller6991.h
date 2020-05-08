@@ -22,6 +22,9 @@
 #include "../../gui/TwoStateButton.h"
 #include "ScanRateView.h"
 #include "StatusView.h"
+#include "TestsController.h"
+#include "Controller6991.h"
+#include "RegisterController.h"
 
 class ConnectController;
 class Controller6132;
@@ -30,6 +33,8 @@ class Controller6991 : public QGroupBox {
 	//TODO
 	// Data Storage implementation
 	Q_OBJECT
+	Device6991* deviceIF_;
+	ConnectController* connectController_;
 	QStateMachine sm_;
 	QTime time_;
 	QSpinBox* idEdit_ = new QSpinBox;
@@ -51,11 +56,12 @@ class Controller6991 : public QGroupBox {
 	QCheckBox* dataStorageCheckBox_ = new QCheckBox("Data Storage");
 	QCheckBox* statusAutoRefreshCheckBox_ = new QCheckBox("Auto Status Refresh");
 	StatusView* statusView_ = new StatusView;
-	ConnectController* connectController_;
 	QWidget* placeHolderForController6132_ = new QWidget;
 	Controller6132* controller6132_;
-	Device6991* deviceIF_;
-
+	RegisterControllerFrontend* resgisterControllerFrontend_ = nullptr;
+	RegisterController6991* resgisterController6991_ = nullptr;
+	TestsController* testController_ = nullptr;
+	bool dbgMode_ = false;
 	QStringList streams = { "1", "2", "3", "4" };
 private:
 	void createConnections() noexcept;
@@ -67,5 +73,5 @@ private:
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
 public:
-	Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
+	Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, bool const dbgMode = false, QWidget* parent = nullptr);
 };

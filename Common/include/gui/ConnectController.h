@@ -21,7 +21,7 @@ class ConnectController : public QGroupBox {
 	AbstractDevice* devIF_;
 	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { devIF_->connect(); }, "Disconnect", [this]() { devIF_->disconnect(); });
 public:
-	ConnectController(AbstractDevice* devIF, QWidget* parent = nullptr) : QGroupBox("Connection", parent), devIF_(devIF) {
+	ConnectController(AbstractDevice* devIF, QWidget* parent = nullptr) : QGroupBox("Device", parent), devIF_(devIF) {
 		connect(devIF, &AbstractDevice::connectionStatusChanged, [this](QString const& name, bool const status) { status ? emit connectDisconnectButton_->connected() : emit connectDisconnectButton_->disconnected(); });
 		connect(connectDisconnectButton_, &TwoStateButton::connected, this, &ConnectController::connected);
 		connect(connectDisconnectButton_, &TwoStateButton::disconnected, this, &ConnectController::disconnected);

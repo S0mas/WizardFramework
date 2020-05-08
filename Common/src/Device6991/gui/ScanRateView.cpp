@@ -21,8 +21,8 @@ void ScanRateView::createConnections() noexcept {
 }
 
 ScanRateView::ScanRateView(QWidget* parent) : QGroupBox("Scan Rate", parent) {
-	valueSpinBox_->setMaximumWidth(130);
-	valueSpinBox_->setMinimumWidth(130);
+	valueSpinBox_->setMaximumWidth(70);
+	valueSpinBox_->setMinimumWidth(70);
 	for (auto unit : ScanRateUnitsEnum::TYPES)
 		unitComboBox_->addItem(ScanRateUnitsEnum::toString(static_cast<ScanRateUnitsEnum::Type>(unit)), unit);
 

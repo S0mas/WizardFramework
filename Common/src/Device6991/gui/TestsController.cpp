@@ -173,9 +173,7 @@ void TestsController::updateTime() const noexcept {
 	testElapsedTimeLabel_->setText(QString("Time elapsed: %1m %2s").arg(minutes).arg(seconds));
 }
 
-TestsController::TestsController(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("", parent) {
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
-	deviceIF_->enableScpiCommandsPrints(false);
+TestsController::TestsController(Device6991* devIF, QWidget * parent) : QGroupBox("", parent), deviceIF_(devIF) {
 	auto hlayout = new QHBoxLayout;
 	hlayout->addWidget(selectionView_);
 	hlayout->addWidget(resultView_);

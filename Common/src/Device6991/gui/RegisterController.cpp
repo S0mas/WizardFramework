@@ -60,9 +60,8 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 	sm_.start();
 }
 
-TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, FecIdType::Type const index, QWidget* parent)
-	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), parentCommandSelector_(parentCommandSelector) {
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
+TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, Device6991* devIF, FecIdType::Type const index, QWidget* parent)
+	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), deviceIF_(devIF), parentCommandSelector_(parentCommandSelector) {
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setText("0x00000000");
@@ -105,8 +104,8 @@ void RegisterControllerFrontend::createConnections() noexcept {
 	);
 }
 
-RegisterControllerFrontend::RegisterControllerFrontend(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
-	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, hwConnector, scpiIF, FecIdType::_2)){
+RegisterControllerFrontend::RegisterControllerFrontend(Device6991* devIF, QWidget* parent)
+	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_2)){
 	auto frontendsLayout = new QHBoxLayout;
 	frontendsLayout->addWidget(frontend1_);
 	frontendsLayout->addWidget(frontend2_);
@@ -148,9 +147,8 @@ void RegisterController6991::createConnections() noexcept {
 	);
 }
 
-RegisterController6991::RegisterController6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent)
-	: QGroupBox("Register Controller", parent) {
-	deviceIF_ = new Device6991("Device6111", hwConnector, scpiIF, this);
+RegisterController6991::RegisterController6991(Device6991* devIF, QWidget* parent)
+	: QGroupBox("Register Controller", parent), deviceIF_(devIF) {
 	lineEdit_->setMaximumWidth(70);
 	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
 	lineEdit_->setText("0x00000000");

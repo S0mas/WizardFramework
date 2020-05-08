@@ -30,7 +30,7 @@ class TargetFrontendCardView : public QGroupBox {
 signals:
 	void stateReq() const;
 public:
-	TargetFrontendCardView(EnumSelector* parentCommandSelector, AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, FecIdType::Type const index, QWidget* parent = nullptr);
+	TargetFrontendCardView(EnumSelector* parentCommandSelector, Device6991* devIF, FecIdType::Type const index, QWidget* parent = nullptr);
 	QLineEdit* lineEdit_ = new QLineEdit;
 public slots:
 	void sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept;
@@ -46,7 +46,7 @@ class RegisterControllerFrontend : public QGroupBox {
 	QPushButton* executeButton = new QPushButton("Execute");
 	void createConnections() noexcept;
 public:
-	RegisterControllerFrontend(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
+	RegisterControllerFrontend(Device6991* devIF, QWidget* parent = nullptr);
 };
 
 class RegisterController6991 : public QGroupBox {
@@ -58,5 +58,5 @@ class RegisterController6991 : public QGroupBox {
 	Device6991* deviceIF_;
 	void createConnections() noexcept;
 public:
-	RegisterController6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget* parent = nullptr);
+	RegisterController6991(Device6991* devIF, QWidget* parent = nullptr);
 };

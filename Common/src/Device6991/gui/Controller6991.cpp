@@ -7,6 +7,8 @@ void Controller6991::createConnections() noexcept {
 	connect(deviceIF_, &Device6991::acquisitionStopped, acqStartStopButton_, &TwoStateButton::disconnected);
 	connect(deviceIF_, &Device6991::connectedDataStream, connectDisconnectButton_, &TwoStateButton::connected);
 	connect(deviceIF_, &Device6991::disconnectedDataStream, connectDisconnectButton_, &TwoStateButton::disconnected);
+	connect(deviceIF_, &Device6991::connectedDataStream, connectDisconnectButton_, [this]() {dataStreamComboBox_->setDisabled(true); });
+	connect(deviceIF_, &Device6991::disconnectedDataStream, connectDisconnectButton_, [this]() {dataStreamComboBox_->setEnabled(true); });
 	connect(deviceIF_, &Device6991::state, statusView_, &StatusView::update);
 	connect(deviceIF_, &Device6991::configuration, this, &Controller6991::setModel);
 	connect(deviceIF_, &Device6991::reportError, this, &Controller6991::showError);
@@ -52,7 +54,6 @@ void Controller6991::initializeStateMachine() noexcept {
 		[this]() {
 			modeGroup_->setEnabled(false);
 			comboBoxMode_->setCurrentIndex(0);
-			dataStreamComboBox_->setEnabled(true);
 			resfreshButton_->setEnabled(false);
 			clockSourceGroup_->setEnabled(false);
 			scanRateView_->setEnabled(false);
@@ -61,9 +62,12 @@ void Controller6991::initializeStateMachine() noexcept {
 			acqStartStopButton_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setChecked(false);
-			dataStorageCheckBox_->setEnabled(false);
-			dataStorageCheckBox_->setChecked(false);
 			idEdit_->setEnabled(true);
+			if (dbgMode_) {
+				resgisterControllerFrontend_->setEnabled(false);
+				resgisterController6991_->setEnabled(false);
+				testController_->setEnabled(false);
+			}
 			placeHolderForController6132_->hide();
 		}
 	);
@@ -71,10 +75,13 @@ void Controller6991::initializeStateMachine() noexcept {
 		[this]() {
 			modeGroup_->setEnabled(true);
 			resfreshButton_->setEnabled(true);
-			dataStorageCheckBox_->setEnabled(true);
 			statusAutoRefreshCheckBox_->setEnabled(true);
-			dataStreamComboBox_->setEnabled(false);
 			idEdit_->setEnabled(false);
+			if (dbgMode_) {
+				resgisterControllerFrontend_->setEnabled(true);
+				resgisterController6991_->setEnabled(true);
+				testController_->setEnabled(true);
+			}
 			addController6132IfNeeded();
 		}
 	);
@@ -162,14 +169,16 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	//	//
 }
 
-Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, QWidget * parent) : QGroupBox("Controller", parent) {
+Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* scpiIF, bool const dbgMode, QWidget* parent)
+	: QGroupBox("Controller", parent),
+	deviceIF_(new Device6991("Device6991", hwConnector, scpiIF, this)),
+	connectController_(new ConnectController(deviceIF_, this)),
+	dbgMode_(dbgMode) {
+
 	placeHolderForController6132_->hide();
 	auto controller6132Layout = new QVBoxLayout;
 	controller6132Layout->setContentsMargins(0, 0, 0, 0);
 	placeHolderForController6132_->setLayout(controller6132Layout);
-	deviceIF_ = new Device6991("Device6991", hwConnector, scpiIF, this);
-	connectController_ = new ConnectController(deviceIF_, this);
-	deviceIF_->enableScpiCommandsPrints(false);
 	comboBoxMode_->setMaximumWidth(100);
 	for (auto mode : ControlModeEnum::TYPES)
 		comboBoxMode_->addItem(ControlModeEnum::toString(mode), mode);
@@ -197,8 +206,14 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	hlayout->addWidget(connectDisconnectButton_);
 	dataStreamGroup_->setLayout(hlayout);
 
+	auto hlayout2 = new QHBoxLayout;
+	hlayout2->addWidget(groupId);
+	hlayout2->addWidget(connectController_);
+	hlayout2->addWidget(dataStreamGroup_);
+
 	for (auto clock : ClockSourceEnum::TYPES)
 		clockSourceComboBox->addItem(ClockSourceEnum::toString(clock), clock);
+	clockSourceComboBox->setMaximumWidth(80);
 
 	auto vlayout = new QVBoxLayout;
 	vlayout->addWidget(clockSourceComboBox);
@@ -207,14 +222,9 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	vlayout = new QVBoxLayout;
 	hlayout = new QHBoxLayout;
 	hlayout->setContentsMargins(0, 0, 0, 0);
-	hlayout->addWidget(groupId);
-	hlayout->addWidget(modeGroup_);
-	hlayout->addWidget(dataStreamGroup_);
-	vlayout->addLayout(hlayout);
-	hlayout = new QHBoxLayout;
-	hlayout->setContentsMargins(0, 0, 0, 0);
 	hlayout->addWidget(scanRateView_);
 	hlayout->addWidget(clockSourceGroup_);
+	hlayout->addWidget(modeGroup_);
 	vlayout->addLayout(hlayout);
 	vlayout->addWidget(startModeView_);
 	vlayout->addWidget(stopModeView_);
@@ -227,12 +237,32 @@ Controller6991::Controller6991(AbstractHardwareConnector* hwConnector, ScpiIF* s
 	hButtonslayout->addWidget(resfreshButton_);
 	hButtonslayout->addWidget(acqStartStopButton_, 1, Qt::AlignRight);
 
+	QImage bustecLogo(":\\images\\bustec.jpg");
+	auto imageWidget = new QLabel;
+	imageWidget->setPixmap(QPixmap::fromImage(bustecLogo));
+
 	auto layout = new QVBoxLayout;
-	layout->addWidget(connectController_);
+	layout->addWidget(imageWidget, 1, Qt::AlignCenter);
+	layout->addLayout(hlayout2);
 	layout->addLayout(vlayout);	
 	layout->addWidget(statusView_);
 	layout->addLayout(hButtonslayout);
 	setLayout(layout);
+
+	if (dbgMode_) {
+		auto dbgController = new QWidget();
+		resgisterControllerFrontend_ = new RegisterControllerFrontend(deviceIF_);
+		resgisterController6991_ = new RegisterController6991(deviceIF_);
+		testController_ = new TestsController(deviceIF_);
+		auto layout = new QVBoxLayout;
+		layout->addWidget(resgisterControllerFrontend_);
+		layout->addWidget(resgisterController6991_);
+		auto hlayout = new QHBoxLayout;
+		hlayout->addWidget(testController_);
+		hlayout->addLayout(layout);
+		dbgController->setLayout(hlayout);
+		dbgController->show();
+	}
 
 	createConnections();
 }
