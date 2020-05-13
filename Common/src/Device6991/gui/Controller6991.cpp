@@ -1,34 +1,44 @@
 #include "../../../include/Device6991/gui/Controller6991.h"
 #include "../../../include/gui/ConnectController.h"
 #include "../../../include/gui/Controller6132.h"
-
+#include <QThread>
 void Controller6991::createConnections() noexcept {
-	connect(deviceIF_, &Device6991::acquisitionStarted, acqStartStopButton_, &TwoStateButton::connected);
-	connect(deviceIF_, &Device6991::acquisitionStopped, acqStartStopButton_, &TwoStateButton::disconnected);
-	connect(deviceIF_, &Device6991::connectedDataStream, connectDisconnectButton_, &TwoStateButton::connected);
-	connect(deviceIF_, &Device6991::disconnectedDataStream, connectDisconnectButton_, &TwoStateButton::disconnected);
-	connect(deviceIF_, &Device6991::connectedDataStream, connectDisconnectButton_, [this]() {dataStreamComboBox_->setDisabled(true); });
-	connect(deviceIF_, &Device6991::disconnectedDataStream, connectDisconnectButton_, [this]() {dataStreamComboBox_->setEnabled(true); });
-	connect(deviceIF_, &Device6991::state, statusView_, &StatusView::update);
-	connect(deviceIF_, &Device6991::configuration, this, &Controller6991::setModel);
-	connect(deviceIF_, &Device6991::reportError, this, &Controller6991::showError);
-	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_, &Device6991::setStoreData);
+	connect(deviceThread_, &QThread::finished, deviceThread_, &QObject::deleteLater);
+	connect(deviceIF_.get(), &Device6991::logMsg, [](QString const& msg) { qDebug() << "LOG: " << msg; });
+	connect(deviceIF_.get(), &Device6991::reportError, [](QString const& msg) { qDebug() << "ERR: " << msg; });
+	connect(deviceIF_.get(), &Device6991::acquisitionStarted, acqStartStopButton_, &TwoStateButton::stateChange1);
+	connect(deviceIF_.get(), &Device6991::acquisitionStopped, acqStartStopButton_, &TwoStateButton::stateChange2);
+	connect(deviceIF_.get(), &Device6991::connectedDataStream, connectDisconnectButton_, &TwoStateButton::stateChange1);
+	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, connectDisconnectButton_, &TwoStateButton::stateChange2);
+	connect(deviceIF_.get(), &Device6991::connectedDataStream, [this]() {dataStreamComboBox_->setDisabled(true); });
+	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, [this]() {dataStreamComboBox_->setEnabled(true); });
+	connect(deviceIF_.get(), &Device6991::state, statusView_, &StatusView::update);
+	connect(deviceIF_.get(), &Device6991::configuration, this, &Controller6991::setModel);
+	connect(deviceIF_.get(), &Device6991::reportError, this, &Controller6991::showError);
+	connect(this, &Controller6991::takeControlReq, deviceIF_.get(), &Device6991::handleTakeControlReq);
+	connect(this, &Controller6991::releaseControlReq, deviceIF_.get(), &Device6991::handleReleaseControlReq);
+	connect(this, &Controller6991::connectDataStreamReq, deviceIF_.get(), &Device6991::handleConnectDataStreamReq);
+	connect(this, &Controller6991::disconnectDataStreamReq, deviceIF_.get(), &Device6991::handleDisconnectDataStreamReq);
+	connect(this, &Controller6991::startAcqReq, deviceIF_.get(), &Device6991::handleStartAcqReq);
+	connect(this, &Controller6991::stopAcqReq, deviceIF_.get(), &Device6991::handleStopAcqReq);
+	connect(this, &Controller6991::configureDeviceReq, deviceIF_.get(), &Device6991::handleConfigureDeviceReq);
+	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::setStoreData);
 
 	connect(setModeButton_, &QPushButton::clicked,
 		[this]() {
 			if (comboBoxMode_->currentData().toInt() == ControlModeEnum::CONTROLLER)
-				deviceIF_->takeControlRequest(id());
+				emit takeControlReq(id());
 			else
-				deviceIF_->releaseControlRequest();
+				emit releaseControlReq();
 
 			auto autoRefreshTimer = new QTimer(this);
-			connect(autoRefreshTimer, &QTimer::timeout, deviceIF_, &Device6991::deviceStateRequest);
+			connect(autoRefreshTimer, &QTimer::timeout, deviceIF_.get(), &Device6991::deviceStateRequest);
 			connect(statusAutoRefreshCheckBox_, &QCheckBox::stateChanged,
 				[autoRefreshTimer](int const state) {
 					state == Qt::Checked ? autoRefreshTimer->start(500) : autoRefreshTimer->stop();
 				}
 			);
-			connect(resfreshButton_, &QPushButton::clicked, deviceIF_, &Device6991::deviceStateRequest);
+			connect(resfreshButton_, &QPushButton::clicked, deviceIF_.get(), &Device6991::deviceStateRequest);
 		}
 	);
 	initializeStateMachine();
@@ -42,8 +52,8 @@ void Controller6991::initializeStateMachine() noexcept {
 
 	connected->setInitialState(listener);
 
-	listener->addTransition(deviceIF_, &Device6991::controlGranted, controller);
-	controller->addTransition(deviceIF_, &Device6991::controlReleased, listener);
+	listener->addTransition(deviceIF_.get(), &Device6991::controlGranted, controller);
+	controller->addTransition(deviceIF_.get(), &Device6991::controlReleased, listener);
 	disconnected->addTransition(connectController_, &ConnectController::connected, listener);
 	connected->addTransition(connectController_, &ConnectController::disconnected, disconnected);
 
@@ -111,9 +121,9 @@ void Controller6991::addController6132IfNeeded() noexcept {
 	Device6132* _6132AtFec1 = nullptr;
 	Device6132* _6132AtFec2 = nullptr;
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
-		_6132AtFec1 = new Device6132(FecIdType::_1, deviceIF_);
+		_6132AtFec1 = new Device6132(FecIdType::_1, deviceIF_.get());
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
-		_6132AtFec2 = new Device6132(FecIdType::_2, deviceIF_);
+		_6132AtFec2 = new Device6132(FecIdType::_2, deviceIF_.get());
 	if (_6132AtFec1 || _6132AtFec2) {
 		auto newController6132 = new Controller6132(_6132AtFec1, _6132AtFec2, this);
 		if (placeHolderForController6132_->layout()->itemAt(0)) {
@@ -169,11 +179,14 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	//	//
 }
 
-Controller6991::Controller6991(Device6991* devIF, bool const dbgMode, QWidget* parent)
+Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const dbgMode, QWidget* parent)
 	: QGroupBox("Controller", parent),
-	deviceIF_(devIF),
-	connectController_(new ConnectController(deviceIF_, this)),
+	deviceIF_(std::move(devIF)),
+	connectController_(new ConnectController(deviceIF_.get(), this)),
 	dbgMode_(dbgMode) {
+	deviceIF_->enableScpiCommandsPrints(false);
+	deviceIF_->moveToThread(deviceThread_);
+	deviceThread_->start();
 
 	placeHolderForController6132_->hide();
 	auto controller6132Layout = new QVBoxLayout;
@@ -251,9 +264,9 @@ Controller6991::Controller6991(Device6991* devIF, bool const dbgMode, QWidget* p
 
 	if (dbgMode_) {
 		auto dbgController = new QWidget();
-		resgisterControllerFrontend_ = new RegisterControllerFrontend(deviceIF_);
-		resgisterController6991_ = new RegisterController6991(deviceIF_);
-		testController_ = new TestsController(deviceIF_);
+		resgisterControllerFrontend_ = new RegisterControllerFrontend(deviceIF_.get());
+		resgisterController6991_ = new RegisterController6991(deviceIF_.get());
+		testController_ = new TestsController(deviceIF_.get());
 		auto layout = new QVBoxLayout;
 		layout->addWidget(resgisterControllerFrontend_);
 		layout->addWidget(resgisterController6991_);
@@ -265,4 +278,9 @@ Controller6991::Controller6991(Device6991* devIF, bool const dbgMode, QWidget* p
 	}
 
 	createConnections();
+}
+
+Controller6991::~Controller6991() {
+	deviceThread_->quit();
+	deviceThread_->wait();
 }

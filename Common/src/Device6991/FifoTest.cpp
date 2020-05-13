@@ -47,8 +47,11 @@ bool FifoTest::configure(FifoTestModel::Configuration const & config) noexcept {
 bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 	count_ = 0;
 	errors_ = 0;
-	devIF_->openSocketConnection(devIF_->inputResources().back()->load(), 16101);
-	return  devIF_->invokeCmd("*DBG 4") && devIF_->tcpSocket_->isOpen() && devIF_->DL_SPI_CSR1_reg_.disableTestMode() &&
+	if (!devIF_->dataStream_->isConnected()) {
+		devIF_->reportError("Connection with data stream is not open/valid. Please open/fix it before starting the test.");
+		return false;
+	}
+	return devIF_->invokeCmd("*DBG 4") &&
 		devIF_->DFIFO_CSR_reg_.resetFifo() &&
 		devIF_->DFIFO_CSR_reg_.isFifoEmpty() &&
 		devIF_->DFIFO_CSR_reg_.enableTestMode() &&
@@ -57,14 +60,9 @@ bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 }
 
 bool FifoTest::stopTest() noexcept {
-	if (isRunning()) {
-		auto dbgClkStopped = devIF_->DEBUG_CSR_reg_.stopClock();
-		if (!dbgClkStopped)
-			return false;
-		devIF_->closeSocketConnection();
-		return devIF_->DFIFO_CSR_reg_.disableTestMode() && devIF_->invokeCmd("*DBG 0");
-	}
-	return false;
+	return devIF_->DEBUG_CSR_reg_.stopClock() &&
+		devIF_->DFIFO_CSR_reg_.disableTestMode() &&
+		devIF_->invokeCmd("*DBG 0");
 }
 
 uint64_t FifoTest::errors() const noexcept {

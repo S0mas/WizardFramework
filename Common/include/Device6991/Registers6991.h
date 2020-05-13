@@ -7,21 +7,80 @@ class Device6991;
 class Register {
 protected:
 	uint32_t address_;
-	Device6991* deviceIF;
 	std::bitset<32> data_;
+	std::function<std::optional<uint32_t>(uint32_t)> readRegisterFunction_;
+	std::function<bool(uint32_t, uint32_t)> writeRegisterFunction_;
+	std::function<void(QString const&)> reportErrorFunction_;
+	std::function<bool()> readHwFunction_ = [this](uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) {
+		if (auto reg = readRegisterFunction_(address_); reg) {
+			data_ = (*reg & mask) >> shiftRight;
+			return true;
+		}
+		reportErrorFunction_(QString("Faild to read register. Reg address: %1").arg(toHex(address_, 8)));
+		return false;
+	};
+
+	std::function<bool()> writeHwFunctionNoArgs_ = [this]() {
+		auto result = writeRegisterFunction_(address_, data_.to_ulong());
+		if (!result)
+			reportErrorFunction_(QString("Faild to write register. Reg address: %1").arg(toHex(address_, 8)));
+		return result;
+	};
+
+	std::function<bool(uint32_t, uint32_t, uint32_t)> writeHwFunction_ = [this](uint32_t const data, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftLeft = 0) {
+		if (mask != 0xFFFFFFFF) {
+			if (!readHw())
+				return false;
+		}
+		data_ &= ~mask;
+		data_ |= data << shiftLeft;
+		return writeHwFunctionNoArgs_();
+	};
+
+	std::function<bool(uint32_t, uint32_t, uint32_t, bool)> testRegFunction_ = [this](uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0, bool const verbose = true) {
+		if (auto reg = value(mask, shiftRight); reg) {
+			if (*reg == expected)
+				return true;
+			else if (verbose)
+				reportErrorFunction_(QString("Value different than expected. Address: %1 Expected: %2, Read:%3, Mask:%4, ShiftedRight:%5")
+					.arg(toHex(address_, 8), toHex(expected, 8), toHex(*reg, 8), toHex(mask, 8), QString::number(shiftRight)));
+		}
+		return false;
+	};
+
 	bool readHw(uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept;
-	bool writeHw() const noexcept;
+	bool writeHw(uint32_t const data, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftLeft = 0) noexcept;
+	bool writeHw() noexcept;
 public:
-	Register(uint32_t const, Device6991*);
-	std::optional<uint32_t> value(uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept;
+	Register(uint32_t const);
+	template<typename T = uint32_t>
+	std::optional<T> value(uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept {
+		return readHw(mask, shiftRight) ? std::optional{ static_cast<T>(data_.to_ulong()) } : std::nullopt;
+	}
+	std::optional<bool> testBit(int const bit) noexcept;
+	bool setBit(int const bit, bool const state) noexcept;
+	bool testReg(uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0, bool const verbose = true) noexcept;
 };
 
-class FC_WR_QUEUE_EMP : public Register {
+class Register6991 : public Register {
+public:
+	Register6991(uint32_t const address, Device6991* devIF_);
+};
+
+class RegisterFec: public Register {
+	FecIdType::Type id_;
+	std::bitset<32> dataSecond_;
+	Device6991* devIF_;
+public:
+	RegisterFec(FecIdType::Type const id, uint32_t const address, Device6991* devIF);
+};
+
+class FC_WR_QUEUE_EMP : public Register6991 {
 public:
 	FC_WR_QUEUE_EMP(Device6991*);
 };
 
-class PCI_ERR_STCTRL : public Register {
+class PCI_ERR_STCTRL : public Register6991 {
 	const int ERR_WRONG_CMD = 1;
 	const int ERR_WRONG_BE = 2;
 	const int ERR_ADDRLOW = 3;
@@ -37,40 +96,27 @@ public:
 	std::optional<bool> wrongPciCmdError() noexcept { return std::nullopt; }
 };
 
-class PREF_ERR_ADDR : public Register {
+class PREF_ERR_ADDR : public Register6991 {
 public:
 	PREF_ERR_ADDR(Device6991*);
 };
 
-class BOARD_ID_reg : public Register {
+class BOARD_ID_reg : public Register6991 {
 public:
 	BOARD_ID_reg(Device6991*);
-	std::optional<uint16_t> id() noexcept {
-		return value() ? std::optional{ data_.to_ulong() & 0xFFFF } : std::nullopt;
-	}
+	std::optional<uint16_t> id() noexcept;
 };
 
-class HW_REV_reg : public Register {
+class HW_REV_reg : public Register6991 {
 public:
 	HW_REV_reg(Device6991*);
-	std::optional<uint8_t> pcbRev() noexcept {
-		return value() ? std::optional{ (data_.to_ulong() & 0xFF0000)>>16 } : std::nullopt;
-	}
-
-	std::optional<uint8_t> fpgaBranch() noexcept {
-		return value() ? std::optional{ (data_.to_ulong() & 0xF000) >> 12 } : std::nullopt;
-	}
-
-	std::optional<uint8_t> fpgaBranchRev() noexcept {
-		return value() ? std::optional{ (data_.to_ulong() & 0xF00) >> 8 } : std::nullopt;
-	}
-
-	std::optional<uint8_t> fpgaRev() noexcept {
-		return value() ? std::optional{ (data_.to_ulong() & 0xFF) >> 8 } : std::nullopt;
-	}
+	std::optional<uint8_t> pcbRev() noexcept;
+	std::optional<uint8_t> fpgaBranch() noexcept;
+	std::optional<uint8_t> fpgaBranchRev() noexcept;
+	std::optional<uint8_t> fpgaRev() noexcept;
 };
 
-class BOARD_CSR1_reg : public Register {
+class BOARD_CSR1_reg : public Register6991 {
 	const int FE1_PRESENT = 0;
 	const int FE1_READY = 1;
 	const int FE2_PRESENT = 2;
@@ -79,47 +125,32 @@ class BOARD_CSR1_reg : public Register {
 public:
 	BOARD_CSR1_reg(Device6991*);
 
-	std::optional<bool> isAuxPresent() noexcept {
-		return value() ? std::optional{ data_.test(AUX_PRESENT) } : std::nullopt;
-	}
-	std::optional<bool> isFec1Present() {
-		return value() ? std::optional{ data_.test(FE1_PRESENT) } : std::nullopt;
-	}
-	std::optional<bool> isFec2Present() {
-		return value() ? std::optional{ data_.test(FE2_PRESENT) } : std::nullopt;
-	}
-	std::optional<bool> isFec1Ready() {
-		return value() ? std::optional{ data_.test(FE1_READY) } : std::nullopt;
-	}
-	std::optional<bool> isFec2Ready() {
-		return value() ? std::optional{ data_.test(FE2_READY) } : std::nullopt;
-	}
-
-	std::optional<bool> isFecReady(FecIdType::Type const fecId) {
-		return fecId == FecIdType::_1 ? isFec1Ready() : isFec2Ready();
-	}
-	std::optional<bool> isFecPresent(FecIdType::Type const fecId) {
-		return fecId == FecIdType::_1 ? isFec1Present() : isFec2Present();
-	}
+	std::optional<bool> isAuxPresent() noexcept;
+	std::optional<bool> isFec1Present();
+	std::optional<bool> isFec2Present();
+	std::optional<bool> isFec1Ready();
+	std::optional<bool> isFec2Ready();
+	std::optional<bool> isFecReady(FecIdType::Type const fecId);
+	std::optional<bool> isFecPresent(FecIdType::Type const fecId);
 };
 
-class LED_CSR_reg : public Register {
+class LED_CSR_reg : public Register6991 {
 	const int LEDS_EN = 31;
 public:
 	LED_CSR_reg(Device6991*);
 };
 
-class CL0_SPI_DATA_reg : public Register {
+class CL0_SPI_DATA_reg : public Register6991 {
 public:
 	CL0_SPI_DATA_reg(Device6991*);
 };
 
-class CL1_SPI_DATA_reg : public Register {
+class CL1_SPI_DATA_reg : public Register6991 {
 public:
 	CL1_SPI_DATA_reg(Device6991*);
 };
 
-class CL_SPI_CSR_reg : public Register {
+class CL_SPI_CSR_reg : public Register6991 {
 	const int CL0_SEL = 24;
 	const int CL1_SEL = 25;
 	const int CL_TEST_LOOP = 26;
@@ -142,22 +173,22 @@ public:
 	std::optional<bool> isTestRunning(TestTypeEnum::Type const type = TestTypeEnum::INVALID) noexcept;
 };
 
-class CL_SPI_TLCNT_reg : public Register {
+class CL_SPI_TLCNT_reg : public Register6991 {
 public:
 	CL_SPI_TLCNT_reg(Device6991*);
 };
 
-class CL0_SPI_TLERR_reg : public Register {
+class CL0_SPI_TLERR_reg : public Register6991 {
 public:
 	CL0_SPI_TLERR_reg(Device6991*);
 };
 
-class CL1_SPI_TLERR_reg : public Register {
+class CL1_SPI_TLERR_reg : public Register6991 {
 public:
 	CL1_SPI_TLERR_reg(Device6991*);
 };
 
-class DL_SPI_CSR1_reg : public Register {
+class DL_SPI_CSR1_reg : public Register6991 {
 	const int DL0_TEST_MODE = 24;
 	const int DL1_TEST_MODE = 28;
 	const int DL_EN = 31;
@@ -166,121 +197,72 @@ public:
 	bool enableTestMode(FecIdType::Type const fcId) noexcept;
 	bool disableTestMode() noexcept;
 	std::optional<bool> isTestRunning(TestTypeEnum::Type const type = TestTypeEnum::INVALID) noexcept;
-	std::optional<uint32_t> dlFsmStatus() noexcept {
-		return value() ? std::optional{ static_cast<DlSclkFreqType::Type>(data_.to_ulong() & 0xF00) } : std::nullopt;
-	}
-
-	std::optional<uint32_t> dlFifoFsmStatus() noexcept {
-		return value() ? std::optional{ static_cast<DlSclkFreqType::Type>(data_.to_ulong() & 0xF0) } : std::nullopt;
-	}
+	std::optional<uint32_t> dlFsmStatus() noexcept;
+	std::optional<uint32_t> dlFifoFsmStatus() noexcept;
+	bool isDlReciverIdle(bool const verbose = true) noexcept;
 };
 
-class DL_SPI_CSR2_reg : public Register {
+class DL_SPI_CSR2_reg : public Register6991 {
 public:
 	DL_SPI_CSR2_reg(Device6991*);
-
-	bool setDl0FrameLength(DlFrameRateType::Type const frameType) noexcept {
-		if (value()) {
-			data_ &= 0xFFFFFFE0;
-			data_ |= frameType;
-			return writeHw();
-		}
-		return false;
-	}
-
-	bool setDl1FrameLength(DlFrameRateType::Type const frameType) noexcept {	
-		if (value()) {
-			data_ &= 0xFFE0FFFF;
-			data_ |= frameType << 16;
-			return writeHw();
-		}
-		return false;
-	}
-
-	bool setDlFrameLength(FecType::Type const cardType, FecIdType::Type const fcId) noexcept {
-		DlFrameRateType::Type rateType = DlFrameRateType::INVALID;
-		if (cardType == FecType::_6111 || cardType == FecType::_6171)
-			rateType = DlFrameRateType::BU6111_BU6171;
-		else if (cardType == FecType::_6132)
-			rateType = DlFrameRateType::BU6132;
-		switch (fcId) {
-		case FecIdType::BOTH:
-			return setDl0FrameLength(rateType) && setDl1FrameLength(rateType);
-		case FecIdType::_1:
-			return setDl0FrameLength(rateType);
-		case FecIdType::_2:
-			return setDl0FrameLength(rateType);
-		default:
-			return false;
-		}
-	}
-
-	std::optional<DlFrameRateType::Type> dl0FrameLength() noexcept {
-		return value() ? std::optional{ static_cast<DlFrameRateType::Type>(data_.to_ulong() & 0x1F) } : std::nullopt;
-	}
-
-	std::optional<DlFrameRateType::Type> dl1FrameLength() noexcept {
-		return value() ? std::optional{ static_cast<DlFrameRateType::Type>((data_.to_ulong() & 0x1F0000) >> 16) } : std::nullopt;
-	}
+	bool setDl0FrameLength(DlFrameRateType::Type const frameType) noexcept;
+	bool setDl1FrameLength(DlFrameRateType::Type const frameType) noexcept;
+	bool setDlFrameLength(FecType::Type const cardType, FecIdType::Type const fcId) noexcept;
+	std::optional<uint32_t> dl0FrameLength() noexcept;
+	std::optional<uint32_t> dl1FrameLength() noexcept;
 };
 
-class DL_SPI_CSR3_reg : public Register {
-
+class DL_SPI_CSR3_reg : public Register6991 {
 public:
 	DL_SPI_CSR3_reg(Device6991*);
 };
 
-class DL0_DWORD_EN_reg : public Register {
-
+class DL0_DWORD_EN_reg : public Register6991 {
 public:
 	DL0_DWORD_EN_reg(Device6991*);
 };
 
-class DL1_DWORD_EN_reg : public Register {
-
+class DL1_DWORD_EN_reg : public Register6991 {
 public:
 	DL1_DWORD_EN_reg(Device6991*);
 };
 
-class DL0_SPI_TMCNT_reg : public Register {
+class DL0_SPI_TMCNT_reg : public Register6991 {
 public:
 	DL0_SPI_TMCNT_reg(Device6991*);
 };
 
-class DL0_SPI_TMERR_reg : public Register {
+class DL0_SPI_TMERR_reg : public Register6991 {
 public:
 	DL0_SPI_TMERR_reg(Device6991*);
 };
 
-class DL1_SPI_TMCNT_reg : public Register {
+class DL1_SPI_TMCNT_reg : public Register6991 {
 public:
 	DL1_SPI_TMCNT_reg(Device6991*);
 };
 
-class DL1_SPI_TMERR_reg : public Register {
+class DL1_SPI_TMERR_reg : public Register6991 {
 public:
 	DL1_SPI_TMERR_reg(Device6991*);
 };
 
-class SYS_TMR_CSR_reg : public Register {
-
+class SYS_TMR_CSR_reg : public Register6991 {
 public:
 	SYS_TMR_CSR_reg(Device6991*);
 };
 
-class SYS_TMR_L_reg : public Register {
-
+class SYS_TMR_L_reg : public Register6991 {
 public:
 	SYS_TMR_L_reg(Device6991*);
 };
 
-class SYS_TMR_H_reg : public Register {
-
+class SYS_TMR_H_reg : public Register6991 {
 public:
 	SYS_TMR_H_reg(Device6991*);
 };
 
-class EVENT_LOG_CSR_reg : public Register {
+class EVENT_LOG_CSR_reg : public Register6991 {
 	const int SW_EVENT_EN = 0;
 	const int ACQST_EVENT_EN = 1;
 	const int DLERR_EVENT_EN = 2;
@@ -292,24 +274,22 @@ public:
 	EVENT_LOG_CSR_reg(Device6991*);
 };
 
-class EVENT_STAMP_L_reg : public Register {
-
+class EVENT_STAMP_L_reg : public Register6991 {
 public:
 	EVENT_STAMP_L_reg(Device6991*);
 };
 
-class EVENT_STAMP_H_reg : public Register {
-
+class EVENT_STAMP_H_reg : public Register6991 {
 public:
 	EVENT_STAMP_H_reg(Device6991*);
 };
 
-class EVENT_CAUSE_reg : public Register {
+class EVENT_CAUSE_reg : public Register6991 {
 public:
 	EVENT_CAUSE_reg(Device6991*);
 };
 
-class DEBUG_CSR_reg : public Register {
+class DEBUG_CSR_reg : public Register6991 {
 	const int DEBUG_CLK_EN = 31;
 public:
 	DEBUG_CSR_reg(Device6991*);
@@ -317,7 +297,7 @@ public:
 	bool stopClock() noexcept;
 };
 
-class DEBUG_CLK_RATE_reg : public Register {
+class DEBUG_CLK_RATE_reg : public Register6991 {
 	const double MAX_RATE_NANO_SECS = 35791392693.344235;
 	const double RATE_STEP_NANO_SECS = 8.333333;
 public:
@@ -326,35 +306,31 @@ public:
 	std::optional<double> rate() noexcept;
 };
 
-class ACQ_CSR_reg : public Register {
+class ACQ_CSR_reg : public Register6991 {
 	const int ACQ_ON = 31;
 	const int ACQ_STOPPED_ERR = 30;
 	const int ACQ_STOP_ON_ERR_EN = 8;
 public:
 	ACQ_CSR_reg(Device6991*);
-
 	std::optional<bool> isAcqActive() noexcept;
 };
 
-class ACQ_RATE_reg : public Register {
-
+class ACQ_RATE_reg : public Register6991 {
 public:
 	ACQ_RATE_reg(Device6991*);
 };
 
-class ACQ_ALARM_L_reg : public Register {
-
+class ACQ_ALARM_L_reg : public Register6991 {
 public:
 	ACQ_ALARM_L_reg(Device6991*);
 };
 
-class ACQ_ALARM_H_reg : public Register {
-
+class ACQ_ALARM_H_reg : public Register6991 {
 public:
 	ACQ_ALARM_H_reg(Device6991*);
 };
 
-class DFIFO_CSR_reg : public Register {
+class DFIFO_CSR_reg : public Register6991 {
 	const int DFIFO_EMPTY_FLAG = 31;
 	const int DFIFO_FULL_FLAG = 30;
 	const int DFIFO_PROG_FLAG = 29;
@@ -368,8 +344,8 @@ public:
 	bool clearOverflow() noexcept;
 	bool resetFifo() noexcept;
 	bool setBlockSize(uint32_t const blockSize) noexcept;
-	std::optional<int> blockSize() noexcept;
-	std::optional<int> samplesInFifo() noexcept;
+	std::optional<uint32_t> blockSize() noexcept;
+	std::optional<uint32_t> samplesInFifo() noexcept;
 	std::optional<bool> isTestRunning() noexcept;
 	std::optional<bool> isFifoEmpty() noexcept;
 	std::optional<bool> isFifoFull() noexcept;
@@ -377,182 +353,80 @@ public:
 	std::optional<bool> overflowHappened() noexcept;
 };
 
-class DFIFO_PFLAG_THR_reg : public Register {
+class DFIFO_PFLAG_THR_reg : public Register6991 {
 public:
 	DFIFO_PFLAG_THR_reg(Device6991*);
 	bool setThreshold(uint32_t const threshold) noexcept;
 	std::optional<uint32_t> threshold() noexcept;
 }; 
 
-class DFIFO_WR_reg : public Register {
-
+class DFIFO_WR_reg : public Register6991 {
 public:
 	DFIFO_WR_reg(Device6991*);
 };
 
-class DFIFO : public Register {
+class DFIFO : public Register6991 {
 public:
 	DFIFO(Device6991*);
 };
 
-class RegisterFeCard : public Register {
-protected:
-	bool readHw(FecIdType::Type const fcId, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept;
-	bool writeHw(FecIdType::Type const fcId) const noexcept;
-	bool readBoth(uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept;
-	std::pair<std::bitset<32>, std::bitset<32>> dataBoth_;
+class FE_ID_reg : public RegisterFec {
 public:
-	RegisterFeCard(uint32_t const, Device6991*);
-	std::pair<std::optional<uint32_t>, std::optional<uint32_t>> value(FecIdType::Type const fcId, uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept;
+	FE_ID_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::FE_ID_reg, devIF) {}
+	std::optional<FecType::Type> fecType() noexcept;
 };
 
-class FE_ID_reg : public RegisterFeCard {
+class BOARD_CSR_reg : public RegisterFec {
+	const int MASK_STATUS_6111 = 0x3F;
+	const int MASK_STATUS_6132 = 0x1F;
 public:
-	FE_ID_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::FE_ID_reg, devIF) {}
-
-	auto fecType(FecIdType::Type const fcId) noexcept {
-		return value(fcId, 0xFFFF);
-	}
+	BOARD_CSR_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::BOARD_CSR_reg, devIF) {}
+	bool testStatus(FecType::Type const type, uint32_t const expectedStatus, bool const verbose = true) noexcept;
+	bool isIdle(FecType::Type const type, bool const verbose = true) noexcept;
 };
 
-class BOARD_CSR_reg : public RegisterFeCard {
+class CMD_reg : public RegisterFec {
 public:
-	BOARD_CSR_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::BOARD_CSR_reg, devIF) {}
-
-	auto status6111(FecIdType::Type const fcId) {
-		return value(fcId, 0x3F);
-	}
-
-	auto status6132(FecIdType::Type const fcId) {
-		return value(fcId, 0x1F);
-	}
-
-	auto status(FecIdType::Type const fcId, FecType::Type const type) {
-		return type == FecType::_6111 ? status6111(fcId) : status6132(fcId);
-	}
-
-	bool testStatus(FecIdType::Type const fcId, FecType::Type const type, uint32_t const expectedStatus) {
-		auto sts = status(fcId, type);
-		switch (fcId) {
-		case FecIdType::BOTH:
-			return sts.first && sts.second ? *sts.first == expectedStatus && *sts.second == expectedStatus : false;
-		case FecIdType::_1:
-			return sts.first ? *sts.first == expectedStatus : false;
-		case FecIdType::_2:
-			return sts.second ? *sts.second == expectedStatus : false;
-		default:
-			return false;
-		}
-	}
+	CMD_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::CMD_reg, devIF) {}
+	bool setCmd(uint32_t const cmd) noexcept;
 };
 
-class CMD_reg : public RegisterFeCard {
+class DL_CSR_reg : public RegisterFec {
 public:
-	CMD_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CMD_reg, devIF) {}
-
-	bool setCmd(FecIdType::Type const fcId, uint32_t const cmd) noexcept {
-		auto read = value(fcId);
-		if (read.first || read.second) {
-			data_ &= 0xFFFF0000;
-			data_ |= cmd;
-			return writeHw(fcId);
-		}
-		return false;
-	}
+	DL_CSR_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::DL_CSR_reg, devIF) {}
+	bool setDlSclkFreqType(DlSclkFreqType::Type const freq) noexcept;
+	std::optional<DlSclkFreqType::Type> dlSclkFreqType() noexcept;
 };
 
-class DL_CSR_reg : public RegisterFeCard {
-public:
-	DL_CSR_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::DL_CSR_reg, devIF) {}
-
-	bool setDlSclkFreqType(FecIdType::Type const fcId, DlSclkFreqType::Type const freq) noexcept {
-		auto read = value(fcId);
-		if (read.first || read.second) {
-			data_ &= 0xFFFFFFF0;
-			data_ |= freq;
-			return writeHw(fcId);
-		}
-		return false;
-	}
-
-	auto dlSclkFreqType(FecIdType::Type const fcId) noexcept {
-		return value(fcId, 0xF);
-	}
-};
-
-class CHN_FILTER_reg : public RegisterFeCard {
+class CHN_FILTER_reg : public RegisterFec {
 	static const uint32_t BITS_PER_CHANNEL = 2;
 	static const uint32_t MASK_PER_CHANNEL = 0x3;
 public:
-	CHN_FILTER_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CHN_FILTER_reg, devIF) {}
-
-	bool setFilter(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds, FilterType6132::Type const filter) noexcept {
-		auto read = value(fcId);
-
-		if (read.first || read.second) {
-			for (auto id : channelIds) {
-				data_ &= 0xFFFFFFFF & ~(MASK_PER_CHANNEL << ((id - 1) * BITS_PER_CHANNEL));
-				data_ |= filter << ((id - 1) * BITS_PER_CHANNEL);
-			}
-			return writeHw(fcId);
-		}
-		return false;
-	}
-
-	std::optional<FilterType6132::Type> filter(const FecIdType::Type fcId, uint32_t const channelId) noexcept {
-		uint32_t mask = MASK_PER_CHANNEL << ((channelId - 1) * BITS_PER_CHANNEL);
-		auto result = fcId == FecIdType::_1 ? value(fcId, mask).first : value(fcId, mask).second;
-		return result ? std::optional{ static_cast<FilterType6132::Type>(*result >> ((channelId - 1) * BITS_PER_CHANNEL)) } : std::nullopt;
-	}
+	CHN_FILTER_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::CHN_FILTER_reg, devIF) {}
+	bool setFilters(std::vector<uint32_t> const& channelIds, FilterType6132::Type const filter) noexcept;
+	std::optional<FilterType6132::Type> filter(uint32_t const channelId) noexcept;
+	std::optional<std::vector<FilterType6132::Type>> filters() noexcept;
 };
 
-class CHN_GAIN_reg : public RegisterFeCard {
+class CHN_GAIN_reg : public RegisterFec {
 	static const uint32_t BITS_PER_CHANNEL = 2;
 	static const uint32_t MASK_PER_CHANNEL = 0x3;
 public:
-	CHN_GAIN_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::CHN_GAIN_reg, devIF) {}
-
-	bool setGain(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds, GainType6132::Type const gain) noexcept {
-		auto read = value(fcId);
-		if (read.first || read.second) {
-			for (auto id : channelIds) {
-				data_ &= 0xFFFFFFFF & ~(MASK_PER_CHANNEL << ((id - 1) * BITS_PER_CHANNEL));
-				data_ |= gain << ((id - 1) * BITS_PER_CHANNEL);
-			}
-			return writeHw(fcId);
-		}
-		return false;
-	}
-
-	std::optional<GainType6132::Type> gain(const FecIdType::Type fcId, uint32_t const channelId) noexcept {
-		uint32_t mask = MASK_PER_CHANNEL << ((channelId - 1) * BITS_PER_CHANNEL);
-		auto result = fcId == FecIdType::_1 ? value(fcId, mask).first : value(fcId, mask).second;
-		return result ? std::optional{ static_cast<GainType6132::Type>(*result >> ((channelId - 1) * BITS_PER_CHANNEL)) } : std::nullopt;
-	}
+	CHN_GAIN_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::CHN_GAIN_reg, devIF) {}
+	bool setGains(std::vector<uint32_t> const& channelIds, GainType6132::Type const gain) noexcept;
+	std::optional<GainType6132::Type> gain(uint32_t const channelId) noexcept;
+	std::optional<std::vector<GainType6132::Type>> gains() noexcept;
 };
 
-class ADC_SEL_reg : public RegisterFeCard {
-
+class ADC_SEL_reg : public RegisterFec {
 public:
-	ADC_SEL_reg(Device6991* devIF) : RegisterFeCard(FecRegistersEnum::ADC_SEL_reg, devIF) {}
-
-	bool selectChannels(const FecIdType::Type fcId, std::vector<uint32_t> const& channelIds) noexcept {
-		data_ = 0;
-		for (auto id : channelIds)
-			data_ |= 1 << (id - 1);
-		return writeHw(fcId);
-	}
+	ADC_SEL_reg(FecIdType::Type const fcId, Device6991* devIF) : RegisterFec(fcId, FecRegistersEnum::ADC_SEL_reg, devIF) {}
+	bool selectChannels(std::vector<uint32_t> const& channelIds) noexcept;
 };
 
-class CHNX_RAW_SAMPLE_reg : public RegisterFeCard {
+class CHNX_RAW_SAMPLE_reg : public RegisterFec {
 public:
-	CHNX_RAW_SAMPLE_reg(uint32_t const channelId = 1, Device6991* devIF = nullptr) : RegisterFeCard(FecRegistersEnum::CHN1_RAW_SAMPLE_reg + channelId - 1, devIF) {}
-
-	std::optional<uint16_t> rawData(const FecIdType::Type fcId) noexcept {
-		return fcId == FecIdType::_1 ? value(fcId, 0xFFFF0000, 16).first : value(fcId, 0xFFFF0000, 16).second;
-	}
-
-	std::optional<uint16_t> flags(const FecIdType::Type fcId) noexcept {
-		return fcId == FecIdType::_1 ? value(fcId, 0xFFFF).first : value(fcId, 0xFFFF).second;
-	}
+	CHNX_RAW_SAMPLE_reg(FecIdType::Type const fcId, uint32_t const channelId = 1, Device6991* devIF = nullptr) : RegisterFec(fcId, FecRegistersEnum::CHN1_RAW_SAMPLE_reg + channelId - 1, devIF) {}
+	std::optional<uint16_t> rawData() noexcept;
+	std::optional<uint16_t> flags() noexcept;
 };

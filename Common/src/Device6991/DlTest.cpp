@@ -13,31 +13,26 @@ FecIdType::Type DlTests::dlTestsTargetFecId(bool const dl0, bool const dl1) cons
 
 bool DlTests::startTest(bool const dl0, bool const dl1, DlSclkFreqType::Type const freq) noexcept {
 	if (dl0 || dl1) {
-		auto fcId = dlTestsTargetFecId(dl0, dl1);
-		if (auto fecType = devIF_->readFecType(fcId); fecType) {
-			return devIF_->isFecIdle(*fecType, fcId) &&
-				devIF_->checkIfDlReceiverStateIsIdle() &&
-				devIF_->DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fcId) &&
-				devIF_->DL_SPI_CSR1_reg_.enableTestMode(fcId) &&
-				devIF_->DL_CSR_reg_.setDlSclkFreqType(fcId, freq) &&
-				devIF_->CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_START : FecCmdsType6132::DL_TEST_START);
-		}
+		auto fecId = dlTestsTargetFecId(dl0, dl1);
+		auto fecType = devIF_->readFecType(fecId);
+		return fecType && devIF_->isFecIdle(fecId, *fecType) &&
+			devIF_->DL_SPI_CSR1_reg_.isDlReciverIdle() &&
+			devIF_->setProperDlFrame(fecId, *fecType) &&
+			devIF_->DL_SPI_CSR1_reg_.enableTestMode(fecId) &&
+			devIF_->fecRegs_[fecId].DL_CSR_reg_.setDlSclkFreqType(freq) &&
+			devIF_->fecRegs_[fecId].CMD_reg_.setCmd(*fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_START : FecCmdsType6132::DL_TEST_START);
 	}
 	return false;
 }
 
 bool DlTests::stopTest() noexcept {
-	if (isRunning()) {
-		auto fcId = dlTestsTargetFecId(isRunning(TestTypeEnum::DL0), isRunning(TestTypeEnum::DL1));
-		if (auto fecType = devIF_->readFecType(fcId); fecType) {
-			return fcId != FecIdType::INVALID &&
-				devIF_->CMD_reg_.setCmd(fcId, *fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_STOP : FecCmdsType6132::DL_TEST_STOP) &&
-				devIF_->testWithTimeout([this, type = *fecType, fcId]() { return devIF_->isFecIdle(type, fcId); }, 100, 25) &&
-				devIF_->DL_SPI_CSR1_reg_.disableTestMode() &&
-				devIF_->testWithTimeout([this]() { return devIF_->checkIfDlReceiverStateIsIdle(); }, 100, 25);
-		}
-	}
-	return false;
+	auto fecId = FecIdType::BOTH;
+	auto fecType = devIF_->readFecType(fecId);	
+	return fecType &&
+		devIF_->fecRegs_[fecId].CMD_reg_.setCmd(*fecType == FecType::_6111 ? FecCmdsType6111::DL_TEST_STOP : FecCmdsType6132::DL_TEST_STOP) &&
+		devIF_->testWithTimeout([this, type = *fecType, fecId]() { return devIF_->fecRegs_[fecId].BOARD_CSR_reg_.isIdle(type, false); }, 100, 25) &&
+		devIF_->DL_SPI_CSR1_reg_.disableTestMode() &&
+		devIF_->testWithTimeout([this]() { return devIF_->DL_SPI_CSR1_reg_.isDlReciverIdle(false); }, 100, 25);	
 }
 
 bool DlTests::isRunning(TestTypeEnum::Type const type) noexcept {

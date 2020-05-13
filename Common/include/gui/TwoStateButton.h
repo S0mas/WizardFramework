@@ -14,14 +14,14 @@ class TwoStateButton : public QPushButton {
 	QState* state1_ = new QState;
 	QState* state2_ = new QState;
 	QState* processing_ = new QState;
-	QTimer* timer_ = new QTimer;
+	QTimer* timer1_ = new QTimer;
+	QTimer* timer2_ = new QTimer;
 signals:
 	void actionStarted() const;
-	void connectionTimeouted() const;
 public:
 	TwoStateButton(QString const& actionText1, std::function<void(void)> const& action1, QString const& actionText2, std::function<void(void)> const& action2, QWidget* parent = nullptr);
 signals:
-	void connected() const;
-	void disconnected() const;
+	void stateChange1() const;
+	void stateChange2() const;
 };
 

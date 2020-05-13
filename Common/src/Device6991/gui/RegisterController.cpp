@@ -1,14 +1,22 @@
 #include "../../../include/Device6991/gui/RegisterController.h"
 #include <QMessageBox>
 
+void TargetFrontendCardView::handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const noexcept {
+	if (fecId == index_)
+		dataLineEdit_->setText(toHex(data, 8));;
+}
+
 void TargetFrontendCardView::createConnections() noexcept {
-	connect(this, &TargetFrontendCardView::stateReq, [this]() { deviceIF_->fcCardStateRequest(index_); });
+	connect(this, &TargetFrontendCardView::stateReq, deviceIF_, &Device6991::handleFecStateReq);
+	connect(this, &TargetFrontendCardView::registerReadReq, deviceIF_, &Device6991::handleFecRegisterReadReq);
+	connect(this, &TargetFrontendCardView::registerWriteReq, deviceIF_, &Device6991::handleFecRegisterWriteReq);
+	connect(deviceIF_, &Device6991::fecRegisterReadResp, this, &TargetFrontendCardView::handleRegisterReadResp);
 	connect(parentCommandSelector_, &EnumSelector::enumChanged,
 		[this](int const concreteEnum) {
 			if (concreteEnum == Commands1Enum::READ)
-				lineEdit_->setEnabled(false);
+				dataLineEdit_->setEnabled(false);
 			else if (concreteEnum == Commands1Enum::WRITE)
-				lineEdit_->setEnabled(checkBox_->isChecked());
+				dataLineEdit_->setEnabled(checkBox_->isChecked());
 		}
 	);
 	initializeStateMachine();
@@ -29,8 +37,8 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 	unchecktransition->setTargetState(inactive);
 	active->addTransition(unchecktransition);
 
-	enabled->addTransition(deviceIF_, &Device6991::fcCardDisabled, disabled);
-	disabled->addTransition(deviceIF_, &Device6991::fcCardEnabled, enabled);
+	enabled->addTransition(deviceIF_, &Device6991::fecDisabledResp, disabled);
+	disabled->addTransition(deviceIF_, &Device6991::fecEnabledResp, enabled);
 
 	sm_.addState(enabled);
 	sm_.addState(disabled);
@@ -42,12 +50,12 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 	);
 	connect(active, &QState::entered,
 		[this]() {
-			lineEdit_->setEnabled(parentCommandSelector_->value() == Commands1Enum::WRITE);
+			dataLineEdit_->setEnabled(parentCommandSelector_->value() == Commands1Enum::WRITE);
 		}
 	);
 	connect(inactive, &QState::entered,
 		[this]() {
-			lineEdit_->setEnabled(false);
+			dataLineEdit_->setEnabled(false);
 		}
 	);
 	connect(disabled, &QState::entered,
@@ -62,50 +70,51 @@ void TargetFrontendCardView::initializeStateMachine() noexcept {
 
 TargetFrontendCardView::TargetFrontendCardView(EnumSelector* parentCommandSelector, Device6991* devIF, FecIdType::Type const index, QWidget* parent)
 	: QGroupBox(QString("Front End %1").arg(index), parent), index_(index), deviceIF_(devIF), parentCommandSelector_(parentCommandSelector) {
-	lineEdit_->setMaximumWidth(70);
-	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
-	lineEdit_->setText("0x00000000");
-	lineEdit_->setEnabled(false);
+	dataLineEdit_->setMaximumWidth(70);
+	dataLineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
+	dataLineEdit_->setText("0x00000000");
+	dataLineEdit_->setEnabled(false);
 
 	checkBox_->setChecked(false);
 
 	auto layout = new QHBoxLayout;
-	layout->addWidget(lineEdit_);
+	layout->addWidget(dataLineEdit_);
 	layout->addWidget(checkBox_);
 	setLayout(layout);
 
 	createConnections();
 }
 
-void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept {
+void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept {
 	if (isEnabled() && checkBox_->isChecked()) {
 		if (cmd == Commands1Enum::READ) {
-			if (auto reg = deviceIF_->readFecRegister(index_, address); reg)
-				lineEdit_->setText(toHex(*reg, 8));
-			else
-				QMessageBox::critical(this, "Error", QString("Read operation faild for frontend card %1!").arg(index_));
+			dataLineEdit_->setText("");
+			emit registerReadReq(index_, address);
 		}
 		else if (cmd == Commands1Enum::WRITE) {
-			auto success = deviceIF_->writeFecRegister(index_, address, lineEdit_->text().toUInt(nullptr, 16));
-			if (!success)
-				QMessageBox::critical(this, "Error", QString("Write operation faild for frontend card %1!").arg(index_));
+			emit registerWriteReq(index_, address, dataLineEdit_->text().toUInt(nullptr, 16));
+			dataLineEdit_->setText("");
 		}
 	}
 }
 
+void TargetFrontendCardView::sendStateReq() const noexcept {
+	emit stateReq(index_);
+}
+
 void RegisterControllerFrontend::createConnections() noexcept {
-	connect(refreshButton, &QPushButton::clicked, frontend1_, &TargetFrontendCardView::stateReq);
-	connect(refreshButton, &QPushButton::clicked, frontend2_, &TargetFrontendCardView::stateReq);
+	connect(refreshButton, &QPushButton::clicked, frontend1_, &TargetFrontendCardView::sendStateReq);
+	connect(refreshButton, &QPushButton::clicked, frontend2_, &TargetFrontendCardView::sendStateReq);
 	connect(executeButton, &QPushButton::clicked,
 		[this]() {
-			emit frontend1_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
-			emit frontend2_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
+			frontend1_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
+			frontend2_->sendCommand(static_cast<Commands1Enum::Type>(commandSelector_->value()), addressSelector_->value());
 		}
 	);
 }
 
 RegisterControllerFrontend::RegisterControllerFrontend(Device6991* devIF, QWidget* parent)
-	: QGroupBox("Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_2)){
+	: QGroupBox("Fec Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_2)){
 	auto frontendsLayout = new QHBoxLayout;
 	frontendsLayout->addWidget(frontend1_);
 	frontendsLayout->addWidget(frontend2_);
@@ -125,37 +134,46 @@ RegisterControllerFrontend::RegisterControllerFrontend(Device6991* devIF, QWidge
 	createConnections();
 }
 
+void RegisterController6991::handleRegisterReadResp(unsigned int const data) const noexcept {
+	dataLineEdit_->setText(toHex(data, 8));
+}
+
 void RegisterController6991::createConnections() noexcept {
+	connect(this, &RegisterController6991::registerReadReq, deviceIF_, &Device6991::handleFpgaRegisterReadReq);
+	connect(this, &RegisterController6991::registerWriteReq, deviceIF_, &Device6991::handleFpgaRegisterWriteReq);
+	connect(deviceIF_, &Device6991::fpgaRegisterReadResp, this, &RegisterController6991::handleRegisterReadResp);
 	connect(executeButton, &QPushButton::clicked,
 		[this]() {
 			if (commandSelector_->value() == Commands2Enum::READ) {
-				if (auto reg = deviceIF_->readFpgaRegister(addressSelector_->value()); reg)
-					lineEdit_->setText(toHex(*reg, 8));
-			}				
-			else if(commandSelector_->value() == Commands2Enum::WRITE)
-				deviceIF_->writeFpgaRegister(addressSelector_->value(), lineEdit_->text().toUInt(nullptr, 16));
+				dataLineEdit_->setText("");
+				emit registerReadReq(addressSelector_->value());
+			}
+			else if (commandSelector_->value() == Commands2Enum::WRITE) {
+				emit registerWriteReq(addressSelector_->value(), dataLineEdit_->text().toUInt(nullptr, 16));
+				dataLineEdit_->setText("");
+			}
 		}
 	);
 
 	connect(commandSelector_, &EnumSelector::enumChanged,
 		[this](int const concreteEnum) {
 			if (concreteEnum == Commands2Enum::READ)
-				lineEdit_->setEnabled(false);
+				dataLineEdit_->setEnabled(false);
 			else if(concreteEnum == Commands2Enum::WRITE)
-				lineEdit_->setEnabled(true);
+				dataLineEdit_->setEnabled(true);
 		}
 	);
 }
 
 RegisterController6991::RegisterController6991(Device6991* devIF, QWidget* parent)
-	: QGroupBox("Register Controller", parent), deviceIF_(devIF) {
-	lineEdit_->setMaximumWidth(70);
-	lineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
-	lineEdit_->setText("0x00000000");
-	lineEdit_->setEnabled(false);
+	: QGroupBox("6991 Register Controller", parent), deviceIF_(devIF) {
+	dataLineEdit_->setMaximumWidth(70);
+	dataLineEdit_->setInputMask("\\0\\xHHHHHHHH;_");
+	dataLineEdit_->setText("0x00000000");
+	dataLineEdit_->setEnabled(false);
 	auto dataGroup = new QGroupBox("Data", this);
 	auto hLayout = new QHBoxLayout;
-	hLayout->addWidget(lineEdit_);
+	hLayout->addWidget(dataLineEdit_);
 	hLayout->addStretch(0);
 	dataGroup->setLayout(hLayout);
 

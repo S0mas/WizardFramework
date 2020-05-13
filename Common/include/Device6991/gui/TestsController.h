@@ -91,7 +91,7 @@ class TestsController : public QGroupBox {
 	TestSelectionView* selectionView_ = new TestSelectionView;
 	QLabel* testElapsedTimeLabel_ = new QLabel("Time elapsed:");
 	Device6991* deviceIF_;
-	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { deviceIF_->startTestsRequest({ selectionView_->model(), fifoTestView_->config(), dlTestView_->selected() }); }, "Stop", [this]() {deviceIF_->stopTestsRequest(); });
+	TwoStateButton* startStopTestsButton_ = new TwoStateButton("Start", [this]() { emit startTestReq({ selectionView_->model(), fifoTestView_->config(), dlTestView_->selected() }); }, "Stop", [this]() { emit stopTestReq(); });
 	QStateMachine sm_;
 	QTime time_;
 	FifoTestView* fifoTestView_ = new FifoTestView;
@@ -100,6 +100,9 @@ private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
 	void updateTime() const noexcept;
+signals:
+	void startTestReq(StartTestsRequest const& request) const;
+	void stopTestReq() const;
 public:
 	TestsController(Device6991* devIF, QWidget* parent = nullptr);
 };

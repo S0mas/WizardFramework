@@ -28,12 +28,17 @@ class TargetFrontendCardView : public QGroupBox {
 	void initializeStateMachine() noexcept;
 	EnumSelector* parentCommandSelector_;
 signals:
-	void stateReq() const;
+	void stateReq(FecIdType::Type const fecId) const;
+	void registerReadReq(FecIdType::Type const fecId, unsigned int const address) const;
+	void registerWriteReq(FecIdType::Type const fecId, unsigned int const address, unsigned int const data) const;
+private slots:
+	void handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const noexcept;
+public slots:
+	void sendStateReq() const noexcept;
 public:
 	TargetFrontendCardView(EnumSelector* parentCommandSelector, Device6991* devIF, FecIdType::Type const index, QWidget* parent = nullptr);
-	QLineEdit* lineEdit_ = new QLineEdit;
-public slots:
-	void sendCommand(Commands1Enum::Type const cmd, uint32_t const address) noexcept;
+	QLineEdit* dataLineEdit_ = new QLineEdit;
+	void sendCommand(Commands1Enum::Type const cmd, unsigned int const address) noexcept;
 };
 
 class RegisterControllerFrontend : public QGroupBox {
@@ -53,10 +58,15 @@ class RegisterController6991 : public QGroupBox {
 	Q_OBJECT
 	EnumSelector* commandSelector_ = new EnumSelector(Commands2Enum(), "Command");
 	EnumSelector* addressSelector_ = new EnumSelector(RegistersEnum(), "Address", true, 8);
-	QLineEdit* lineEdit_ = new QLineEdit;
+	QLineEdit* dataLineEdit_ = new QLineEdit;
 	QPushButton* executeButton = new QPushButton("Execute");
 	Device6991* deviceIF_;
 	void createConnections() noexcept;
+private slots:
+	void handleRegisterReadResp(unsigned int const data) const noexcept;
+signals:
+	void registerReadReq(unsigned int const address) const;
+	void registerWriteReq(unsigned int const address, unsigned int const data) const;
 public:
 	RegisterController6991(Device6991* devIF, QWidget* parent = nullptr);
 };

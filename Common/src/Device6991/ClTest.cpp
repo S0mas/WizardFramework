@@ -10,9 +10,7 @@ bool ClTests::startTest(bool const cl0, bool const cl1) noexcept {
 }
 
 bool ClTests::stopTest() noexcept {
-	if (isRunning())
-		return devIF_->CL_SPI_CSR_reg_.stopTests();
-	return false;
+	return devIF_->CL_SPI_CSR_reg_.stopTests();
 }
 
 bool ClTests::isRunning(TestTypeEnum::Type const type) noexcept {

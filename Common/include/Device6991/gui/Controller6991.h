@@ -16,6 +16,8 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 
+#include <memory>
+
 #include "../Device6991.h"
 #include "AcquisitionStopModeView.h"
 #include "AcquisitionStartModeView.h"
@@ -33,7 +35,7 @@ class Controller6991 : public QGroupBox {
 	//TODO
 	// Data Storage implementation
 	Q_OBJECT
-	Device6991* deviceIF_;
+	std::unique_ptr<Device6991> deviceIF_;
 	ConnectController* connectController_;
 	QStateMachine sm_;
 	QTime time_;
@@ -43,8 +45,8 @@ class Controller6991 : public QGroupBox {
 	QPushButton* setModeButton_ = new QPushButton("Set");
 	QWidget* dataStreamGroup_ = new QGroupBox("Data Stream");
 	QComboBox* dataStreamComboBox_ = new QComboBox;
-	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { deviceIF_->connectDataStreamRequest(16100+dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { deviceIF_->disconnectDataStreamRequest(); });
-	TwoStateButton* acqStartStopButton_ = new TwoStateButton("Start", [this]() { deviceIF_->configurateDeviceRequest(model()); deviceIF_->startAcquisitionRequest(); }, "Stop", [this]() { deviceIF_->stopAcquisitionRequest(); });
+	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { emit connectDataStreamReq(dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { emit disconnectDataStreamReq(); });
+	TwoStateButton* acqStartStopButton_ = new TwoStateButton("Start", [this]() { emit configureDeviceReq(model()); emit startAcqReq(); }, "Stop", [this]() { emit stopAcqReq(); });
 	ScanRateView* scanRateView_ = new ScanRateView;
 	QWidget* clockSourceGroup_ = new QGroupBox("Clock Source");
 	QComboBox* clockSourceComboBox = new QComboBox;
@@ -63,6 +65,7 @@ class Controller6991 : public QGroupBox {
 	TestsController* testController_ = nullptr;
 	bool dbgMode_ = false;
 	QStringList streams = { "1", "2", "3", "4" };
+	QThread* deviceThread_ = new QThread(this);
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
@@ -72,6 +75,15 @@ private:
 	uint32_t id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
+signals:
+	void takeControlReq(int const id) const;
+	void releaseControlReq() const;
+	void connectDataStreamReq(int const dataStreamId) const;
+	void disconnectDataStreamReq() const;
+	void configureDeviceReq(Configuration6991 const& config) const;
+	void startAcqReq() const;
+	void stopAcqReq() const;
 public:
-	Controller6991(Device6991* devIF, bool const dbgMode = false, QWidget* parent = nullptr);
+	Controller6991(std::unique_ptr<Device6991>& devIF, bool const dbgMode = false, QWidget* parent = nullptr);
+	~Controller6991() override;
 };

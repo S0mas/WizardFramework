@@ -19,12 +19,17 @@
 class ConnectController : public QGroupBox {
 	Q_OBJECT
 	AbstractDevice* devIF_;
-	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { devIF_->connect(); }, "Disconnect", [this]() { devIF_->disconnect(); });
+	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { emit sendConnectReq(); }, "Disconnect", [this]() { emit sendDisconnectReq(); });
+signals:
+	void sendConnectReq() const;
+	void sendDisconnectReq() const;
 public:
 	ConnectController(AbstractDevice* devIF, QWidget* parent = nullptr) : QGroupBox("Device", parent), devIF_(devIF) {
-		connect(devIF, &AbstractDevice::connectionStatusChanged, [this](QString const& name, bool const status) { status ? emit connectDisconnectButton_->connected() : emit connectDisconnectButton_->disconnected(); });
-		connect(connectDisconnectButton_, &TwoStateButton::connected, this, &ConnectController::connected);
-		connect(connectDisconnectButton_, &TwoStateButton::disconnected, this, &ConnectController::disconnected);
+		connect(devIF, &AbstractDevice::connectionStatusChanged, [this](QString const& name, bool const status) { status ? emit connectDisconnectButton_->stateChange1() : emit connectDisconnectButton_->stateChange2(); });
+		connect(this, &ConnectController::sendConnectReq, devIF, &AbstractDevice::handleConnectReq);
+		connect(this, &ConnectController::sendDisconnectReq, devIF, &AbstractDevice::handleDisconnectReq);
+		connect(connectDisconnectButton_, &TwoStateButton::stateChange1, this, &ConnectController::connected);
+		connect(connectDisconnectButton_, &TwoStateButton::stateChange2, this, &ConnectController::disconnected);
 
 		auto const& inputResources = devIF->inputResources();
 		auto layout = new QVBoxLayout;

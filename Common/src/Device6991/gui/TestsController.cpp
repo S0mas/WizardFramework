@@ -117,8 +117,10 @@ TestsSelectionModel TestSelectionView::model() const noexcept {
 
 
 void TestsController::createConnections() noexcept {
-	connect(deviceIF_, &Device6991::testsStarted, startStopTestsButton_, &TwoStateButton::connected);
-	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::disconnected);
+	connect(this, &TestsController::startTestReq, deviceIF_, &Device6991::handleStartTestsReq);
+	connect(this, &TestsController::stopTestReq, deviceIF_, &Device6991::handleStopTestsReq);
+	connect(deviceIF_, &Device6991::testsStarted, startStopTestsButton_, &TwoStateButton::stateChange1);
+	connect(deviceIF_, &Device6991::testsStopped, startStopTestsButton_, &TwoStateButton::stateChange2);
 	connect(deviceIF_, &Device6991::testCounters, [this](TestsStatus const& status) { resultView_->setModel(status.model); if(selectionView_->model().at(TestTypeEnum::FIFO))fifoTestView_->setModel(status.fifoTestModel_); });
 	connect(selectionView_, &TestSelectionView::fifoSelected, fifoTestView_, &FifoTestView::setEnabled);
 	connect(selectionView_, &TestSelectionView::dlSelected,

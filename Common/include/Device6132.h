@@ -5,17 +5,17 @@ class Device6132 : public QObject {
 	Q_OBJECT
 	FecIdType::Type id_;
 	Device6991* devIF_;
-	CHN_FILTER_reg CHN_FILTER_reg_{ nullptr };
-	CHN_GAIN_reg CHN_GAIN_reg_{ nullptr };
-	CMD_reg CMD_reg_{ nullptr };
-	ADC_SEL_reg ADC_SEL_reg_{ nullptr };
+	CHN_FILTER_reg CHN_FILTER_reg_{ id_, devIF_ };
+	CHN_GAIN_reg CHN_GAIN_reg_{ id_, devIF_ };
+	CMD_reg CMD_reg_{ id_, devIF_ };
+	ADC_SEL_reg ADC_SEL_reg_{ id_, devIF_ };
 	std::vector<CHNX_RAW_SAMPLE_reg> channelsRegs_;
 
 	bool setupGains(std::vector<uint32_t> const& channelIds) noexcept {
-		return devIF_->isFecIdle(FecType::_6132, id_) &&													
-			ADC_SEL_reg_.selectChannels(id_, channelIds) &&																		
-			CMD_reg_.setCmd(id_, FecCmdsType6132::GAIN_SETUP) &&																
-			devIF_->testWithTimeout([this]() { return devIF_->isFecIdle(FecType::_6132, id_); }, 500);
+		return devIF_->isFecIdle(id_, FecType::_6132) &&
+			ADC_SEL_reg_.selectChannels(channelIds) &&																		
+			CMD_reg_.setCmd(FecCmdsType6132::GAIN_SETUP) &&																
+			devIF_->testWithTimeout([this]() { return devIF_->fecRegs_[id_].BOARD_CSR_reg_.isIdle(FecType::_6132, false); }, 500);
 	}
 
 	double calculateVoltage(uint16_t const rawData) noexcept {
@@ -27,29 +27,25 @@ class Device6132 : public QObject {
 	}
 public:
 	Device6132(const FecIdType::Type& fcId, Device6991* dev6991, QObject* parent = nullptr) noexcept : id_(fcId), devIF_(dev6991) {
-		CHN_FILTER_reg_ = CHN_FILTER_reg(devIF_);
-		CHN_GAIN_reg_ = CHN_GAIN_reg(devIF_);
-		CMD_reg_ = CMD_reg(devIF_);
-		ADC_SEL_reg_ = ADC_SEL_reg(devIF_);
 		for (int channelId = 1; channelId <= 16; ++channelId)
-			channelsRegs_.push_back(CHNX_RAW_SAMPLE_reg(channelId, devIF_));
+			channelsRegs_.push_back(CHNX_RAW_SAMPLE_reg(id_, channelId, devIF_));
 	}
 	~Device6132() = default;
 
 	bool setGain(std::vector<uint32_t> const& channelIds, GainType6132::Type const gain) noexcept {
-		return CHN_GAIN_reg_.setGain(id_, channelIds, gain) && setupGains(channelIds);
+		return CHN_GAIN_reg_.setGains(channelIds, gain) && setupGains(channelIds);
 	}
 
 	bool setFilter(std::vector<uint32_t> const& channelIds, FilterType6132::Type const filter) noexcept {
-		return CHN_FILTER_reg_.setFilter(id_, channelIds, filter);
+		return CHN_FILTER_reg_.setFilters(channelIds, filter);
 	}
 
 	std::optional<GainType6132::Type> gain(uint32_t const channelId) noexcept {
-		return CHN_GAIN_reg_.gain(id_, channelId);
+		return CHN_GAIN_reg_.gain(channelId);
 	}
 
 	std::optional<FilterType6132::Type> filter(uint32_t const channelId) noexcept {
-		return CHN_FILTER_reg_.filter(id_, channelId);
+		return CHN_FILTER_reg_.filter(channelId);
 	}
 
 	void setFcId(FecIdType::Type const fcId) noexcept {
@@ -57,14 +53,14 @@ public:
 	}
 
 	std::optional<std::vector<std::optional<double>>> measure(std::vector<uint32_t> const& channelIds) {
-		if (devIF_->isFecIdle(FecType::_6132, id_) &&
-			ADC_SEL_reg_.selectChannels(id_, channelIds) &&
-			CMD_reg_.setCmd(id_, FecCmdsType6132::ADC_CONVERT) &&
-			devIF_->testWithTimeout([this]() { return devIF_->isFecIdle(FecType::_6132, id_); }, 500)) {
+		if (devIF_->isFecIdle(id_, FecType::_6132) &&
+			ADC_SEL_reg_.selectChannels(channelIds) &&
+			CMD_reg_.setCmd(FecCmdsType6132::ADC_CONVERT) &&
+			devIF_->testWithTimeout([this]() { return devIF_->isFecIdle(id_, FecType::_6132); }, 500)) {
 			std::vector<std::optional<double>> results(16, std::nullopt);
 			for (auto id : channelIds) {
 				auto g = gain(id);
-				if (auto rawData = channelsRegs_[id - 1].rawData(id_); rawData && g)
+				if (auto rawData = channelsRegs_[id - 1].rawData(); rawData && g)
 					results[id-1] = calculateVoltage(*rawData) / GainType6132::toMeaningValue(*g);
 			}
 			return results;

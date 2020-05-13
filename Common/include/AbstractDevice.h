@@ -130,6 +130,14 @@ public:
 	auto inputResources() const noexcept {
 		return connector_->resources();
 	}
+public slots:
+	void handleConnectReq() const {
+		connect();
+	}
+
+	void handleDisconnectReq() const {
+		disconnect();
+	}
 signals:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// @fn	void AbstractDevice::connectionStatusChanged(const QString& deviceNameId, const bool connected) const;

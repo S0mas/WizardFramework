@@ -8,19 +8,14 @@
 #include "ClTest.h"
 #include "DlTest.h"
 #include "Registers6991.h"
-#include <QTcpSocket>
-#include <QTextStream>
-#include <QDataStream>
+#include "../DataStream.h"
 #include <QFile>
-#include <QDataStream>
 #include <future>
 
 #include <array>
 #include <atomic>
 #include <bitset>
 #include <optional>
-
-class Device6991;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @class	Device6991
@@ -30,12 +25,27 @@ class Device6991;
 /// @author	Krzysztof Sommerfeld
 /// @date	06.02.2020
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class Device6991;
+
+struct FecRegs {
+	FecRegs(FecIdType::Type const id, Device6991* devIF) : id_(id), devIF_(devIF) {}
+	FecIdType::Type id_;
+	Device6991* devIF_;
+	FE_ID_reg FE_ID_reg_{ id_, devIF_ };
+	BOARD_CSR_reg BOARD_CSR_reg_{ id_, devIF_ };
+	CMD_reg CMD_reg_{ id_, devIF_ };
+	DL_CSR_reg DL_CSR_reg_{ id_, devIF_ };
+};
 
 class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	Q_OBJECT
 	friend class FifoTest;
 	friend class DlTests;
 	friend class ClTests;
+	friend class Device6132;
+	mutable std::mutex hwAccess_;
+	mutable QString response_;
+
 	FC_WR_QUEUE_EMP FC_WR_QUEUE_EMP_{ this };
 	PCI_ERR_STCTRL PCI_ERR_STCTRL_{ this };
 	PREF_ERR_ADDR PREF_ERR_ADDR_{ this };
@@ -76,26 +86,18 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	DFIFO_WR_reg DFIFO_WR_reg_{ this };
 	DFIFO DFIFO_{ this };
 
-	//FEC REGS
-	FE_ID_reg FE_ID_reg_{ this };
-	BOARD_CSR_reg BOARD_CSR_reg_{ this };
-	CMD_reg CMD_reg_{ this };
-	DL_CSR_reg DL_CSR_reg_{ this };
+	std::array<FecRegs, 3> fecRegs_{ FecRegs{FecIdType::BOTH, this}, FecRegs{FecIdType::_1, this}, FecRegs{FecIdType::_2, this} };
 
 	FifoTest fifoTest_{ this };
 	DlTests dlTest_{ this };
 	ClTests clTest_{ this };
-	
-	QTcpSocket* tcpSocket_ = nullptr;
-	QDataStream in_;
-	mutable QString response_;
-	bool isAcqActive_ = false;
 
-	bool exiting = false;
-	mutable std::mutex hwAccess_;
-	bool storeData_ = false;
-	QFile* dataFile_ = new QFile("data6991.txt");
+	DataStream* dataStream_ = new DataStream(this);
+
 	bool enablePrint_ = true;
+	bool isAcqActive_ = false;
+	bool storeData_ = false;
+	QFile* dataFile_ = new QFile("data6991.txt", this);
 
 	bool isAnyTestRunning() noexcept {
 		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
@@ -133,14 +135,15 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		auto list = stateData.split(',');
 		DeviceState state;
 		state.setState(DeviceStateEnum::fromString(list[0]));
-		state.set(list[1]);
-		if (auto acqRealState = isAcquisitionActive(); acqRealState) {
-			if (*acqRealState && !isAcqActive_) 
-				emit acquisitionStarted();
-			else if (!*acqRealState && isAcqActive_) 
-				emit acquisitionStopped();
-			isAcqActive_ = *acqRealState;
-		}
+		//TODO UNCOMMENT WHEN RDY
+		//state.set(list[1]);
+		//if (auto acqRealState = isAcquisitionActive(); acqRealState) {
+		//	if (*acqRealState && !isAcqActive_) 
+		//		emit acquisitionStarted();
+		//	else if (!*acqRealState && isAcqActive_) 
+		//		emit acquisitionStopped();
+		//	isAcqActive_ = *acqRealState;
+		//}
 			
 		return state;
 	}
@@ -248,73 +251,20 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 	}
 
-	void openSocketConnection(QString const& addresss, uint32_t const port) noexcept {
-		tcpSocket_ = new QTcpSocket(this);
-		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &Device6991::connectedDataStream);
-		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &Device6991::disconnectedDataStream);
-		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &Device6991::readData);
-		QObject::connect(tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &Device6991::displayError);
-		in_.setDevice(tcpSocket_);
-		in_.setVersion(QDataStream::Qt_5_12);
-		tcpSocket_->connectToHost(addresss, port);
-	}
-
-	void closeSocketConnection() noexcept {
-		tcpSocket_->disconnectFromHost();
-		delete tcpSocket_;
-	}
-
 	void storeData(std::string const& data) noexcept {		
 		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
 			return;
 		QTextStream out(dataFile_);
 		out << data.data();
 	}
-
-
-private slots:
-	void displayError(QAbstractSocket::SocketError socketError) noexcept {
-		emit reportError(QString(tcpSocket_->errorString()));
-		closeSocketConnection();
-	}
-
-	void readData() noexcept {
-		in_.startTransaction();
-		auto bytes = tcpSocket_->bytesAvailable();
-
-		HeaderPart header;
-		in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(&header)), sizeof(header));
-		
-		if (!in_.commitTransaction()) {
-			emit reportError("Reading data from socket error.");
-			return;
-		}
-
-		AcquisitionPacket acqPacket(header.dataSize_/4);
-		acqPacket.header_ = header;
-		in_.startTransaction();
-		in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(acqPacket.data_.samples_.data())), header.dataSize_);
-
-		if (fifoTest_.isRunning())
-			fifoTest_.validateData(acqPacket.data_.samples_);
-
-		if (!in_.commitTransaction()) {
-			emit reportError("Reading data from socket error.");
-			return;
-		}
-
-		//if (storeData_)
-			//storeData()
-	}
 public:
 	using DataType = QVector<bool>;
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
-		QObject::connect(this, &Device6991::logMsg, [](QString const& msg) {qDebug() << "LOG: " << msg; });
-		QObject::connect(this, &Device6991::reportError, [](QString const& msg) {qDebug() << "ERR: " << msg; });
+		QObject::connect(dataStream_, &DataStream::reportError, this, &Device6991::reportError);
+		QObject::connect(dataStream_, &DataStream::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(dataStream_, &DataStream::disconnected, this, &Device6991::disconnectedDataStream);
 	}
-	~Device6991() override {
-		exiting = true;
-	}
+	~Device6991() override = default;
 
 	void saveSubtype(const QString& str) const override {}
 	void saveSerialnumber(const QString& str) const override {}
@@ -332,45 +282,12 @@ public:
 		return invokeCmd("SYSTem:LOCK?") ? std::optional{ response_.toUInt()} : std::nullopt;
 	}
 public slots:
-	void connectDataStreamRequest(uint32_t const port) {
-		auto ipResource = inputResources().back();
-		openSocketConnection({ ipResource->load() }, port);
-	}
-
-	void disconnectDataStreamRequest() {
-		closeSocketConnection();
-	}
-
 	void deviceStateRequest() noexcept {
 		if (invokeCmd("SYSTem:STATe?")) {
 			auto devState = extractStatus(response_);
 			devState.setControllerId(controllerId());
 			emit state(devState);
 		}	
-	}
-
-	void releaseControlRequest() const noexcept {
-		if (invokeCmd("SYSTem:LOCK 0"))
-			emit controlReleased();
-	}
-
-	void startAcquisitionRequest() noexcept {
-		if (auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && invokeCmd("MEASure:ASYNc")) {
-			isAcqActive_ = true;
-			emit acquisitionStarted();
-		}
-	}
-
-	void stopAcquisitionRequest() noexcept {
-		if (invokeCmd("MEASure:ABORt")) {
-			isAcqActive_ = false;
-			emit acquisitionStopped();
-		}
-	}
-
-	void takeControlRequest(uint32_t const id) const noexcept {
-		if (invokeCmd(QString("SYSTem:LOCK %1").arg(id)))
-			emit controlGranted();
 	}
 
 	void controllerKeyRequest() const noexcept {
@@ -394,49 +311,6 @@ public slots:
 		config.fansMode_ = fansMode();
 		config.ptpTime_ = ptpTime();
 		emit configuration(config);
-	}
-
-	void configurateDeviceRequest(Configuration6991 const config) const noexcept {
-		if (config.scanRate_)
-			setScanRate(*config.scanRate_);
-		if (config.fansMode_)
-			setFansMode(*config.fansMode_);
-		if (config.startMode_.mode_) {
-			if (*config.startMode_.mode_ == AcquisitionStartModeEnum::PTP_ALARM && config.startMode_.ptpAlarm_)
-				setPtpAlarm(*config.startMode_.ptpAlarm_);
-			setStartMode(*config.startMode_.mode_);
-		}
-		if (config.stopMode_.stopOnError_)
-			setStopOnError(*config.stopMode_.stopOnError_);	
-		if (config.stopMode_.scansThreshold_)
-			setScansTreshold(*config.stopMode_.scansThreshold_);
-		if (config.scansPerDirectReadPacket_)
-			setScansNoPerDirectReadPacket(*config.scansPerDirectReadPacket_);
-		if (config.timestamps_)
-			setTimeStamps(*config.timestamps_);
-		if (config.clockSource_)
-			setClockSource(*config.clockSource_);
-	}
-
-	void startTestsRequest(StartTestsRequest const& request) noexcept {
-		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			setScansNoPerDirectReadPacket(10);
-			dlTest_.startTest(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1), request.clockFreq_);
-			if (request.model.at(TestTypeEnum::FIFO))
-				fifoTest_.startTest(request.fifoTestConfig_);
-			clTest_.startTest(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
-			emit testsStarted();
-			invokeCmd("SYSTem:LOCK 0");
-		}
-	}
-
-	void stopTestsRequest() noexcept {
-		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
-			clTest_.stopTest();
-			dlTest_.stopTest();
-			fifoTest_.stopTest();
-			invokeCmd("SYSTem:LOCK 0");
-		}		
 	}
 
 	void testCountersRequest() noexcept {
@@ -512,7 +386,7 @@ public slots:
 	}
 
 	std::optional<std::pair<uint32_t, uint32_t>> readBothFecRegisters(uint32_t const address) const noexcept {
-		auto success = invokeCmd(QString("*HW:FEC? 0, #h%2").arg(toHex(address, 8)));
+		auto success = invokeCmd(QString("*HW:FEC? 0, #h%1").arg(toHex(address, 8)));
 		if (success) {
 			auto list = response_.split(';');
 			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };
@@ -520,50 +394,16 @@ public slots:
 		return  std::nullopt;
 	}
 
+	bool writeBothFecRegisters(uint32_t const address, uint32_t const data1, uint32_t const data2) const noexcept {
+		return invokeCmd(QString("*HW:FEC 0, #h%1, #h%2, #h%3").arg(toHex(address, 8), toHex(data1, 8), toHex(data2, 8)));
+	}
+
 	std::optional<uint32_t> readCpuRegister(uint32_t const address) const noexcept {
 		return invokeCmd(QString("*HW:REG? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
 	}
 
-	void fcCardStateRequest(FecIdType::Type const fecId) noexcept {
-		if (auto present = BOARD_CSR1_reg_.isFecPresent(fecId); present && *present)
-			emit fcCardEnabled(fecId);
-		else
-			emit fcCardDisabled(fecId);
-	}
-
 	void setStoreData(bool const state) noexcept {
 		storeData_ = state;
-	}
-
-	bool testReg(std::function<std::optional<uint32_t>()> const readFunction, uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
-		auto value = readFunction();
-		bool result = value ? ((*value)&mask) == expected : false;
-		if (result)
-			return true;
-		else if (value && verbose)
-			emit reportError(QString("Value different than expected. Address: %1 Expected: %2, Read:%3, Mask:%4")
-			.arg(QString::number(address, 16)).arg(QString::number(expected, 16)).arg(QString::number(*value, 16)).arg(QString::number(mask, 16)));
-		else if(verbose)
-			emit reportError(QString("Couldnt read register. Address: %1").arg(QString::number(address, 16)));
-		return false;
-	}
-
-	bool testFpgaReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
-		return testReg([this, address]() { return readFpgaRegister(address); }, address, expected, mask, verbose);
-	}
-
-	bool testFecReg(uint32_t const fcId, int32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
-		return testReg([this, fcId, address]() {
-			auto result = readFecRegister(fcId, address);
-			if(!result)
-				emit reportError(QString("FROM FC ID: %1").arg(fcId));
-			return result;
-		}
-		, address, expected, mask, verbose);
-	}
-
-	bool testCpuReg(uint32_t const address, uint32_t const expected, uint32_t const mask = 0xFFFFFFFF, bool const verbose = true) noexcept {
-		return testReg([this, address]() { return readCpuRegister(address); }, address, expected, mask, verbose);
 	}
 
 	bool testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds = 0x7FFFFFFF, uint32_t const breakTimeInMilliseconds = 0) {
@@ -583,38 +423,159 @@ public slots:
 		enablePrint_ = enable;
 	}
 
-	bool isFecIdle(FecType::Type const type, FecIdType::Type const fcId) noexcept {
-		uint32_t expectedVal = type == FecType::_6111 ? FecStatusType6111::IDLE : FecStatusType6132::IDLE;
-		return BOARD_CSR_reg_.testStatus(fcId, type, expectedVal);
+	std::optional<FecType::Type> readFecType(FecIdType::Type const fecId) noexcept {
+		return fecRegs_[fecId].FE_ID_reg_.fecType();
 	}
 
-	bool checkIfDlReceiverStateIsIdle() noexcept {
-		if (auto fifoFsmStatus = DL_SPI_CSR1_reg_.dlFifoFsmStatus(); fifoFsmStatus) {
-			if (auto fsmStatus = DL_SPI_CSR1_reg_.dlFsmStatus(); fsmStatus) {
-				if (*fifoFsmStatus != 0) {
-					emit reportError("FifoFsmStatus is not 0.");
-					return false;
-				}
-				if (*fsmStatus != 0) {
-					emit reportError("FsmStatus is not 0.");
-					return false;
-				}
-				return true;
-			}
+	bool isFecIdle(FecIdType::Type fecId, FecType::Type const type) noexcept {
+		return fecRegs_[fecId].BOARD_CSR_reg_.isIdle(type);
+	}
+
+	bool isFecIdle(FecIdType::Type fecId) noexcept {
+		auto fecType = readFecType(fecId);
+		return fecType && fecRegs_[fecId].BOARD_CSR_reg_.isIdle(*fecType);
+	}
+
+	bool setProperDlFrame(FecIdType::Type fecId, FecType::Type const type) noexcept {
+		return DL_SPI_CSR2_reg_.setDlFrameLength(type, fecId);
+	}
+
+	bool setProperDlFrame(FecIdType::Type fecId) noexcept {
+		auto fecType = readFecType(fecId);
+		return fecType && DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fecId);
+	}
+public slots:
+	void handleFpgaRegisterReadReq(uint32_t const address) const noexcept {
+		if (auto reg = readFpgaRegister(address); reg) {
+			emit fpgaRegisterReadResp(*reg);
+			emit logMsg(QString("Fpga register read successful, address:%1, data:%2").arg(toHex(address, 8), toHex(*reg, 8)));
 		}
-		return false;
+		else
+			emit reportError(QString("Failed to read fpga register, address:%1").arg(toHex(address, 8)));
 	}
 
-	std::optional<FecType::Type> readFecType(FecIdType::Type const fcId) noexcept {
-		auto read = FE_ID_reg_.fecType(fcId);
-		if (read.first && fcId == FecIdType::BOTH || fcId == FecIdType::_1) 
-			return static_cast<FecType::Type>(*read.first);	
-		if (read.second && fcId == FecIdType::BOTH || fcId == FecIdType::_2)
-			return static_cast<FecType::Type>(*read.second);
-		return std::nullopt;
+	void handleFecRegisterReadReq(FecIdType::Type const fecId, uint32_t const address) const noexcept {
+		if (fecId != FecIdType::BOTH) {
+			if (auto reg = readFecRegister(fecId, address); reg) {
+				emit fecRegisterReadResp(fecId, *reg);
+				emit logMsg(QString("Fec register read successful, fecId:%1, address:%2, data:%3").arg(fecId).arg(toHex(address, 8), toHex(*reg, 8)));
+			}
+			else
+				emit reportError(QString("Failed to read fec register, fecId:%1, address:%2").arg(fecId).arg(toHex(address, 8)));
+		}
+		else {
+			if (auto reg = readBothFecRegisters(address); reg) {
+				emit fecRegisterReadResp(FecIdType::_1, (*reg).first);
+				emit fecRegisterReadResp(FecIdType::_2, (*reg).second);
+				emit logMsg(QString("Fecs registers read successful, fecId:%1, address:%2, data1:%3, data2:%4").arg(fecId).arg(toHex(address, 8), toHex((*reg).first, 8), toHex((*reg).second, 8)));
+			}
+			else
+				emit reportError(QString("Failed to read fecs registers, fecId:%1, address:%2").arg(fecId).arg(toHex(address, 8)));
+		}
+	}
+
+	void handleFpgaRegisterWriteReq(uint32_t const address, uint32_t const data) const noexcept {
+		if (writeFpgaRegister(address, data))
+			emit logMsg(QString("Fpga register write successful, address:%1, data:%2").arg(toHex(address, 8), toHex(data, 8)));
+		else
+			emit reportError(QString("Failed to write fpga register, address:%1, data:%2").arg(toHex(address, 8), toHex(data, 8)));			
+	}
+
+	void handleFecRegisterWriteReq(FecIdType::Type const fecId, uint32_t const address, uint32_t const data) const noexcept {
+		if (writeFecRegister(fecId, address, data))
+			emit logMsg(QString("Fec register write successful, fecId:%1, address:%2, data:%3").arg(fecId).arg(toHex(address, 8), toHex(data, 8)));
+		else
+			emit reportError(QString("Failed to write fec register, fecId:%1, address:%2, data:%3").arg(fecId).arg(toHex(address, 8), toHex(data, 8)));
+	}
+			
+	//TODO when implementation will be ready on the device
+	void handleFecStateReq(FecIdType::Type const fecId) const noexcept {
+		//if (auto present = BOARD_CSR1_reg_.isFecPresent(fecId); present && *present)
+		emit fecEnabledResp(fecId);
+		//else
+		//	emit fcCardDisabled(fecId);
+	}
+
+	void handleTakeControlReq(int const id) const noexcept {
+		if (invokeCmd(QString("SYSTem:LOCK %1").arg(id)))
+			emit controlGranted();
+	}
+
+	void handleReleaseControlReq() const noexcept {
+		if (invokeCmd("SYSTem:LOCK 0"))
+			emit controlReleased();
+	}
+
+	void handleConnectDataStreamReq(int const dataStreamId) {
+		auto ipResource = inputResources().back();
+		dataStream_->connect({ ipResource->load() }, 16100 + dataStreamId);
+	}
+
+	void handleDisconnectDataStreamReq() {
+		dataStream_->disconnect();
+	}
+
+	void handleConfigureDeviceReq(Configuration6991 const& config) const {
+		if (config.scanRate_)
+			setScanRate(*config.scanRate_);
+		if (config.fansMode_)
+			setFansMode(*config.fansMode_);
+		if (config.startMode_.mode_) {
+			if (*config.startMode_.mode_ == AcquisitionStartModeEnum::PTP_ALARM && config.startMode_.ptpAlarm_)
+				setPtpAlarm(*config.startMode_.ptpAlarm_);
+			setStartMode(*config.startMode_.mode_);
+		}
+		if (config.stopMode_.stopOnError_)
+			setStopOnError(*config.stopMode_.stopOnError_);
+		if (config.stopMode_.scansThreshold_)
+			setScansTreshold(*config.stopMode_.scansThreshold_);
+		if (config.scansPerDirectReadPacket_)
+			setScansNoPerDirectReadPacket(*config.scansPerDirectReadPacket_);
+		if (config.timestamps_)
+			setTimeStamps(*config.timestamps_);
+		if (config.clockSource_)
+			setClockSource(*config.clockSource_);
+	}
+
+	void handleStartAcqReq() {
+		if (auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && invokeCmd("MEASure:ASYNc")) {
+			isAcqActive_ = true;
+			emit acquisitionStarted();
+		}
+	}
+
+	void handleStopAcqReq() {
+		if (invokeCmd("MEASure:ABORt")) {
+			isAcqActive_ = false;
+			emit acquisitionStopped();
+		}
+	}
+
+	void handleStartTestsReq(StartTestsRequest const& request) noexcept {
+		handleStopTestsReq();
+		//starting tests order matters, fifo test cant be run with dl test and dl test must be started before cl
+		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
+			setScansNoPerDirectReadPacket(10);
+			dlTest_.startTest(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1), request.clockFreq_);
+			if (request.model.at(TestTypeEnum::FIFO))
+				fifoTest_.startTest(request.fifoTestConfig_);
+			clTest_.startTest(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
+			emit testsStarted();
+			invokeCmd("SYSTem:LOCK 0");
+		}
+	}
+
+	void handleStopTestsReq() noexcept {
+		//stopping tests order matters, cl test must be stopped first
+		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
+			clTest_.stopTest();
+			dlTest_.stopTest();
+			fifoTest_.stopTest();
+			invokeCmd("SYSTem:LOCK 0");
+		}
 	}
 signals:
-	void actualControllerKey(uint32_t const id) const;
+	void actualControllerKey(int const id) const;
 	void acquisitionStarted() const;
 	void acquisitionStopped() const;
 	void connectedDataStream() const;
@@ -626,6 +587,8 @@ signals:
 	void testsStarted() const;
 	void testsStopped() const;
 	void testCounters(TestsStatus const& status) const;
-	void fcCardEnabled(uint32_t const fcId) const;
-	void fcCardDisabled(uint32_t const fcId) const;
+	void fecEnabledResp(int const fcId) const;
+	void fecDisabledResp(int const fcId) const;
+	void fpgaRegisterReadResp(unsigned int const data) const;
+	void fecRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const;
 };

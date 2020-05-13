@@ -202,12 +202,10 @@ struct Commands1Enum {
 	enum Type {
 		READ = 0x51,
 		WRITE = 0x52,
-		WRITE_LOOPBACK = 0x53,
-		CUSTOM = 0x00,
 		INVALID = -1
 	};
 
-	inline constexpr static std::array<Type, 4> TYPES = { READ, WRITE, WRITE_LOOPBACK, CUSTOM };
+	inline constexpr static std::array<Type, 2> TYPES = { READ, WRITE};
 
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
@@ -215,10 +213,6 @@ struct Commands1Enum {
 			return "READ";
 		case WRITE:
 			return "WRITE";
-		case WRITE_LOOPBACK:
-			return "WRITE_LOOPBACK";
-		case CUSTOM:
-			return "CUSTOM";
 		default:
 			return "invalid";
 		}
@@ -229,10 +223,6 @@ struct Commands1Enum {
 			return READ;
 		else if (mode == "WRITE")
 			return WRITE;
-		else if (mode == "WRITE_LOOPBACK")
-			return WRITE_LOOPBACK;
-		else if (mode == "CUSTOM")
-			return CUSTOM;
 		return INVALID;
 	}
 };
@@ -822,8 +812,8 @@ struct DataPart {
 	QString toString() const noexcept {
 		QString result;
 		for (auto i = 0; i < samples_.size(); i++)
-			result += QString("%1").arg(toHex(samples_[i], 8));
-		return result+"\n";
+			result += QString("%1 ; ").arg(toHex(samples_[i], 8));
+		return result;
 	}
 };
 
