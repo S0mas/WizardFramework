@@ -27,6 +27,7 @@ class DataStream : public QObject {
 		for (int i = 1; i < scan.size(); ++i)
 			out << ',' << QString::number(scan[i], 'g', 6);
 		out << '\n';
+		emit logMsg("Data stored!");
 	}
 
 	void forwardData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) noexcept {
@@ -37,11 +38,11 @@ class DataStream : public QObject {
 
 		forwardSocket_->write(reinterpret_cast<const char*>(&newheader), sizeof(newheader));
 		forwardSocket_->write(reinterpret_cast<const char*>(data.samples_.data()), data.samples_.size() * 4);
-		qDebug() << "data forwarded!";
+		emit logMsg("Data forwarded!");
 	}
 
 	void doWithData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) {
-		qDebug() << "doWithData!";
+		emit logMsg("Data received!");
 		if (storeData_)
 			storeData(data.samples_);
 		if (forwardData_)
@@ -63,7 +64,7 @@ public:
 		QObject::connect(client, &DataCollectorClient::logMsg, this, &DataStream::logMsg);
 		QObject::connect(client, &DataCollectorClient::reportError, this, &DataStream::reportError);
 		client->connect();
-		qDebug() << "connecting  :  " << address << "    port:" << port;
+		emit logMsg(QString("connecting %1:%2").arg(address).arg(port));
 	}
 
 	void disconnect() noexcept {

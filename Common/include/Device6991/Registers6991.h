@@ -11,7 +11,7 @@ protected:
 	std::function<std::optional<uint32_t>(uint32_t)> readRegisterFunction_;
 	std::function<bool(uint32_t, uint32_t)> writeRegisterFunction_;
 	std::function<void(QString const&)> reportErrorFunction_;
-	std::function<bool()> readHwFunction_ = [this](uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) {
+	std::function<bool(uint32_t, uint32_t)> readHwFunction_ = [this](uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) {
 		if (auto reg = readRegisterFunction_(address_); reg) {
 			data_ = (*reg & mask) >> shiftRight;
 			return true;

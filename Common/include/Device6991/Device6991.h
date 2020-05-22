@@ -252,6 +252,7 @@ public:
 	using DataType = QVector<bool>;
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
 		QObject::connect(dataStream_, &DataStream::reportError, this, &Device6991::reportError);
+		QObject::connect(dataStream_, &DataStream::logMsg, this, &Device6991::logMsg);
 		QObject::connect(dataStream_, &DataStream::connected, this, &Device6991::connectedDataStream);
 		QObject::connect(dataStream_, &DataStream::disconnected, this, &Device6991::disconnectedDataStream);
 	}

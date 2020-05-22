@@ -2,7 +2,7 @@
 #include "../../include/Device6991/Device6991.h"
 
 bool Register::readHw(uint32_t const mask, uint32_t const shiftRight) noexcept {
-	return readHwFunction_();
+	return readHwFunction_(mask, shiftRight);
 }
 
 bool Register::writeHw(uint32_t const data, uint32_t const mask, uint32_t const shiftLeft) noexcept {
