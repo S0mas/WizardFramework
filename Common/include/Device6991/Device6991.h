@@ -96,8 +96,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 
 	bool enablePrint_ = true;
 	bool isAcqActive_ = false;
-	bool storeData_ = false;
-	QFile* dataFile_ = new QFile("data6991.txt", this);
 
 	bool isAnyTestRunning() noexcept {
 		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
@@ -113,7 +111,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		if (enablePrint_)
 			qDebug() << "Response:" << response_;
 		scpiCmd("*STB?");
-		std::bitset<8> stb = readResponse().toUInt(nullptr, 16);//TODO CHECK IF IT SHOULDNT BE INTERPRETED AS HEX
+		std::bitset<8> stb = readResponse().toUInt(nullptr, 16);
 		bool eva = stb[2];
 		if (eva) {
 			auto error = readError();
@@ -249,13 +247,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 
 	void setScansNoPerDirectReadPacket(uint32_t const scansNo) const noexcept {
 		invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
-	}
-
-	void storeData(std::string const& data) noexcept {		
-		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
-			return;
-		QTextStream out(dataFile_);
-		out << data.data();
 	}
 public:
 	using DataType = QVector<bool>;
@@ -403,7 +394,7 @@ public slots:
 	}
 
 	void setStoreData(bool const state) noexcept {
-		storeData_ = state;
+		dataStream_->setStoreData(state);
 	}
 
 	bool testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds = 0x7FFFFFFF, uint32_t const breakTimeInMilliseconds = 0) {

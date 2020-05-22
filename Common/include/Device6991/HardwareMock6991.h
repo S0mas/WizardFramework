@@ -12,7 +12,6 @@
 #include "Defines6991.h"
 #include "Registers6991.h"
 #include <map>
-
 //dbg
 #include <thread>
 #include <chrono>
@@ -148,12 +147,32 @@ class HardwareMock6991 : public QObject {
 	void stopDataSending() const noexcept {
 		dataSendingTimer->stop();
 	}
+
+	int packetNo_ = 0;
+	void sendMockData(QTcpSocket* socket) {
+		uint32_t channelsToMeasure = 4;
+		uint32_t sampleSize = 4;
+		uint32_t scans = 2;
+		AcquisitionPacket packet_{ channelsToMeasure * scans };
+		packet_.header_.id_ = 0x1337;
+		packet_.header_.options_ = 0;
+		packet_.header_.runningNumber_ = packetNo_++;
+		packet_.header_.numberOfScans_ = scans;
+		packet_.header_.numberOfSamples_ = packet_.header_.numberOfScans_ * channelsToMeasure;
+		packet_.header_.dataSize_ = packet_.header_.numberOfSamples_ * sampleSize;
+		packet_.header_.status1_ = { 0 };
+		packet_.header_.status2_ = { 0 };
+		packet_.data_.samples_ = { 1, 2, 3, 4, 5, 6, 7, 8 };
+		socket->write(reinterpret_cast<char*>(&packet_.header_), sizeof(packet_.header_));
+		socket->write(reinterpret_cast<char*>(packet_.data_.samples_.data()), packet_.data_.samples_.size() * 4);
+	}
+
 public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
 		fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
 		auto checkTestsRegsTimer = new QTimer(this);
 		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
-		connect(dataSendingTimer, &QTimer::timeout, [this]() {for (auto socket : sockets_) if (socket) { socket->write("0x12345678"); }});
+		connect(dataSendingTimer, &QTimer::timeout, [this]() {for (auto socket : sockets_) if (socket) { sendMockData(socket); }});
 		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
@@ -163,18 +182,19 @@ public:
 		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0x6132;
 		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0x6132;
 		checkTestsRegsTimer->start(500);
-		int port = 1;
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
 			servers_[i]->setMaxPendingConnections(1);
-			servers_[i]->listen(QHostAddress::LocalHost, i+1);
+			servers_[i]->listen(QHostAddress::LocalHost, 16100 + i + 1);
+			qDebug() << "start listening on :  " << QHostAddress::LocalHost << "    port:" << 16100 + i + 1;
 			sockets_[i] = nullptr;
 			connect(servers_[i], &QTcpServer::newConnection,
 				[this, i]() {
 					sockets_[i] = servers_[i]->nextPendingConnection();
 					connect(sockets_[i], &QAbstractSocket::disconnected,
 						[this, i]() {
-							servers_[i]->listen(QHostAddress::LocalHost, i + 1);
+							servers_[i]->listen(QHostAddress::LocalHost, 16100+i + 1);
+							qDebug() << "start listening on :  " << QHostAddress::LocalHost << "    port:" << 16100 + i + 1;
 							sockets_[i]->deleteLater();
 							sockets_[i] = nullptr;
 						}
@@ -183,6 +203,7 @@ public:
 				}
 			);
 		}
+		startDataSending();
 	}
 
 	QString readError() noexcept {

@@ -21,7 +21,7 @@ public:
 		for (int groupId = 1; groupId <= groupsNo; ++groupId) {
 			QVector<ChannelSelectionButton*> buttons;
 			for (int i = 0; i < channelsPerGroup_; ++i) {
-				ChannelId id = (groupId - 1) * channelsPerGroup_ + 1 + i;
+				uint32_t id = (groupId - 1) * channelsPerGroup_ + 1 + i;
 				auto button = new ChannelSelectionButton(id, this);
 				connect(button, &ChannelSelectionButton::toggled, [&statuses, id](const bool state) { statuses.set(id, state); });
 				button->setChecked(statuses.status(id));

@@ -808,7 +808,8 @@ struct DataPart {
 	DataPart(uint32_t const samples) {
 		samples_.resize(samples);
 	}
-	std::vector<uint32_t> samples_;
+	
+	std::vector<float> samples_;
 	QString toString() const noexcept {
 		QString result;
 		for (auto i = 0; i < samples_.size(); i++)

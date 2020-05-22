@@ -1,53 +1,40 @@
 #pragma once
+#include <QDataStream>
+#include <QString>
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QDataStream>
-#include <array>
-
-struct ReadTransaction {
-	bool headerReaded_ = false;
-	bool dataReaded_ = false;
-};
+#include "DataCollectorClient.h"
 
 class DataCollectorServer : public QObject {
 	Q_OBJECT
 	QTcpServer* server_;
 	uint32_t port_;
+	ReadingStrategy* readingStrategy_;
 
 	void disconnected() {	
-		server_->listen(QHostAddress::LocalHost, port_);
-		socket_->deleteLater();
-		socket_ = nullptr;
-		qDebug() << "Client disconnected!";
+		emit logMsg("Client disconnected!");
 	}
 
 	void connected() {
-		socket_ = server_->nextPendingConnection();
-		connect(socket_, &QIODevice::readyRead, this, &DataCollectorServer::readData);
+		auto socket_ = server_->nextPendingConnection();
 		connect(socket_, &QAbstractSocket::disconnected, this, &DataCollectorServer::disconnected);
-		connect(socket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &DataCollectorServer::displayError);
-		dataStream_.setDevice(socket_);
-		dataStream_.setVersion(QDataStream::Qt_5_1);
-		server_->close();
-		qDebug() << "Client connected!";
+		auto client = new DataCollectorClient(readingStrategy_->copy(), socket_, this);
+		emit newClientConnected(client);
+		emit logMsg("Client connected!");
 	}
 
-	void displayError() {
-		emit reportError(QString(socket_->errorString()));
+	void displayError(QAbstractSocket::SocketError socketError) {
+		emit reportError(QString::number(socketError));
 	}
-protected:
-	QTcpSocket* socket_;
-	QDataStream dataStream_;
-	ReadTransaction transaction_;
-	virtual void readData() noexcept = 0;
 public:
-	DataCollectorServer(uint32_t const port, QObject* parent = nullptr) : QObject(parent), port_(port){
+	DataCollectorServer(uint32_t const port, ReadingStrategy* readingStrategy, QObject* parent = nullptr) : QObject(parent), port_(port), readingStrategy_(readingStrategy) {
 		server_ = new QTcpServer(this);
-		server_->setMaxPendingConnections(1);
 		server_->listen(QHostAddress::LocalHost, port_);
-		socket_ = nullptr;
 		connect(server_, &QTcpServer::newConnection, this, &DataCollectorServer::connected);
+		connect(server_, &QTcpServer::acceptError, this, &DataCollectorServer::displayError);
 	}
 signals:
+	void logMsg(QString const& msg) const;
 	void reportError(QString const& msg) const;
+	void newClientConnected(DataCollectorClient* client) const;
 };

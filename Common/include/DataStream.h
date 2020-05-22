@@ -4,103 +4,99 @@
 #include "Device6991/Defines6991.h"
 #include <QDataStream>
 #include <QString>
+#include <QFile>
 #include <mutex>
+#include "PacketReading.h"
+#include "DataCollectorClient.h"
 
 class DataStream : public QObject {
 	Q_OBJECT
-	struct DataStreamTranastion {
-		AcquisitionPacket packet_{ 0 };
-		bool headerReaded_ = false;
-		bool dataReaded_ = false;
-	};
-	QTcpSocket* tcpSocket_;
+	DataCollectorClient* client;
+	QTcpSocket* forwardSocket_;
 	mutable std::mutex socketAccess_;
-	QDataStream in_;
-	DataStreamTranastion transaction_;
+	QFile* dataFile_ = new QFile("data.csv", this);
+	QTextStream out{ dataFile_};
+	bool storeData_ = false;
+	bool forwardData_ = false;
 
-	void readPacketHeader() noexcept {
-		in_.startTransaction();
-		auto headerPtr = &transaction_.packet_.header_;
-		if (auto const bytes = tcpSocket_->bytesAvailable(); bytes < sizeof(*headerPtr))
-			qDebug() << QString("Waiting for full packet header... have %1 bytes, expected header size: %2").arg(bytes).arg(sizeof(*headerPtr));
-		else {
-			in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(headerPtr)), sizeof(*headerPtr));
-			transaction_.headerReaded_ = true;
-			qDebug() << headerPtr->toString();
-			if (!in_.commitTransaction())
-				emit reportError("Reading data from socket error.");
-		}
-	}
-
-	void readPacketData() noexcept {
-		in_.startTransaction();
-		auto headerPtr = &transaction_.packet_.header_;
-		if (auto const bytes = tcpSocket_->bytesAvailable(); bytes < headerPtr->dataSize_)
-			qDebug() << QString("Waiting for full packet data... have %1 bytes, expected data size: %2").arg(bytes).arg(headerPtr->dataSize_);
-		else {
-			transaction_.packet_.data_.samples_.resize(headerPtr->dataSize_ / 4);
-			in_.readRawData(reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(transaction_.packet_.data_.samples_.data())), headerPtr->dataSize_);
-			transaction_.dataReaded_ = true;
-			qDebug() << transaction_.packet_.data_.toString();
-			if (!in_.commitTransaction())
-				emit reportError("Reading data from socket error.");
-		}
-	}
-
-	void readData() noexcept {
-		std::lock_guard lock(socketAccess_);
-		if (!tcpSocket_)
+	void storeData(std::vector<float> const& scan) noexcept {
+		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
 			return;
-		if (!transaction_.headerReaded_)
-			readPacketHeader();
-		if (transaction_.headerReaded_ && !transaction_.dataReaded_)
-			readPacketData();
-		if (transaction_.headerReaded_ && transaction_.dataReaded_) {
-			transaction_.dataReaded_ = false;
-			transaction_.headerReaded_ = false;
-			//if (storeData_) TODO STORE DATA
-			//	storeData(transaction_.packet_.data_.toString().toStdString());
-		}
-	}
-public:
-	DataStream(QObject* parent = nullptr) : QObject(parent) {}
-	void displayError(QAbstractSocket::SocketError socketError) noexcept {
-		emit reportError(QString(tcpSocket_->errorString()));
-		disconnect();
+		if(!scan.empty())
+			out << scan[0];
+		for (int i = 1; i < scan.size(); ++i)
+			out << ',' << QString::number(scan[i], 'g', 6);
+		out << '\n';
 	}
 
-	void connect(QString const& addresss, uint32_t const port) noexcept {
+	void forwardData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) noexcept {
+		SignalDataPacket::Header newheader;
+		newheader.dataSize_ = header.dataSize_;
+		newheader.sampleType_ = SignalDataPacket::SampleType::Sample6132;
+		newheader.scansNo_ = header.numberOfScans_;
+
+		forwardSocket_->write(reinterpret_cast<const char*>(&newheader), sizeof(newheader));
+		forwardSocket_->write(reinterpret_cast<const char*>(data.samples_.data()), data.samples_.size() * 4);
+		qDebug() << "data forwarded!";
+	}
+
+	void doWithData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) {
+		qDebug() << "doWithData!";
+		if (storeData_)
+			storeData(data.samples_);
+		if (forwardData_)
+			forwardData(header, data);
+	}
+
+public:
+	DataStream(QObject* parent = nullptr) : QObject(parent) {
+		setForwardData(true);/*todo remove dbg only*/
+	}
+
+	void connect(QString const& address, uint32_t const port) noexcept {
 		std::lock_guard lock(socketAccess_);
-		tcpSocket_ = new QTcpSocket(this);
-		QObject::connect(tcpSocket_, &QAbstractSocket::connected, this, &DataStream::connected);
-		QObject::connect(tcpSocket_, &QAbstractSocket::disconnected, this, &DataStream::disconnected);
-		QObject::connect(tcpSocket_, &QIODevice::readyRead, this, &DataStream::readData);
-		QObject::connect(tcpSocket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &DataStream::displayError);
-		in_.setDevice(tcpSocket_);
-		in_.setVersion(QDataStream::Qt_5_1);
-		tcpSocket_->connectToHost(addresss, port);
+		auto readingStrat = new PacketReading<HeaderPart, float>;
+		readingStrat->setDataReadingCallback([this](HeaderPart const& header, SignalDataPacket::Data<float> const& data) { doWithData(header, data); });
+		client = new DataCollectorClient(QHostAddress(address), port, readingStrat, this);
+		QObject::connect(client, &DataCollectorClient::connected, this, &DataStream::connected);
+		QObject::connect(client, &DataCollectorClient::disconnected, this, &DataStream::disconnected);
+		QObject::connect(client, &DataCollectorClient::logMsg, this, &DataStream::logMsg);
+		QObject::connect(client, &DataCollectorClient::reportError, this, &DataStream::reportError);
+		client->connect();
+		qDebug() << "connecting  :  " << address << "    port:" << port;
 	}
 
 	void disconnect() noexcept {
 		std::lock_guard lock(socketAccess_);
-		if (tcpSocket_) {
-			tcpSocket_->disconnectFromHost();
-			delete tcpSocket_;
-			tcpSocket_ = nullptr;
+		if (client) {
+			client->disconnect();
+			delete client;
 		}
 	}
 
 	bool isConnected() noexcept {
 		std::lock_guard lock(socketAccess_);
-		if (tcpSocket_)
-			qDebug() << tcpSocket_->bytesAvailable();
-		return tcpSocket_ != nullptr && tcpSocket_->isOpen();
+		return client && client->isConnected();
 	}
 
-	QString bytesToRead() {
-		return tcpSocket_ ? QString::number(tcpSocket_->bytesAvailable()) : "not connected";
+	void setStoreData(bool const state) noexcept {
+		storeData_ = state;
+	}
+
+	void setForwardData(bool const state) noexcept {
+		if (state) {
+			forwardSocket_ = new QTcpSocket(this);
+			forwardSocket_->connectToHost("127.0.0.1", 1);
+			forwardData_ = state;
+		}		
+		else {
+			forwardData_ = state;
+			forwardSocket_->disconnectFromHost();
+			delete forwardSocket_;
+		}
 	}
 signals:
+	void logMsg(QString const& msg) const;
 	void reportError(QString const& msg) const;
 	void connected() const;
 	void disconnected() const;

@@ -13,6 +13,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+#include <QThread>
 #include <QMessageBox>
 #include <QVBoxLayout>
 
@@ -75,6 +76,12 @@ private:
 	uint32_t id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
+	void disableDataStreamCmbBox() const noexcept {
+		dataStreamComboBox_->setDisabled(true);
+	}
+	void enableDataStreamCmbBox() const noexcept {
+		dataStreamComboBox_->setEnabled(true);
+	}
 signals:
 	void takeControlReq(int const id) const;
 	void releaseControlReq() const;

@@ -4,23 +4,21 @@
 #include <QMutex>
 #include <QDebug>
 
-using ChannelId = uint32_t;
-
 struct ChannelStatus {
-	const ChannelId id_;
+	const uint32_t id_;
 	bool enabled_;
 	ChannelStatus(const int id) noexcept : id_(id), enabled_(false) {}
 };
 
 class ChannelStatuses {
-	std::map<ChannelId, ChannelStatus> statuses_;
+	std::map<uint32_t, ChannelStatus> statuses_;
 public:
 	ChannelStatuses(const int channelsNo) noexcept {
-		for (ChannelId i = 1; i <= channelsNo; ++i)
+		for (uint32_t i = 1; i <= channelsNo; ++i)
 			statuses_.insert({ i, ChannelStatus(i) });
 	}
 
-	void disable(const ChannelId id) noexcept {
+	void disable(const uint32_t id) noexcept {
 		statuses_.at(id).enabled_ = false;
 	}
 
@@ -29,7 +27,7 @@ public:
 			status.second.enabled_ = false;
 	}
 
-	void enable(const ChannelId id) noexcept {
+	void enable(const uint32_t id) noexcept {
 		statuses_.at(id).enabled_ = true;
 	}
 
@@ -38,11 +36,11 @@ public:
 			status.second.enabled_ = true;
 	}
 
-	void set(const ChannelId id, const bool state) noexcept {
+	void set(const uint32_t id, const bool state) noexcept {
 		statuses_.at(id).enabled_ = state;
 	}
 
-	bool status(const ChannelId id) const noexcept {
+	bool status(const uint32_t id) const noexcept {
 		return statuses_.at(id).enabled_;
 	}
 
@@ -58,8 +56,8 @@ public:
 		return res;
 	}
 
-	std::vector<ChannelId> allEnabled() const noexcept {
-		std::vector<ChannelId> res;
+	std::vector<uint32_t> allEnabled() const noexcept {
+		std::vector<uint32_t> res;
 		res.reserve(size());
 		for (auto const& status : statuses_)
 			if(status.second.enabled_)
@@ -70,14 +68,14 @@ public:
 
 class ChannelSelectionButton : public QPushButton {
 	Q_OBJECT
-	ChannelId id_;
+	uint32_t id_;
 public:
-	ChannelSelectionButton(const ChannelId id, QWidget* parent = nullptr) : QPushButton(QString::number(id), parent), id_(id){
+	ChannelSelectionButton(const uint32_t id, QWidget* parent = nullptr) : QPushButton(QString::number(id), parent), id_(id){
 		setFixedWidth(25);
 		setCheckable(true);
 	}
 
-	ChannelId id() const noexcept {
+	uint32_t id() const noexcept {
 		return id_;
 	}
 };

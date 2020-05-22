@@ -10,8 +10,8 @@ void Controller6991::createConnections() noexcept {
 	connect(deviceIF_.get(), &Device6991::acquisitionStopped, acqStartStopButton_, &TwoStateButton::stateChange2);
 	connect(deviceIF_.get(), &Device6991::connectedDataStream, connectDisconnectButton_, &TwoStateButton::stateChange1);
 	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, connectDisconnectButton_, &TwoStateButton::stateChange2);
-	connect(deviceIF_.get(), &Device6991::connectedDataStream, [this]() {dataStreamComboBox_->setDisabled(true); });
-	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, [this]() {dataStreamComboBox_->setEnabled(true); });
+	connect(deviceIF_.get(), &Device6991::connectedDataStream, this, &Controller6991::disableDataStreamCmbBox);
+	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, this, &Controller6991::enableDataStreamCmbBox);
 	connect(deviceIF_.get(), &Device6991::state, statusView_, &StatusView::update);
 	connect(deviceIF_.get(), &Device6991::configuration, this, &Controller6991::setModel);
 	connect(deviceIF_.get(), &Device6991::reportError, this, &Controller6991::showError);
@@ -281,6 +281,6 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 }
 
 Controller6991::~Controller6991() {
-	deviceThread_->quit();
+	deviceThread_->quit();///todo test this
 	deviceThread_->wait();
 }

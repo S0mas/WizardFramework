@@ -15,7 +15,10 @@ namespace SignalDataPacket {
 	};
 	template<typename T>
 	struct Data {
-		Data(uint32_t const samples) {
+		Data(uint32_t const samples = 0) {
+			samples_.resize(samples);
+		}
+		void resize(uint32_t const samples) {
 			samples_.resize(samples);
 		}
 		struct TimeStamp {
