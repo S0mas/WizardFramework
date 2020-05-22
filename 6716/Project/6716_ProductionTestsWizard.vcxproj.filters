@@ -276,6 +276,9 @@
     <QtMoc Include="..\..\Common\include\Promises.h">
       <Filter>Header Files\Common</Filter>
     </QtMoc>
+    <QtMoc Include="..\..\Common\include\UserCommunicationObject.h">
+      <Filter>Header Files\Common</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="debug\moc_predefs.h.cbt">
@@ -406,9 +409,6 @@
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Common\include\HardwareConnectorT028.h">
-      <Filter>Header Files\Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Common\include\UserCommunicationObject.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Common\include\ChannelsIF.h">

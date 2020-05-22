@@ -1,4 +1,4 @@
-#include "../include/Tests/SignalPathCalibrationTest.h"
+#include "../../include/Tests/SignalPathCalibrationTest.h"
 
 bool SignalPathCalibrationTest::signalPathCalibration(ViInt16 channelIndex) const {
 	int channelMask = (1 << (channelIndex - 1));

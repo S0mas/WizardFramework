@@ -1,4 +1,4 @@
-#include "../include/Tests/SignalPathTest.h"
+#include "../../include/Tests/SignalPathTest.h"
 
 Result SignalPathTest::test() const {
 	// 1

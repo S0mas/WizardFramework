@@ -12,7 +12,7 @@
 /// @date	04.02.2020
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class AbstractDevice  : public UserCommunicationObject {
+class AbstractDevice : public UserCommunicationObject {
 	Q_OBJECT
 	QString nameId_;
 	bool connected_ = false;
@@ -106,6 +106,17 @@ public:
 	void connect() const noexcept;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	bool AbstractDevice::disconnect() const noexcept;
+	///
+	/// @brief	Connects this device.
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	04.02.2020
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	void disconnect() const noexcept;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// @fn	auto AbstractDevice::inputResources() const noexcept
 	///
 	/// @brief	Gets the resources of the device that needs some user input.
@@ -116,8 +127,16 @@ public:
 	/// @returns	The vector of input resources.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	auto AbstractDevice::inputResources() const noexcept {
+	auto inputResources() const noexcept {
 		return connector_->resources();
+	}
+public slots:
+	void handleConnectReq() const {
+		connect();
+	}
+
+	void handleDisconnectReq() const {
+		disconnect();
 	}
 signals:
 	////////////////////////////////////////////////////////////////////////////////////////////////////

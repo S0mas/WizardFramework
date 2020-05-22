@@ -1,4 +1,4 @@
-#include "../include/Tests/AutobalanceDACTest.h"
+#include "../../include/Tests/AutobalanceDACTest.h"
 
 Result AutobalanceDACTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x64);

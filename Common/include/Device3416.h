@@ -2,7 +2,7 @@
 #include "AbstractDevice.h"
 #include "DeviceIdentityResourcesIF.h"
 #include "ChannelsIF.h"
-#include <visa.h>
+#include "../../../visa/include/visa.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// @class	Device3416

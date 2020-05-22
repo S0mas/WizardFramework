@@ -1,6 +1,6 @@
 #include "../include/HardwareConnector3416.h"
 #include "../include/Resource.h"
-#include <bu3416.h>
+#include "../../../bu3416/include/bu3416.h"
 
 std::string HardwareConnector3416::resource() const noexcept {
 	return QString("TCPIP0::%1::INSTR").arg(ipResource->value()).toStdString();

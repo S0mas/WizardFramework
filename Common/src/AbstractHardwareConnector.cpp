@@ -10,13 +10,13 @@ bool AbstractHardwareConnector::isSessionAvailable() const noexcept {
 }
 
 void AbstractHardwareConnector::sendConnectionStatus() const noexcept {
-	emit connectionStatus(isSessionAvailable() && isConnectionPossible());
-	QTimer::singleShot(2000, this, &AbstractHardwareConnector::sendConnectionStatus);
+	if (monitorConnection_) {
+		QTimer::singleShot(2000, this, &AbstractHardwareConnector::sendConnectionStatus);
+		emit connectionStatus(isSessionAvailable() && isConnectionPossible());
+	}
 }
 
-AbstractHardwareConnector::AbstractHardwareConnector(QObject* parent) noexcept : QObject(parent)  {
-	QTimer::singleShot(2000, this, &AbstractHardwareConnector::sendConnectionStatus);
-}
+AbstractHardwareConnector::AbstractHardwareConnector(QObject* parent) noexcept : QObject(parent)  {}
 
 unsigned long AbstractHardwareConnector::vi() const noexcept {
 	return vi_;
@@ -25,13 +25,21 @@ unsigned long AbstractHardwareConnector::vi() const noexcept {
 void AbstractHardwareConnector::connect() noexcept {
 	disconnect();
 	connectImpl();
-	isSessionAvailable() ? logMsg(QString("Connection established, viSession: %1").arg(vi())) : logMsg("FAILED");
+	if (isSessionAvailable()) {
+		logMsg(QString("Connection established, viSession: %1").arg(vi()));
+		monitorConnection_ = true;
+		sendConnectionStatus();
+	}
+	else
+		logMsg("FAILED");
 }
 
 void AbstractHardwareConnector::disconnect() noexcept {
 	if (isSessionAvailable()) {
 		disconnectImpl();
 		clearSession();
+		emit connectionStatus(false);
+		monitorConnection_ = false;
 	}
 }
 

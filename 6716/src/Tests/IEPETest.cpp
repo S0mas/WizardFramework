@@ -1,4 +1,4 @@
-#include "../include/Tests/IEPETest.h"
+#include "../../include/Tests/IEPETest.h"
 
 Result IEPETest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x60);

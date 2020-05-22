@@ -1,7 +1,7 @@
 #include "../include/HardwareConnector6716.h"
 #include "../include/Resource.h"
-#include <bu6716.h>
-#include <visa.h>
+#include "../../../bu6716/include/bu6716.h"
+#include "../../../visa/include/visa.h"
 
 std::string HardwareConnector6716::resource() const noexcept {
 	return QString("TCPIP0::%1::5025::SOCKET").arg(ipResource->value()).toStdString();

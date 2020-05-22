@@ -1,4 +1,5 @@
 #include "../include/ProductionTestWizardContent6716.h"
+#include "../include/Tests/ACCouplingTest.h"
 #include "../include/Tests/ExcitationCalibrationTest.h"
 #include "../include/Tests/ACCouplingTest.h"
 #include "../include/Tests/AutobalanceDACTest.h"

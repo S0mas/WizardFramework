@@ -24,11 +24,11 @@ void ChannelsIF::Channel::disable() noexcept {
 	enabled_ = false;
 }
 
-long long int ChannelsIF::Channel::mask() const noexcept {
+uint64_t ChannelsIF::Channel::mask() const noexcept {
 	return 1ll << (index() - 1);
 }
 
-ChannelsIF::ChannelsIF(const int channelsNo) noexcept {
+ChannelsIF::ChannelsIF(const uint32_t channelsNo) noexcept {
 	for (int index = 1; index <= channelsNo; ++index)
 		channels_.push_back(Channel(index));
 }
@@ -54,8 +54,8 @@ void ChannelsIF::setChannelsStates(const std::vector<bool>& states) noexcept {
 		(states[channel.index() - 1ll]) ? channel.enable() : channel.disable();
 }
 
-long long int ChannelsIF::channelsStateAsMask() const noexcept {
-	long long int mask = 0;
+uint64_t ChannelsIF::channelsStateAsMask() const noexcept {
+	uint64_t mask = 0;
 	for (auto const& channel : channels_)
 		if (channel.enabled()) mask |= 1ll << (channel.index() - 1);
 	return mask;

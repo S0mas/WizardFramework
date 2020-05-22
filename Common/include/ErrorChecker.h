@@ -72,7 +72,7 @@ public:
 	/// @param 	status	The status.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	ErrorStatus(const QString& str, const int status) : lastStatusMsg(str) {
+	ErrorStatus(const QString& str, const int status) : lastStatusMsg(str + QString(", Status: %1").arg(status)) {
 		if (status > 0)
 			type = StatusType::WRN;
 		else if (status < 0)

@@ -1,4 +1,4 @@
-#include "../include/Tests/TedsClass2Test.h"
+#include "../../include/Tests/TedsClass2Test.h"
 
 void TedsClass2Test::_initTeds2() const {
 	device6716->writeI2cNoAddress(0x19, bu6716_TEDS_CMD_DRST);

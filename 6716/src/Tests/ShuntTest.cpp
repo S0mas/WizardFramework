@@ -1,4 +1,4 @@
-#include "../include/Tests/ShuntTest.h"
+#include "../../include/Tests/ShuntTest.h"
 
 void ShuntTest::quickAutobalance(ViUInt16 channelMask, ViInt16 adcGain) const {
 	ViReal64 corr;

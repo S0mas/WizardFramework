@@ -1,4 +1,4 @@
-#include "../include/Tests/ChannelGainTest.h"
+#include "../../include/Tests/ChannelGainTest.h"
 
 Result ChannelGainTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x64);

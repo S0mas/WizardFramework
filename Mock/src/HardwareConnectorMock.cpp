@@ -11,7 +11,6 @@ bool HardwareConnectorMock::isConnectionPossible() const {
 void HardwareConnectorMock::connectImpl() noexcept {
 	qDebug() << QString("Connected to '%1'").arg(ipResource->nameId());
 	vi_ = 1;
-	reportError("TEST ERROR, NOTHING HAPPEND - PROCEED!");
 }
 
 void HardwareConnectorMock::disconnectImpl() noexcept {

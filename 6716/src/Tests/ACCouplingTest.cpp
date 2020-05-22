@@ -1,4 +1,4 @@
-#include "../include/Tests/ACCouplingTest.h"
+#include "../../include/Tests/ACCouplingTest.h"
 
 Result ACCouplingTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x64);

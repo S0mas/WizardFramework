@@ -1,4 +1,4 @@
-#include "../include/Tests/I2CAccessToFPGATest.h"
+#include "../../include/Tests/I2CAccessToFPGATest.h"
 
 bool I2CAccessToFPGATest::testRWAndCheckId(const unsigned char expectedValue) const noexcept {
 	device6716->writeFPGAreg(bu6716_FPGA_TEST_RW, expectedValue);

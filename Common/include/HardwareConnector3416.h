@@ -1,7 +1,7 @@
 #pragma once
 #include "AbstractHardwareConnector.h"
 #include "Resource.h"
-#include <visa.h>
+#include "../../../visa/include/visa.h"
 #include <string>
 
 class HardwareConnector3416 : public AbstractHardwareConnector {

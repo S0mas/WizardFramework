@@ -1,5 +1,5 @@
 #include "../include/HardwareConnectorT028.h"
-#include <t028.h>
+#include "../../../bu5716/t028/include/t028.h"
 
 bool HardwareConnectorT028::isConnectionPossible() const {
 	ViSession session = 0;

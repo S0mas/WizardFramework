@@ -1,4 +1,4 @@
-#include "../include/Tests/QuarterBridgeTest.h"
+#include "../../include/Tests/QuarterBridgeTest.h"
 
 Result QuarterBridgeTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x60);

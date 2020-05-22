@@ -1,6 +1,6 @@
 #include "../include/Device3416.h"
-#include <bu3416.h>
-#include <visa.h>
+#include "../../../bu3416/include/bu3416.h"
+#include "../../../visa/include/visa.h"
 #include "../include/HardwareConnector3416.h"
 
 Device3416::Device3416(const QString& nameId, const QString& motherBoardNameId, QObject* parent) noexcept : AbstractDevice(nameId, new HardwareConnector3416(nameId, motherBoardNameId), parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(16) {}

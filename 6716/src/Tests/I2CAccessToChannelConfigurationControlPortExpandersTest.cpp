@@ -1,4 +1,4 @@
-#include "../include/Tests/I2CAccessToChannelConfigurationControlPortExpandersTest.h"
+#include "../../include/Tests/I2CAccessToChannelConfigurationControlPortExpandersTest.h"
 
 bool I2CAccessToChannelConfigurationControlPortExpandersTest::checkPortExpander() const noexcept {
 	for (auto i = 0u; i < 16; ++i) {

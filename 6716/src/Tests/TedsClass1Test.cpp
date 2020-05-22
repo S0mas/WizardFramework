@@ -1,4 +1,4 @@
-#include "../include/Tests/TedsClass1Test.h"
+#include "../../include/Tests/TedsClass1Test.h"
 
 Result TedsClass1Test::test() const {
 	ViStatus status;

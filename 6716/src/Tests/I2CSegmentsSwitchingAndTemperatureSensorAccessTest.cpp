@@ -1,4 +1,4 @@
-#include "../include/Tests/I2CSegmentsSwitchingAndTemperatureSensorAccessTest.h"
+#include "../../include/Tests/I2CSegmentsSwitchingAndTemperatureSensorAccessTest.h"
 
 Result I2CSegmentsSwitchingAndTemperatureSensorAccessTest::test() const {
 	if (!testWriteRead(1, bu6716_FPGA_SEGSW))

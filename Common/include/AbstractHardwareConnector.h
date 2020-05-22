@@ -15,6 +15,7 @@
 
 class AbstractHardwareConnector : public QObject {
 	Q_OBJECT
+	mutable bool monitorConnection_ = false;
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// @fn	void AbstractHardwareConnector::clearSession() noexcept;
 	///

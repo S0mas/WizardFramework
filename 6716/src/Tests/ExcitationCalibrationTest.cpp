@@ -1,4 +1,4 @@
-#include "../include/Tests/ExcitationCalibrationTest.h"
+#include "../../include/Tests/ExcitationCalibrationTest.h"
 
 // This test is concatenation of two tests - Initial Excitation Calibration(nr 11) and Excitation Calibration(nr 22) - due to almost no difference in these two.
 // <step nr> from Initial Excitation Calibration(are not marked) and Excitation Calibration(are marked with 'x')

@@ -1,4 +1,4 @@
-#include "../include/Tests/LEDsTest.h"
+#include "../../include/Tests/LEDsTest.h"
 
 bool LEDsTest::switchLED_inTestMode(const unsigned char channel, const LED_STATE state) const {
 	unsigned char color = (state == LED_STATE::RED) ? (2 << 2) | (3 << 0) : (3 << 2) | (2 << 0);

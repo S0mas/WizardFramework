@@ -5,6 +5,7 @@
 #include <QObject>
 #include "ResourceManagementStrategies.h"
 #include "ResourceContentValidationStrategies.h"
+#include "ResourceValidator.h"
 
 class Enums : public QObject {
 	Q_OBJECT
@@ -37,7 +38,7 @@ protected:
 	QString inputMask_;
 	std::unique_ptr<AbstractResourceManagementStrategy> managementStrategy_ = nullptr;
 	std::unique_ptr<AbstractResourceContentValidationStrategy> validationStrategy_ = nullptr;
-	std::function<bool(const QString&)> validate_ = nullptr;
+	ResourceValidator validator_{ [this](QString const& input) { return validate(input); } };
 public:
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,6 +261,21 @@ public:
 
 	bool validate(const QString& proposedValue) const noexcept {
 		return validationStrategy_->validate(proposedValue);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/// @fn	ResourceValidator const& AbstractDataResource::validator() const noexcept
+	///
+	/// @brief	Returns validator object
+	///
+	/// @author	Krzysztof Sommerfeld
+	/// @date	07.05.2020
+	///
+	/// @returns	Returns validator object.
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	const ResourceValidator* validator() const noexcept {
+		return &validator_;
 	}
 };
 

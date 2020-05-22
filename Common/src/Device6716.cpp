@@ -1,10 +1,10 @@
 #include "../include/Device6716.h"
 #include "bu3100.h"
 #include "bu3416.h"
-#include "visa.h"
 #include "../include/HardwareConnector6716.h"
+#include "../include/ScpiIFVisa.h"
 
-Device6716::Device6716(const QString& nameId, QObject* parent) noexcept : ScpiDevice(nameId, new HardwareConnector6716(nameId), parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(16) {
+Device6716::Device6716(const QString& nameId, QObject* parent) noexcept : ScpiDevice(nameId, new HardwareConnector6716(nameId), new ScpiIFVisa, parent), DeviceIdentityResourcesIF(nameId), ChannelsIF(16) {
 }
 
 bool Device6716::writeFPGAreg(const unsigned char address, const unsigned char data) const {

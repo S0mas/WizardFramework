@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractHardwareConnector.h"
-#include <visa.h>
+#include "../../../visa/include/visa.h"
 
 class HardwareConnectorT028 : public AbstractHardwareConnector {
 	const ViSession* masterViSession = nullptr;

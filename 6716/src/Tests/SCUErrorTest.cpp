@@ -1,4 +1,4 @@
-#include "../include/Tests/SCUErrorTest.h"
+#include "../../include/Tests/SCUErrorTest.h"
 
 Result SCUErrorTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x60);

@@ -1,5 +1,5 @@
 #include "../include/AbstractTest6716.h"
-#include <bu6100.h>
+#include "../../../bu6100/include/bu6100.h"
 
 inline constexpr int hexFormat = 16;
 inline constexpr int decFormat = 10;

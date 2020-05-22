@@ -1,11 +1,11 @@
 #pragma once
 #define INSTR_LANGUAGE_SPECIFIC
 #include "../../Common/include/AbstractTest.h"
-#include <visa.h>
-#include <bu6716.h>
-#include <t028.h>
-#include <bu3416.h>
-#include <bu6100.h>
+#include "../../../visa/include/visa.h"
+#include "../../../bu6716/include/bu6716.h"
+#include "../../../bu5716/t028/include/t028.h"
+#include "../../../bu3416/include/bu3416.h"
+#include "../../../bu6100/include/bu6100.h"
 #include "../../Common/include/Device6716.h"
 #include "../../Common/include/Device6100.h"
 #include "../../Common/include/Device3416.h"

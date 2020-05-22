@@ -1,9 +1,10 @@
 #include "../include/Device6100.h"
-#include <bu6100.h>
-#include <visa.h>
+#include "../../../bu6100/include/bu6100.h"
+#include "../../../visa/include/visa.h"
 #include "../include/HardwareConnector6100.h"
+#include "../include/ScpiIFVisa.h"
 
-Device6100::Device6100(const QString& nameId, QObject* parent) noexcept : ScpiDevice(nameId, new HardwareConnector6100(nameId), parent), DeviceIdentityResourcesIF(nameId) {}
+Device6100::Device6100(const QString& nameId, QObject* parent) noexcept : ScpiDevice(nameId, new HardwareConnector6100(nameId), new ScpiIFVisa, parent), DeviceIdentityResourcesIF(nameId) {}
 
 void Device6100::saveSubtype(const QString& str) const {
 	//todo

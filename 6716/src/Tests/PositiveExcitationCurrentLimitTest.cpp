@@ -1,4 +1,4 @@
-#include "../include/Tests/PositiveExcitationCurrentLimitTest.h"
+#include "../../include/Tests/PositiveExcitationCurrentLimitTest.h"
 
 Result PositiveExcitationCurrentLimitTest::test() const {
 	device6716->configureVoltageReferanceSwitches(0x60);

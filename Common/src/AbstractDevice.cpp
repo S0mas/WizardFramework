@@ -23,3 +23,8 @@ void AbstractDevice::connect() const noexcept {
 	logMsg(QString("Connecting %1..").arg(nameId()));
 	connector_->connect();
 }
+
+void AbstractDevice::disconnect() const noexcept {
+	logMsg(QString("Disconnecting %1..").arg(nameId()));
+	connector_->disconnect();
+}

@@ -1,4 +1,4 @@
-#include "../include/Tests/I2CAccessTo1WireControllersTest.h"
+#include "../../include/Tests/I2CAccessTo1WireControllersTest.h"
 
 Result I2CAccessTo1WireControllersTest::test() const {
 	//ViUInt16 reset_cmd[] = { 0x0300, 0x0000 };
