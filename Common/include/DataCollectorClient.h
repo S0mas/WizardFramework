@@ -5,8 +5,6 @@
 
 class DataCollectorClient : public QObject {
 	Q_OBJECT
-	QHostAddress address_;
-	uint32_t port_;
 	ReadingStrategy* readingStrategy_;
 
 	void makeConnections() {
@@ -22,14 +20,14 @@ class DataCollectorClient : public QObject {
 private slots:
 	void readData() {
 		readingStrategy_->readData();
+		if (socket_->bytesAvailable() == 0)
+			emit logMsg("Socket is empty!");
 	}
 protected:
 	QTcpSocket* socket_;
 public:
-	DataCollectorClient(QHostAddress const& address, uint32_t const port, ReadingStrategy* readingStrategy, QObject* parent = nullptr)
+	DataCollectorClient(ReadingStrategy* readingStrategy, QObject* parent = nullptr)
 		: QObject(parent),
-		address_(address),
-		port_(port),
 		readingStrategy_(readingStrategy),
 		socket_(nullptr)
 	{}
@@ -42,13 +40,13 @@ public:
 		makeConnections();
 	}
 
-	void connect() {
+	void connect(QHostAddress const& address, uint32_t const port) {
 		if (socket_)
 			delete socket_;
 		socket_ = new QTcpSocket(this);
 		readingStrategy_->setDataStreamDevice(socket_);
 		makeConnections();
-		socket_->connectToHost(address_, port_);
+		socket_->connectToHost(address, port);
 	}
 
 	void disconnect() noexcept {
@@ -62,7 +60,6 @@ public:
 	bool isConnected() const noexcept {
 		return socket_ != nullptr && socket_->isOpen();
 	}
-
 signals:
 	void logMsg(QString const& msg) const;
 	void reportError(QString const& msg) const;

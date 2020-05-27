@@ -51,6 +51,8 @@ public:
 			transaction_.headerReaded_ = false;
 			transaction_.dataReaded_ = false;
 			callback_(header_, data_);
+			if (dataStream_.device()->bytesAvailable() > 0)
+				readData();
 		}
 	}
 

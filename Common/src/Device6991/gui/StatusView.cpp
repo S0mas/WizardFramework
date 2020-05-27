@@ -5,7 +5,7 @@
 #include <QString>
 #include <QVBoxLayout>
 
-StatusView::StatusView(QWidget * parent) : QGroupBox("Device status", parent) {
+StatusView::StatusView(QWidget * parent) : QGroupBox("Device Status", parent) {
 	auto layout = new QVBoxLayout;
 
 	auto hlayout = new QHBoxLayout;

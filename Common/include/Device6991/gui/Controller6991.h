@@ -41,7 +41,7 @@ class Controller6991 : public QGroupBox {
 	QStateMachine sm_;
 	QTime time_;
 	QSpinBox* idEdit_ = new QSpinBox;
-	QWidget* modeGroup_ = new QGroupBox("ControlMode");
+	QWidget* modeGroup_ = new QGroupBox("Control Mode");
 	QComboBox* comboBoxMode_ = new QComboBox;
 	QPushButton* setModeButton_ = new QPushButton("Set");
 	QWidget* dataStreamGroup_ = new QGroupBox("Data Stream");
@@ -49,8 +49,6 @@ class Controller6991 : public QGroupBox {
 	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { emit connectDataStreamReq(dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { emit disconnectDataStreamReq(); });
 	TwoStateButton* acqStartStopButton_ = new TwoStateButton("Start", [this]() { emit configureDeviceReq(model()); emit startAcqReq(); }, "Stop", [this]() { emit stopAcqReq(); });
 	ScanRateView* scanRateView_ = new ScanRateView;
-	QWidget* clockSourceGroup_ = new QGroupBox("Clock Source");
-	QComboBox* clockSourceComboBox = new QComboBox;
 	AcquisitionStartModeView* startModeView_ = new AcquisitionStartModeView;
 	AcquisitionStopModeView* stopModeView_ = new AcquisitionStopModeView;
 	QPushButton* resfreshButton_ = new QPushButton("Refresh");

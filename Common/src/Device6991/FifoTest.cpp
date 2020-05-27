@@ -1,12 +1,23 @@
 #include "../../include/Device6991/FifoTest.h"
 #include "../../include/Device6991/Device6991.h"
 
-FifoTest::FifoTest(Device6991 * devIF) : devIF_(devIF) {}
+FifoTest::FifoTest(Device6991 * devIF) : devIF_(devIF) {
+	dataFile_ = new QFile("FifoTestErrors.csv", devIF);
+}
 
 void FifoTest::validateData(std::vector<uint32_t> const & data) {
-	for (auto const& sample : data)
-		if (count_++ != sample)
+	for (auto const& sample : data) {
+		if (expected_++ != sample) {
+			if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
+				return;
+			QTextStream out(dataFile_);
+			out << expected_ - 1 << ", " << sample << '\n';
 			++errors_;
+			expected_ = sample + 1;
+		}
+		++count_;
+
+	}		
 	if (!data.empty())
 		lastSample_ = data.back();
 }
@@ -17,7 +28,6 @@ FifoTestModel FifoTest::model() noexcept {
 	auto overflow = devIF_->DFIFO_CSR_reg_.overflowHappened();
 	auto progThresholdPassed = devIF_->DFIFO_CSR_reg_.isFifoProgFull();
 	model.config_.blockSize_ = devIF_->DFIFO_CSR_reg_.blockSize();
-	model.config_.rate_ = devIF_->DEBUG_CLK_RATE_reg_.rate();
 	model.config_.treshold_ = devIF_->DFIFO_PFLAG_THR_reg_.threshold();
 	if (overflow && *overflow)
 		model.overflows_++;
@@ -47,7 +57,10 @@ bool FifoTest::configure(FifoTestModel::Configuration const & config) noexcept {
 bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 	count_ = 0;
 	errors_ = 0;
-	if (!devIF_->dataStream_->isConnected()) {
+	expected_ = 0;
+	dataFile_->resize(0);
+	devIF_->dataStream_.clearDataFile();
+	if (!devIF_->dataStream_.isConnected()) {
 		devIF_->reportError("Connection with data stream is not open/valid. Please open/fix it before starting the test.");
 		return false;
 	}

@@ -114,7 +114,7 @@ void RegisterControllerFrontend::createConnections() noexcept {
 }
 
 RegisterControllerFrontend::RegisterControllerFrontend(Device6991* devIF, QWidget* parent)
-	: QGroupBox("Fec Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_2)){
+	: QGroupBox("Front-End Cards Register Controller", parent), frontend1_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_1)), frontend2_(new TargetFrontendCardView(commandSelector_, devIF, FecIdType::_2)){
 	auto frontendsLayout = new QHBoxLayout;
 	frontendsLayout->addWidget(frontend1_);
 	frontendsLayout->addWidget(frontend2_);

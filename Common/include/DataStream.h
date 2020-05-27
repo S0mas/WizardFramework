@@ -8,76 +8,75 @@
 #include <mutex>
 #include "PacketReading.h"
 #include "DataCollectorClient.h"
-
-class DataStream : public QObject {
-	Q_OBJECT
-	DataCollectorClient* client;
+#include "LoggingObject.h"
+//TODO MEMORY LEAKS
+template<typename DataType>
+class DataStream {
+	PacketReading<HeaderPart, DataType> readingStrat_;
+	DataCollectorClient* client_;
 	QTcpSocket* forwardSocket_;
 	mutable std::mutex socketAccess_;
-	QFile* dataFile_ = new QFile("data.csv", this);
-	QTextStream out{ dataFile_};
+	QFile* dataFile_;
+	
 	bool storeData_ = false;
 	bool forwardData_ = false;
-
-	void storeData(std::vector<float> const& scan) noexcept {
+	std::vector<std::function<void(HeaderPart const&, SignalDataPacket::Data<DataType> const&)>> callbacks_;
+	
+	void storeData(std::vector<DataType> const& scan) noexcept {
 		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
 			return;
+		QTextStream out(dataFile_);
 		if(!scan.empty())
 			out << scan[0];
 		for (int i = 1; i < scan.size(); ++i)
-			out << ',' << QString::number(scan[i], 'g', 6);
+			out << ',' << scan[i];
 		out << '\n';
-		emit logMsg("Data stored!");
+		//emit logMsg("Data stored!");
 	}
 
-	void forwardData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) noexcept {
+	void forwardData(HeaderPart const& header, SignalDataPacket::Data<DataType> const& data) noexcept {
 		SignalDataPacket::Header newheader;
 		newheader.dataSize_ = header.dataSize_;
 		newheader.sampleType_ = SignalDataPacket::SampleType::Sample6132;
 		newheader.scansNo_ = header.numberOfScans_;
 
 		forwardSocket_->write(reinterpret_cast<const char*>(&newheader), sizeof(newheader));
-		forwardSocket_->write(reinterpret_cast<const char*>(data.samples_.data()), data.samples_.size() * 4);
-		emit logMsg("Data forwarded!");
+		forwardSocket_->write(reinterpret_cast<const char*>(data.samples_.data()), data.samples_.size() * sizeof(DataType));
+		//emit logMsg("Data forwarded!");
 	}
 
-	void doWithData(HeaderPart const& header, SignalDataPacket::Data<float> const& data) {
-		emit logMsg("Data received!");
-		if (storeData_)
-			storeData(data.samples_);
-		if (forwardData_)
-			forwardData(header, data);
+	void doWithData(HeaderPart const& header, SignalDataPacket::Data<DataType> const& data) {
+		//emit logMsg("Data received!");
+		for (auto const& callback : callbacks_)
+			callback(header, data);
 	}
 
 public:
-	DataStream(QObject* parent = nullptr) : QObject(parent) {
-		setForwardData(true);/*todo remove dbg only*/
+	DataStream(QObject* membersParent = nullptr) {
+		client_ = new DataCollectorClient(&readingStrat_, membersParent);
+		dataFile_ = new QFile("data.csv", membersParent);
+		setForwardData(true);/*todo remove dbg only*/	
+		readingStrat_.setDataReadingCallback([this](HeaderPart const& header, SignalDataPacket::Data<DataType> const& data) { doWithData(header, data); });
+		callbacks_.push_back([this](HeaderPart const& header, SignalDataPacket::Data<DataType> const& data) { forwardData(header, data); });
+		callbacks_.push_back([this](HeaderPart const& header, SignalDataPacket::Data<DataType> const& data) { storeData(data.samples_); });
 	}
 
+	
 	void connect(QString const& address, uint32_t const port) noexcept {
 		std::lock_guard lock(socketAccess_);
-		auto readingStrat = new PacketReading<HeaderPart, float>;
-		readingStrat->setDataReadingCallback([this](HeaderPart const& header, SignalDataPacket::Data<float> const& data) { doWithData(header, data); });
-		client = new DataCollectorClient(QHostAddress(address), port, readingStrat, this);
-		QObject::connect(client, &DataCollectorClient::connected, this, &DataStream::connected);
-		QObject::connect(client, &DataCollectorClient::disconnected, this, &DataStream::disconnected);
-		QObject::connect(client, &DataCollectorClient::logMsg, this, &DataStream::logMsg);
-		QObject::connect(client, &DataCollectorClient::reportError, this, &DataStream::reportError);
-		client->connect();
-		emit logMsg(QString("connecting %1:%2").arg(address).arg(port));
+		client_->connect(QHostAddress(address), port);
+		dataFile_->resize(0);
+		//emit logMsg(QString("connecting %1:%2").arg(address).arg(port));
 	}
 
 	void disconnect() noexcept {
 		std::lock_guard lock(socketAccess_);
-		if (client) {
-			client->disconnect();
-			delete client;
-		}
+		client_->disconnect();
 	}
 
 	bool isConnected() noexcept {
 		std::lock_guard lock(socketAccess_);
-		return client && client->isConnected();
+		return client_->isConnected();
 	}
 
 	void setStoreData(bool const state) noexcept {
@@ -86,7 +85,7 @@ public:
 
 	void setForwardData(bool const state) noexcept {
 		if (state) {
-			forwardSocket_ = new QTcpSocket(this);
+			forwardSocket_ = new QTcpSocket;//TODO remove memory leak
 			forwardSocket_->connectToHost("127.0.0.1", 1);
 			forwardData_ = state;
 		}		
@@ -96,9 +95,16 @@ public:
 			delete forwardSocket_;
 		}
 	}
-signals:
-	void logMsg(QString const& msg) const;
-	void reportError(QString const& msg) const;
-	void connected() const;
-	void disconnected() const;
+
+	void clearDataFile() {
+		dataFile_->resize(0);
+	}
+
+	void addCallback(std::function<void(HeaderPart const&, SignalDataPacket::Data<DataType> const&)> const& callback) {
+		callbacks_.push_back(callback);
+	}
+
+	DataCollectorClient* client() {
+		return client_;
+	}
 };

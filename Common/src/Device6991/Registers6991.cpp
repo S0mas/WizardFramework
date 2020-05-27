@@ -429,7 +429,7 @@ bool BOARD_CSR_reg::testStatus(FecType::Type const type, uint32_t const expected
 }
 
 bool BOARD_CSR_reg::isIdle(FecType::Type const type, bool const verbose) noexcept {
-	return FecType::_6111 ? testStatus(type, FecStatusType6111::IDLE) : testStatus(type, FecStatusType6132::IDLE, verbose);
+	return type == FecType::_6111 ? testStatus(type, FecStatusType6111::IDLE) : testStatus(type, FecStatusType6132::IDLE, verbose);
 }
 
 bool CMD_reg::setCmd(uint32_t const cmd) noexcept {

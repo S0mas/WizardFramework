@@ -321,14 +321,6 @@ public:
 		config_.fansMode_ = mode;
 	}
 
-	ClockSourceEnum::Type clockSource() const noexcept {
-		return *config_.clockSource_;
-	}
-
-	void setClockSource(ClockSourceEnum::Type const source) noexcept {
-		config_.clockSource_ = source;
-	}
-
 	PtpTime ptpAlarm() const noexcept {
 		return *config_.startMode_.ptpAlarm_;
 	}

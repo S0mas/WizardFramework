@@ -92,7 +92,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	DlTests dlTest_{ this };
 	ClTests clTest_{ this };
 
-	DataStream* dataStream_ = new DataStream(this);
+	DataStream<uint32_t> dataStream_{ this };
 
 	bool enablePrint_ = true;
 	bool isAcqActive_ = false;
@@ -249,12 +249,13 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 	}
 public:
-	using DataType = QVector<bool>;
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
-		QObject::connect(dataStream_, &DataStream::reportError, this, &Device6991::reportError);
-		QObject::connect(dataStream_, &DataStream::logMsg, this, &Device6991::logMsg);
-		QObject::connect(dataStream_, &DataStream::connected, this, &Device6991::connectedDataStream);
-		QObject::connect(dataStream_, &DataStream::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(dataStream_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(dataStream_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(dataStream_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
+		QObject::connect(dataStream_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
+
+		dataStream_.addCallback([this](HeaderPart const& header, SignalDataPacket::Data<uint32_t> const& data) { if (fifoTest_.isRunning()) fifoTest_.validateData(data.samples_); });
 	}
 	~Device6991() override = default;
 
@@ -299,7 +300,6 @@ public slots:
 		config.scansPerDirectReadPacket_ = scansNoPerDirectReadPacket();
 		config.temperatures_ = temperatures();
 		config.timestamps_ = timestamps();
-		config.clockSource_ = clockSource();
 		config.fansMode_ = fansMode();
 		config.ptpTime_ = ptpTime();
 		emit configuration(config);
@@ -383,7 +383,7 @@ public slots:
 			auto list = response_.split(';');
 			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };
 		}
-		return  std::nullopt;
+		return std::nullopt;
 	}
 
 	bool writeBothFecRegisters(uint32_t const address, uint32_t const data1, uint32_t const data2) const noexcept {
@@ -395,7 +395,7 @@ public slots:
 	}
 
 	void setStoreData(bool const state) noexcept {
-		dataStream_->setStoreData(state);
+		dataStream_.setStoreData(state);
 	}
 
 	bool testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds = 0x7FFFFFFF, uint32_t const breakTimeInMilliseconds = 0) {
@@ -500,11 +500,11 @@ public slots:
 
 	void handleConnectDataStreamReq(int const dataStreamId) {
 		auto ipResource = inputResources().back();
-		dataStream_->connect({ ipResource->load() }, 16100 + dataStreamId);
+		dataStream_.connect({ ipResource->load() }, 16100 + dataStreamId);
 	}
 
 	void handleDisconnectDataStreamReq() {
-		dataStream_->disconnect();
+		dataStream_.disconnect();
 	}
 
 	void handleConfigureDeviceReq(Configuration6991 const& config) const {
@@ -525,8 +525,6 @@ public slots:
 			setScansNoPerDirectReadPacket(*config.scansPerDirectReadPacket_);
 		if (config.timestamps_)
 			setTimeStamps(*config.timestamps_);
-		if (config.clockSource_)
-			setClockSource(*config.clockSource_);
 	}
 
 	void handleStartAcqReq() {
@@ -561,8 +559,8 @@ public slots:
 		//stopping tests order matters, cl test must be stopped first
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			clTest_.stopTest();
-			dlTest_.stopTest();
 			fifoTest_.stopTest();
+			dlTest_.stopTest();		
 			invokeCmd("SYSTem:LOCK 0");
 		}
 	}

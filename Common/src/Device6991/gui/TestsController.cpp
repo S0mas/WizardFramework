@@ -196,7 +196,7 @@ TestsController::TestsController(Device6991* devIF, QWidget * parent) : QGroupBo
 	createConnections();
 }
 
-FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
+FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo Test", parent) {
 	blockSizeEdit_->setMaximum(127);
 	blockSizeEdit_->setMinimum(1);
 	blockSizeEdit_->setButtonSymbols(QAbstractSpinBox::NoButtons);
@@ -220,7 +220,7 @@ FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
 	group->setLayout(layout);
 	hlayout->addWidget(group);
 
-	group = new QGroupBox("Rate");
+	group = new QGroupBox("Rate [ns]");
 	layout = new QVBoxLayout;
 	layout->addWidget(rateEdit_);
 	group->setLayout(layout);
@@ -235,10 +235,10 @@ FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
 	auto mainLayout = new QVBoxLayout;
 	mainLayout->addLayout(hlayout);
 
-	group = new QGroupBox("Test status");
+	group = new QGroupBox("Test Status");
 	layout = new QVBoxLayout;
 	hlayout = new QHBoxLayout;
-	hlayout->addWidget(new QLabel("Samples count:"));
+	hlayout->addWidget(new QLabel("Samples Count:"));
 	hlayout->addWidget(samplesInFifoCount_);
 	layout->addLayout(hlayout);
 
@@ -253,12 +253,12 @@ FifoTestView::FifoTestView(QWidget * parent) : QGroupBox("Fifo test", parent) {
 	layout->addLayout(hlayout);
 
 	hlayout = new QHBoxLayout;
-	hlayout->addWidget(new QLabel("Pass treshold:"));
+	hlayout->addWidget(new QLabel("Pass Treshold:"));
 	hlayout->addWidget(passThresholdCounter_);
 	layout->addLayout(hlayout);
 
 	hlayout = new QHBoxLayout;
-	hlayout->addWidget(new QLabel("Last sample:"));
+	hlayout->addWidget(new QLabel("Last Sample:"));
 	hlayout->addWidget(lastSample_);
 	layout->addLayout(hlayout);
 	group->setLayout(layout);

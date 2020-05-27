@@ -840,7 +840,6 @@ struct Configuration6991 {
 	std::optional<ScanRateModel> scanRate_;
 	std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> temperatures_;
 	std::optional<FansModeEnum::Type> fansMode_;
-	std::optional<ClockSourceEnum::Type> clockSource_;
 	std::optional<PtpTime> ptpTime_;
 	AcquisitionStartModeModel startMode_;
 	AcquisitionStopModeModel stopMode_;

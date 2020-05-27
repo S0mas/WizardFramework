@@ -13,7 +13,7 @@ class StatusView : public QGroupBox {
 	QLabel* dataStreamValue_ = new QLabel;
 	QLabel* stateLabel_ = new QLabel("State:");
 	QLabel* stateValue_ = new QLabel;
-	QLabel* currentTimeLabel_ = new QLabel("Current time:");
+	QLabel* currentTimeLabel_ = new QLabel("Current Time:");
 	QLabel* currentTimeValue_ = new QLabel;
 public:
 	StatusView(QWidget* parent = nullptr);

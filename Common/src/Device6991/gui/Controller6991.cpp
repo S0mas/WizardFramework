@@ -65,7 +65,6 @@ void Controller6991::initializeStateMachine() noexcept {
 			modeGroup_->setEnabled(false);
 			comboBoxMode_->setCurrentIndex(0);
 			resfreshButton_->setEnabled(false);
-			clockSourceGroup_->setEnabled(false);
 			scanRateView_->setEnabled(false);
 			startModeView_->setEnabled(false);
 			stopModeView_->setEnabled(false);
@@ -97,7 +96,6 @@ void Controller6991::initializeStateMachine() noexcept {
 	);
 	connect(controller, &QState::entered,
 		[this]() {
-			clockSourceGroup_->setEnabled(true);
 			scanRateView_->setEnabled(true);
 			startModeView_->setEnabled(true);
 			stopModeView_->setEnabled(true);
@@ -106,7 +104,6 @@ void Controller6991::initializeStateMachine() noexcept {
 	);
 	connect(controller, &QState::exited,
 		[this]() {
-			clockSourceGroup_->setEnabled(false);
 			scanRateView_->setEnabled(false);
 			startModeView_->setEnabled(false);
 			stopModeView_->setEnabled(false);
@@ -144,7 +141,6 @@ Configuration6991 Controller6991::model() const noexcept {
 	config.scanRate_ = scanRateView_->model();
 	config.startMode_ = startModeView_->model();
 	config.stopMode_ = stopModeView_->model(*config.scanRate_);
-	config.clockSource_ = static_cast<ClockSourceEnum::Type>(clockSourceComboBox->currentData().toInt());
 	config.scansPerDirectReadPacket_ = 10;
 	//TODO
 	//config.timestamps_ =
@@ -166,8 +162,6 @@ void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 		scanRateView_->setModel(*configuration.scanRate_);
 	startModeView_->setModel(configuration.startMode_);
 	stopModeView_->setModel(configuration.stopMode_);
-	if (configuration.clockSource_)
-		clockSourceComboBox->setCurrentIndex(*configuration.clockSource_);
 	//TODO
 	//if (configuration.fansMode_)
 	//	//
@@ -224,19 +218,10 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	hlayout2->addWidget(connectController_);
 	hlayout2->addWidget(dataStreamGroup_);
 
-	for (auto clock : ClockSourceEnum::TYPES)
-		clockSourceComboBox->addItem(ClockSourceEnum::toString(clock), clock);
-	clockSourceComboBox->setMaximumWidth(80);
-
 	auto vlayout = new QVBoxLayout;
-	vlayout->addWidget(clockSourceComboBox);
-	clockSourceGroup_->setLayout(vlayout);
-
-	vlayout = new QVBoxLayout;
 	hlayout = new QHBoxLayout;
 	hlayout->setContentsMargins(0, 0, 0, 0);
 	hlayout->addWidget(scanRateView_);
-	hlayout->addWidget(clockSourceGroup_);
 	hlayout->addWidget(modeGroup_);
 	vlayout->addLayout(hlayout);
 	vlayout->addWidget(startModeView_);
