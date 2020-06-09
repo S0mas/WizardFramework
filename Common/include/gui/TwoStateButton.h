@@ -20,6 +20,8 @@ signals:
 	void actionStarted() const;
 public:
 	TwoStateButton(QString const& actionText1, std::function<void(void)> const& action1, QString const& actionText2, std::function<void(void)> const& action2, QWidget* parent = nullptr);
+
+
 signals:
 	void stateChange1() const;
 	void stateChange2() const;

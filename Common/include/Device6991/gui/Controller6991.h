@@ -23,7 +23,9 @@
 #include "AcquisitionStopModeView.h"
 #include "AcquisitionStartModeView.h"
 #include "../../gui/TwoStateButton.h"
+#include "../../gui/ScpiController.h"
 #include "ScanRateView.h"
+#include "ScansPerPacketView.h"
 #include "StatusView.h"
 #include "TestsController.h"
 #include "Controller6991.h"
@@ -49,12 +51,14 @@ class Controller6991 : public QGroupBox {
 	TwoStateButton* connectDisconnectButton_ = new TwoStateButton("Connect", [this]() { emit connectDataStreamReq(dataStreamComboBox_->currentText().toUInt()); }, "Disconnect", [this]() { emit disconnectDataStreamReq(); });
 	TwoStateButton* acqStartStopButton_ = new TwoStateButton("Start", [this]() { emit configureDeviceReq(model()); emit startAcqReq(); }, "Stop", [this]() { emit stopAcqReq(); });
 	ScanRateView* scanRateView_ = new ScanRateView;
+	ScansPerPacketView* scansPerPacketView_ = new ScansPerPacketView;
 	AcquisitionStartModeView* startModeView_ = new AcquisitionStartModeView;
 	AcquisitionStopModeView* stopModeView_ = new AcquisitionStopModeView;
 	QPushButton* resfreshButton_ = new QPushButton("Refresh");
 	QPushButton* stopButton_ = new QPushButton("Stop");
 	QPushButton* startButton_ = new QPushButton("Start");
 	QCheckBox* dataStorageCheckBox_ = new QCheckBox("Data Storage");
+	QCheckBox* forwardDataCheckBox_ = new QCheckBox("Forward Data To Plotter");
 	QCheckBox* statusAutoRefreshCheckBox_ = new QCheckBox("Auto Status Refresh");
 	StatusView* statusView_ = new StatusView;
 	QWidget* placeHolderForController6132_ = new QWidget;
@@ -62,6 +66,7 @@ class Controller6991 : public QGroupBox {
 	RegisterControllerFrontend* resgisterControllerFrontend_ = nullptr;
 	RegisterController6991* resgisterController6991_ = nullptr;
 	TestsController* testController_ = nullptr;
+	ScpiController* scpiController_ = nullptr;
 	bool dbgMode_ = false;
 	QStringList streams = { "1", "2", "3", "4" };
 	QThread* deviceThread_ = new QThread(this);

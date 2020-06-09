@@ -2,10 +2,12 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include "ReadingStrategy.h"
+#include <mutex>
 
 class DataCollectorClient : public QObject {
 	Q_OBJECT
 	ReadingStrategy* readingStrategy_;
+	mutable std::recursive_mutex socketAccess_;
 
 	void makeConnections() {
 		QObject::connect(socket_, &QAbstractSocket::connected, this, &DataCollectorClient::connected);
@@ -19,6 +21,7 @@ class DataCollectorClient : public QObject {
 	}
 private slots:
 	void readData() {
+		std::lock_guard lock(socketAccess_);
 		readingStrategy_->readData();
 		if (socket_->bytesAvailable() == 0)
 			emit logMsg("Socket is empty!");
@@ -29,8 +32,10 @@ public:
 	DataCollectorClient(ReadingStrategy* readingStrategy, QObject* parent = nullptr)
 		: QObject(parent),
 		readingStrategy_(readingStrategy),
-		socket_(nullptr)
-	{}
+		socket_(new QTcpSocket(this)) {
+		readingStrategy_->setDataStreamDevice(socket_);
+		makeConnections();
+	}
 
 	DataCollectorClient(ReadingStrategy* readingStrategy, QTcpSocket* socket, QObject* parent = nullptr)
 		: QObject(parent),
@@ -41,24 +46,38 @@ public:
 	}
 
 	void connect(QHostAddress const& address, uint32_t const port) {
-		if (socket_)
-			delete socket_;
-		socket_ = new QTcpSocket(this);
-		readingStrategy_->setDataStreamDevice(socket_);
-		makeConnections();
+		std::lock_guard lock(socketAccess_);	
 		socket_->connectToHost(address, port);
 	}
 
 	void disconnect() noexcept {
-		if (socket_) {
-			socket_->disconnectFromHost();
-			delete socket_;
-			socket_ = nullptr;
-		}
+		std::lock_guard lock(socketAccess_);
+		socket_->disconnectFromHost();
 	}
 
 	bool isConnected() const noexcept {
-		return socket_ != nullptr && socket_->isOpen();
+		std::lock_guard lock(socketAccess_);
+		return socket_->isOpen();
+	}
+
+	void showDataAvailable() {
+		std::lock_guard lock(socketAccess_);
+		qDebug() << socket_->bytesAvailable();
+	}
+
+	uint32_t peerPort() const noexcept {
+		std::lock_guard lock(socketAccess_);
+		return socket_->peerPort();
+	}
+
+	QHostAddress peerAddress() const noexcept {
+		std::lock_guard lock(socketAccess_);
+		return socket_->peerAddress();
+	}
+
+	QHostAddress localAddress() const noexcept {
+		std::lock_guard lock(socketAccess_);
+		return socket_->localAddress();
 	}
 signals:
 	void logMsg(QString const& msg) const;

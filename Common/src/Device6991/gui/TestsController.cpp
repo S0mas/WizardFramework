@@ -186,12 +186,11 @@ TestsController::TestsController(Device6991* devIF, QWidget * parent) : QGroupBo
 	layout->addWidget(dlTestView_);
 
 	hlayout = new QHBoxLayout;
+	hlayout->addWidget(testElapsedTimeLabel_);
+	hlayout->addStretch(0);
 	hlayout->addWidget(startStopTestsButton_, 1, Qt::AlignRight);
 	layout->addLayout(hlayout);
-
-	hlayout = new QHBoxLayout;
-	hlayout->addWidget(testElapsedTimeLabel_);
-	layout->addLayout(hlayout);
+	layout->addStretch();
 	setLayout(layout);
 	createConnections();
 }

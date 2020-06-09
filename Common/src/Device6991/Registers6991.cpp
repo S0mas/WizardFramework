@@ -324,7 +324,7 @@ bool DFIFO_CSR_reg::resetFifo() noexcept {
 
 bool DFIFO_CSR_reg::setBlockSize(uint32_t const blockSize) noexcept {
 	if (blockSize > 0 && blockSize < 128)
-		return writeHw(blockSize, 0x7F0000);
+		return writeHw(blockSize, 0x7F0000, 16);
 	return false;
 }
 

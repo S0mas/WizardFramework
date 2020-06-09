@@ -744,88 +744,6 @@ public:
 	}
 };
 
-struct Status1Part {
-	uint32_t data_;
-	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		std::bitset<32> bits(data_);
-		return { bits[31], bits[30], bits[29], bits[28] };
-	}
-
-	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
-		std::bitset<32> bits(data_);
-		return bits[28 + linkIndex];
-	}
-
-	uint8_t lockKey() const noexcept {
-		return data_ && 0xFF;
-	}
-};
-
-struct Status2Part {
-	uint32_t data_;
-	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		std::bitset<32> bits(data_);
-		return { bits[31], bits[30], bits[29], bits[28] };
-	}
-
-	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
-		std::bitset<32> bits(data_);
-		return bits[28 + linkIndex];
-	}
-
-	uint8_t lockKey() const noexcept {
-		return data_ && 0xFF;
-	}
-};
-
-struct HeaderPart {
-	uint16_t id_;
-	uint16_t options_;
-	uint32_t runningNumber_;
-	uint32_t dataSize_;
-	uint16_t numberOfScans_;
-	uint16_t numberOfSamples_;
-	Status1Part status1_;
-	Status2Part status2_;
-
-	QString toString() const noexcept {
-		return QString("Id: %1, Options: %2, RunningNumber: %3, DataSize: %4, Scans: %5, Samples: %6, Status 1: %7, Status 2: %8")
-			.arg(toHex(id_, 4), toHex(options_, 4), toHex(runningNumber_, 8), toHex(dataSize_, 8), toHex(numberOfScans_, 4), toHex(numberOfSamples_, 4), toHex(status1_.data_, 8), toHex(status2_.data_, 8));
-	}
-};
-
-struct Timestamp {
-	uint64_t seconds_;
-	uint32_t nanoseconds_;
-};
-
-struct Sample {
-	//Timestamp ts_;
-	uint32_t rawData_;
-};
-
-struct DataPart {
-	DataPart(uint32_t const samples) {
-		samples_.resize(samples);
-	}
-	
-	std::vector<float> samples_;
-	QString toString() const noexcept {
-		QString result;
-		for (auto i = 0; i < samples_.size(); i++)
-			result += QString("%1 ; ").arg(toHex(samples_[i], 8));
-		return result;
-	}
-};
-
-struct AcquisitionPacket {
-	AcquisitionPacket(uint32_t const samples) {
-		data_ = DataPart(samples);
-	}
-	HeaderPart header_;
-	DataPart data_{ 0 };
-};
-
 struct AcquisitionStartModeModel {
 	std::optional<AcquisitionStartModeEnum::Type> mode_;
 	std::optional<PtpTime> ptpAlarm_;
@@ -846,7 +764,6 @@ struct Configuration6991 {
 	std::optional<uint32_t> scansPerDirectReadPacket_;
 	std::optional<bool> timestamps_;
 };
-
 
 struct TestTypeEnum {
 	enum Type {

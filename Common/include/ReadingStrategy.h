@@ -14,4 +14,8 @@ public:
 		dataStream_.setDevice(device);
 		dataStream_.setVersion(QDataStream::Qt_5_1);
 	}
+
+	void setEndianness(QDataStream::ByteOrder order) noexcept {
+		dataStream_.setByteOrder(order);
+	}
 };

@@ -11,6 +11,8 @@
 #include "Command.h"
 #include "Defines6991.h"
 #include "Registers6991.h"
+#include "../SignalDataPacket.h"
+#include <QRandomGenerator>
 #include <map>
 //dbg
 #include <thread>
@@ -141,30 +143,40 @@ class HardwareMock6991 : public QObject {
 	}
 
 	void startDataSending() const noexcept {
-		dataSendingTimer->start(500);
+		//dataSendingTimer->start(100);
 	}
 
 	void stopDataSending() const noexcept {
-		dataSendingTimer->stop();
+		//dataSendingTimer->stop();
 	}
 
 	int packetNo_ = 0;
 	void sendMockData(QTcpSocket* socket) {
-		uint32_t channelsToMeasure = 4;
-		uint32_t sampleSize = 4;
-		uint32_t scans = 2;
-		AcquisitionPacket packet_{ channelsToMeasure * scans };
-		packet_.header_.id_ = 0x1337;
-		packet_.header_.options_ = 0;
-		packet_.header_.runningNumber_ = packetNo_++;
-		packet_.header_.numberOfScans_ = scans;
-		packet_.header_.numberOfSamples_ = packet_.header_.numberOfScans_ * channelsToMeasure;
-		packet_.header_.dataSize_ = packet_.header_.numberOfSamples_ * sampleSize;
-		packet_.header_.status1_ = { 0 };
-		packet_.header_.status2_ = { 0 };
-		packet_.data_.samples_ = { 1, 2, 3, 4, 5, 6, 7, 8 };
-		socket->write(reinterpret_cast<char*>(&packet_.header_), sizeof(packet_.header_));
-		socket->write(reinterpret_cast<char*>(packet_.data_.samples_.data()), packet_.data_.samples_.size() * 4);
+		uint32_t channelsToMeasure = 256;
+		uint32_t sampleSize = 1;
+		uint32_t scans = 5;
+	
+		HeaderPart6991 header_;
+		header_.id_ = 0x6111;
+		header_.options_ = 0;
+		header_.runningNumber_ = packetNo_++;
+		header_.numberOfScans_ = scans;
+		header_.numberOfSamplesPerScan_ = channelsToMeasure;
+		header_.dataSize_ = header_.numberOfSamplesPerScan_ * scans * sampleSize / 8;
+		header_.status1_ = { 0 };
+		header_.status2_ = { 0 };
+
+		SignalPacket<Scan6111> packet(header_);
+
+		for (auto& scan : packet.data_.scans_)
+			for (auto& sample : scan.samples_)
+				sample.raw_ = QRandomGenerator::global()->bounded(0xFF);
+		if (socket->isOpen()) {
+			QDataStream stream(socket);
+			stream.setByteOrder(QDataStream::LittleEndian);
+			stream << header_;
+			stream << packet.data_;
+		}
 	}
 
 public:
@@ -179,8 +191,8 @@ public:
 		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 8191;
 		fpgaRegs_[RegistersEnum::ACQ_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::BOARD_CSR1_reg] = 0x0000001F;
-		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
-		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
+		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111;
+		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111;
 		checkTestsRegsTimer->start(500);
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
@@ -203,7 +215,7 @@ public:
 				}
 			);
 		}
-		startDataSending();
+		dataSendingTimer->start(100);
 	}
 
 	QString readError() noexcept {

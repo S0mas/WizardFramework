@@ -22,7 +22,8 @@ void Controller6991::createConnections() noexcept {
 	connect(this, &Controller6991::startAcqReq, deviceIF_.get(), &Device6991::handleStartAcqReq);
 	connect(this, &Controller6991::stopAcqReq, deviceIF_.get(), &Device6991::handleStopAcqReq);
 	connect(this, &Controller6991::configureDeviceReq, deviceIF_.get(), &Device6991::handleConfigureDeviceReq);
-	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::setStoreData);
+	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetStoreDataReq);
+	connect(forwardDataCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetForwardDataReq);
 
 	connect(setModeButton_, &QPushButton::clicked,
 		[this]() {
@@ -66,16 +67,23 @@ void Controller6991::initializeStateMachine() noexcept {
 			comboBoxMode_->setCurrentIndex(0);
 			resfreshButton_->setEnabled(false);
 			scanRateView_->setEnabled(false);
+			scansPerPacketView_->setEnabled(false);
 			startModeView_->setEnabled(false);
 			stopModeView_->setEnabled(false);
 			acqStartStopButton_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setChecked(false);
+			// TODO REMOVE THIS AFTER REPLACE DATA STREAM TEMPORARY SOLUTION WITH ONE STREAM SOLUTION ALSO CONNECTING/DISCONNECTING STREAM WILL BE AVAILABLE WITHOUT ACTIVE CONNECTION WITH DEVICE
+			if (connectDisconnectButton_->text() == "Disconnect")
+				emit disconnectDataStreamReq(); 
+			connectDisconnectButton_->setEnabled(false);
 			idEdit_->setEnabled(true);
 			if (dbgMode_) {
 				resgisterControllerFrontend_->setEnabled(false);
 				resgisterController6991_->setEnabled(false);
 				testController_->setEnabled(false);
+				scpiController_->setEnabled(false);
+				scpiController_->setLedIndicatorState(false);
 			}
 			placeHolderForController6132_->hide();
 		}
@@ -86,10 +94,13 @@ void Controller6991::initializeStateMachine() noexcept {
 			resfreshButton_->setEnabled(true);
 			statusAutoRefreshCheckBox_->setEnabled(true);
 			idEdit_->setEnabled(false);
+			connectDisconnectButton_->setEnabled(true);
 			if (dbgMode_) {
 				resgisterControllerFrontend_->setEnabled(true);
 				resgisterController6991_->setEnabled(true);
 				testController_->setEnabled(true);
+				scpiController_->setEnabled(true);
+				scpiController_->setLedIndicatorState(true);
 			}
 			addController6132IfNeeded();
 		}
@@ -97,6 +108,7 @@ void Controller6991::initializeStateMachine() noexcept {
 	connect(controller, &QState::entered,
 		[this]() {
 			scanRateView_->setEnabled(true);
+			scansPerPacketView_->setEnabled(true);
 			startModeView_->setEnabled(true);
 			stopModeView_->setEnabled(true);
 			acqStartStopButton_->setEnabled(true);
@@ -141,7 +153,7 @@ Configuration6991 Controller6991::model() const noexcept {
 	config.scanRate_ = scanRateView_->model();
 	config.startMode_ = startModeView_->model();
 	config.stopMode_ = stopModeView_->model(*config.scanRate_);
-	config.scansPerDirectReadPacket_ = 10;
+	config.scansPerDirectReadPacket_ = scansPerPacketView_->value();
 	//TODO
 	//config.timestamps_ =
 	//config.scansPerDirectReadPacket_ = 
@@ -160,6 +172,7 @@ uint32_t Controller6991::id() const noexcept {
 void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	if (configuration.scanRate_)
 		scanRateView_->setModel(*configuration.scanRate_);
+	scansPerPacketView_->setValue(*configuration.scansPerDirectReadPacket_);
 	startModeView_->setModel(configuration.startMode_);
 	stopModeView_->setModel(configuration.stopMode_);
 	//TODO
@@ -178,7 +191,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	deviceIF_(std::move(devIF)),
 	connectController_(new ConnectController(deviceIF_.get(), this)),
 	dbgMode_(dbgMode) {
-	deviceIF_->enableScpiCommandsPrints(false);
+	deviceIF_->enableScpiCommandsPrints(true);
 	deviceIF_->moveToThread(deviceThread_);
 	deviceThread_->start();
 
@@ -222,6 +235,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	hlayout = new QHBoxLayout;
 	hlayout->setContentsMargins(0, 0, 0, 0);
 	hlayout->addWidget(scanRateView_);
+	hlayout->addWidget(scansPerPacketView_);
 	hlayout->addWidget(modeGroup_);
 	vlayout->addLayout(hlayout);
 	vlayout->addWidget(startModeView_);
@@ -229,6 +243,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	vlayout->addWidget(placeHolderForController6132_);
 	vlayout->addStretch(0);
 	vlayout->addWidget(dataStorageCheckBox_);
+	vlayout->addWidget(forwardDataCheckBox_);
 	vlayout->addWidget(statusAutoRefreshCheckBox_);
 
 	auto hButtonslayout = new QHBoxLayout;
@@ -252,9 +267,11 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 		resgisterControllerFrontend_ = new RegisterControllerFrontend(deviceIF_.get());
 		resgisterController6991_ = new RegisterController6991(deviceIF_.get());
 		testController_ = new TestsController(deviceIF_.get());
+		scpiController_ = new ScpiController(deviceIF_.get());
 		auto layout = new QVBoxLayout;
 		layout->addWidget(resgisterControllerFrontend_);
 		layout->addWidget(resgisterController6991_);
+		layout->addWidget(scpiController_);
 		auto hlayout = new QHBoxLayout;
 		hlayout->addWidget(testController_);
 		hlayout->addLayout(layout);

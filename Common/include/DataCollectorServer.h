@@ -13,6 +13,7 @@ class DataCollectorServer : public QObject {
 
 	void disconnected() {	
 		emit logMsg("Client disconnected!");
+		emit clientDisconnected();
 	}
 
 	void connected() {
@@ -37,4 +38,5 @@ signals:
 	void logMsg(QString const& msg) const;
 	void reportError(QString const& msg) const;
 	void newClientConnected(DataCollectorClient* client) const;
+	void clientDisconnected() const;
 };

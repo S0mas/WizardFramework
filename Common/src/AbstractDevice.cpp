@@ -28,3 +28,8 @@ void AbstractDevice::disconnect() const noexcept {
 	logMsg(QString("Disconnecting %1..").arg(nameId()));
 	connector_->disconnect();
 }
+
+void AbstractDevice::setConnectionMonitor(bool const state) const noexcept {
+	logMsg(QString("Turning connection monitro %1..").arg(state ? "ON" : "OFF"));
+	connector_->setConnectionMonitor(state);
+}

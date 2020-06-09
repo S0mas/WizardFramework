@@ -130,6 +130,12 @@ public:
 	auto inputResources() const noexcept {
 		return connector_->resources();
 	}
+
+	bool isConnected() const noexcept {
+		return connector_->isSessionAvailable();
+	}
+
+	void setConnectionMonitor(bool const state) const noexcept;
 public slots:
 	void handleConnectReq() const {
 		connect();

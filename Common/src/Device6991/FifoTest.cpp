@@ -5,7 +5,7 @@ FifoTest::FifoTest(Device6991 * devIF) : devIF_(devIF) {
 	dataFile_ = new QFile("FifoTestErrors.csv", devIF);
 }
 
-void FifoTest::validateData(std::vector<uint32_t> const & data) {
+void FifoTest::validateData(std::vector<uint32_t> const& data) {
 	for (auto const& sample : data) {
 		if (expected_++ != sample) {
 			if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
@@ -59,13 +59,15 @@ bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 	errors_ = 0;
 	expected_ = 0;
 	dataFile_->resize(0);
-	devIF_->dataStream_.clearDataFile();
-	if (!devIF_->dataStream_.isConnected()) {
+	devIF_->dataStreamFifo_.clearDataFile();
+	if (!devIF_->dataStreamFifo_.isConnected()) {
 		devIF_->reportError("Connection with data stream is not open/valid. Please open/fix it before starting the test.");
 		return false;
 	}
-	return devIF_->invokeCmd("*DBG 4") &&
-		devIF_->DFIFO_CSR_reg_.resetFifo() &&
+
+	devIF_->invokeCmd("*DBG 4");
+	devIF_->setScansNoPerDirectReadPacket(10);
+	return  devIF_->DFIFO_CSR_reg_.resetFifo() &&
 		devIF_->DFIFO_CSR_reg_.isFifoEmpty() &&
 		devIF_->DFIFO_CSR_reg_.enableTestMode() &&
 		configure(config) &&
@@ -73,9 +75,12 @@ bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 }
 
 bool FifoTest::stopTest() noexcept {
-	return devIF_->DEBUG_CSR_reg_.stopClock() &&
+	auto result = devIF_->DEBUG_CSR_reg_.stopClock() &&
 		devIF_->DFIFO_CSR_reg_.disableTestMode() &&
 		devIF_->invokeCmd("*DBG 0");
+	if(devIF_->dataStreamFifo_.isConnected())
+		devIF_->dataStreamFifo_.disconnect();
+	return result;
 }
 
 uint64_t FifoTest::errors() const noexcept {

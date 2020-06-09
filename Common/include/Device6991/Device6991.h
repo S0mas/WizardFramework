@@ -43,8 +43,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	friend class DlTests;
 	friend class ClTests;
 	friend class Device6132;
-	mutable std::mutex hwAccess_;
-	mutable QString response_;
 
 	FC_WR_QUEUE_EMP FC_WR_QUEUE_EMP_{ this };
 	PCI_ERR_STCTRL PCI_ERR_STCTRL_{ this };
@@ -92,41 +90,19 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	DlTests dlTest_{ this };
 	ClTests clTest_{ this };
 
-	DataStream<uint32_t> dataStream_{ this };
+	//Temporary solution TODO create proper stream only
+	DataStream<ScanFifo> dataStreamFifo_{ 0, this };
+	DataStream<Scan6111> dataStream6111_{ forwardingPort6111, this };
+	DataStream<Scan6132> dataStream6132_{ forwardingPort6132, this };
+	int withStreamShouldReconnectAfterFifoTest = 0;
+	int portToReconnectAfterFifoTest = 0;
+	QHostAddress addressToRecnnectAfterFifoTest;
+	///////////////////////////////////////////////////
 
-	bool enablePrint_ = true;
 	bool isAcqActive_ = false;
 
 	bool isAnyTestRunning() noexcept {
 		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
-	}
-
-	QString readError() const noexcept {
-		scpiCmd("SYSTem:ERR?");
-		return readResponse();
-	}
-
-	bool succeeded() const noexcept {
-		response_ = readResponse();
-		if (enablePrint_)
-			qDebug() << "Response:" << response_;
-		scpiCmd("*STB?");
-		std::bitset<8> stb = readResponse().toUInt(nullptr, 16);
-		bool eva = stb[2];
-		if (eva) {
-			auto error = readError();
-			emit reportError(error);
-			return false;
-		}
-		return true;
-	}
-
-	bool invokeCmd(const QString& cmd) const noexcept {
-		std::lock_guard lock(hwAccess_);
-		scpiCmd(cmd);
-		if(enablePrint_)
-			qDebug() << cmd;
-		return succeeded();
 	}
 
 	DeviceState extractStatus(QString const& stateData) noexcept {
@@ -147,55 +123,68 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	}
 
 	std::optional<DeviceState> status() noexcept {
-		return invokeCmd(QString("SYSTem:STATe?")) ? std::optional{extractStatus(response_)} : std::nullopt;
+		auto resp = invokeQuery(QString("SYSTem:STATe?"));
+		return resp ? std::optional{extractStatus(*resp)} : std::nullopt;
+	}
+
+	bool enableChannal(uint32_t const channelId, bool const state = true) noexcept {
+		return invokeCmd(QString("CONFigure%1:ENABled %2").arg(channelId).arg(state ? 1 : 0));
 	}
 
 	std::optional<ScanRateModel> scanRate() const noexcept {
-		if (invokeCmd(QString("CONFigure:SCAN:RATe?"))) 
-			return ScanRateModel::fromString(response_);
+		if (auto rate = invokeQuery(QString("CONFigure:SCAN:RATe?")); rate)
+			return ScanRateModel::fromString(*rate);
 		return std::nullopt;
 	}
 
-	void setScanRate(ScanRateModel const scanRate) const noexcept {
-		invokeCmd(QString("CONFigure:SCAN:RATe %1,%2").arg(scanRate.value_).arg(ScanRateUnitsEnum::toString(scanRate.units_)));
+	bool setScanRate(ScanRateModel const scanRate) const noexcept {
+		return invokeCmd(QString("CONFigure:SCAN:RATe %1,%2").arg(scanRate.value_).arg(ScanRateUnitsEnum::toString(scanRate.units_)));
 	}
 
 	std::optional<AcquisitionStartModeEnum::Type> startMode() const noexcept {
-		return invokeCmd(QString("CONFigure:TRIGger:STARt?")) ? std::optional(AcquisitionStartModeEnum::fromString(response_)) : std::nullopt;
+		if (auto mode = invokeQuery(QString("CONFigure:TRIGger:STARt?")); mode)
+			return std::optional(AcquisitionStartModeEnum::fromString(*mode));
+		return std::nullopt;
 	}
 
-	void setStartMode(AcquisitionStartModeEnum::Type const mode) const noexcept {
-		invokeCmd(QString("CONFigure:TRIGger:STARt '%1'").arg(AcquisitionStartModeEnum::toString(mode)));
+	bool setStartMode(AcquisitionStartModeEnum::Type const mode) const noexcept {
+		return invokeCmd(QString("CONFigure:TRIGger:STARt '%1'").arg(AcquisitionStartModeEnum::toString(mode)));
 	}
 
 	std::optional<PtpTime> ptpTime() const noexcept {
-		if (invokeCmd(QString("SYSTem:PTPTime?")))
-			return PtpTime::fromString(response_);
+		if (auto ptpTime = invokeQuery(QString("SYSTem:PTPTime?")); ptpTime)
+			return PtpTime::fromString(*ptpTime);
 		return std::nullopt;
 	}
 
 	std::optional<bool> stopOnError() const noexcept {
-		return invokeCmd(QString("CONFigure:STOPonerr?")) ? std::optional{ response_.toUInt() == 1} : std::nullopt;
+		if (auto stopOnError = invokeQuery(QString("CONFigure:STOPonerr?")); stopOnError)
+			return (*stopOnError).toUInt() == 1;
+		return std::nullopt;
 	}
 
-	void setStopOnError(bool const stopOnError) const noexcept {
-		invokeCmd(QString("CONFigure:STOPonerr %1").arg(stopOnError ? "ON" : "OFF"));
+	bool setStopOnError(bool const stopOnError) const noexcept {
+		return invokeCmd(QString("CONFigure:STOPonerr %1").arg(stopOnError ? 1 : 0));
 	}
 
 	std::optional<uint32_t> scansTreshold() const noexcept {
-		return invokeCmd(QString("CONFigure:SCAN:POST?")) ? std::optional{ response_.toUInt()} : std::nullopt;
+		if (auto scanTreshold = invokeQuery(QString("CONFigure:SCAN:POST?")); scanTreshold)
+			return (*scanTreshold).toUInt();
+		return std::nullopt;
 	}
 
-	void setScansTreshold(uint32_t const scansTreshold) const noexcept {
-		invokeCmd(QString("CONFigure:SCAN:POST %1").arg(scansTreshold));
+	bool setScansTreshold(uint32_t const scansTreshold) const noexcept {
+		return invokeCmd(QString("CONFigure:SCAN:POST %1").arg(scansTreshold));
 	}
 
 	std::optional<bool> timestamps() const noexcept {
-		return invokeCmd(QString("CONFigure:SCAN:TIMestamp?")) ? std::optional{ response_.toUInt() == 1} : std::nullopt;
+		if (auto timestamp = invokeQuery(QString("CONFigure:SCAN:TIMestamp?")); timestamp)
+			return (*timestamp).toUInt() == 1;
+		return std::nullopt;
 	}
 
-	void setTimeStamps(bool const mode) const noexcept {
-		invokeCmd(QString("CONFigure:SCAN:TIMestamp %1").arg(mode ? "ON" : "OFF"));
+	bool setTimeStamps(bool const mode) const noexcept {
+		return invokeCmd(QString("CONFigure:SCAN:TIMestamp %1").arg(mode ? 1 : 0));
 	}
 
 	std::optional<DeviceState> channelState() const noexcept { // TODO
@@ -203,7 +192,9 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	}
 
 	std::optional<Temperature> temperature(TemperaturesEnum::Type const source) const noexcept {
-		return invokeCmd(QString("SYSTem:TEMPerature? '%1'").arg(TemperaturesEnum::toString(source))) ? std::optional{Temperature{response_.toUInt(), source}} : std::nullopt;//TODO check temp response format
+		if (auto temp = invokeQuery(QString("SYSTem:TEMPerature? '%1'").arg(TemperaturesEnum::toString(source))); temp)
+			return Temperature{ (*temp).toUInt(), source };//TODO check temp response format
+		return std::nullopt;
 	}
 
 	std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> temperatures() const noexcept {
@@ -214,11 +205,13 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	}
 
 	std::optional<FansModeEnum::Type> fansMode() const noexcept {
-		return invokeCmd(QString("SYSTem:FAN?")) ? std::optional{FansModeEnum::fromString(response_)} : std::nullopt;
+		if (auto fansMode = invokeQuery(QString("SYSTem:FAN?")); fansMode)
+			return FansModeEnum::fromString(*fansMode);
+		return std::nullopt;
 	}
 
-	void setFansMode(FansModeEnum::Type const mode) const noexcept {
-		invokeCmd(QString("SYSTem:FAN %1").arg(mode));
+	bool setFansMode(FansModeEnum::Type const mode) const noexcept {
+		return invokeCmd(QString("SYSTem:FAN %1").arg(mode));
 	}
 
 	std::optional<ClockSourceEnum::Type> clockSource() const noexcept { // TODO
@@ -230,32 +223,43 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	}
 
 	std::optional<PtpTime> ptpAlarm() const noexcept {
-		if (invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm?"))) {
-			auto list = response_.split(',');
-			return std::optional(PtpTime{ list[0].toUInt(), list[1].toUInt() });
+		if (auto ptpAlarm = invokeQuery(QString("CONFigure:TRIGger:PTP:ALARm?")); ptpAlarm) {
+			auto list = (*ptpAlarm).split(',');
+			return PtpTime{ list[0].toUInt(), list[1].toUInt() };
 		}
 		return std::nullopt;
 	}
 
-	void setPtpAlarm(PtpTime const alarmTime) const noexcept {
-		invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm %1,%2").arg(alarmTime.seconds_).arg(alarmTime.nanoseconds_));
+	bool setPtpAlarm(PtpTime const alarmTime) const noexcept {
+		return invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm %1,%2").arg(alarmTime.seconds_).arg(alarmTime.nanoseconds_));
 	}
 
 	std::optional<uint32_t> scansNoPerDirectReadPacket() const noexcept {
-		return invokeCmd(QString("CONFigure:DIRectread?")) ? std::optional{ response_.toUInt() } : std::nullopt;
+		if (auto scansPerPacket = invokeQuery(QString("CONFigure:DIRectread?")); scansPerPacket)
+			return (*scansPerPacket).toUInt();
+		return std::nullopt;
 	}
 
-	void setScansNoPerDirectReadPacket(uint32_t const scansNo) const noexcept {
-		invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
+	bool setScansNoPerDirectReadPacket(uint32_t const scansNo) const noexcept {
+		return invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 	}
 public:
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF,  QObject* parent = nullptr) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
-		QObject::connect(dataStream_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
-		QObject::connect(dataStream_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
-		QObject::connect(dataStream_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
-		QObject::connect(dataStream_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
+		QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
+		QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
+		dataStreamFifo_.addCallback([this](HeaderPart6991 const& header, SignalPacketData<ScanFifo> const& data) { if (fifoTest_.isRunning()) for (auto const& scan : data.scans_)fifoTest_.validateData(scan.samples_); });
 
-		dataStream_.addCallback([this](HeaderPart const& header, SignalDataPacket::Data<uint32_t> const& data) { if (fifoTest_.isRunning()) fifoTest_.validateData(data.samples_); });
+		QObject::connect(dataStream6111_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(dataStream6111_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(dataStream6111_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
+		QObject::connect(dataStream6111_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
+
+		QObject::connect(dataStream6132_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
+		QObject::connect(dataStream6132_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
+		QObject::connect(dataStream6132_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
+		QObject::connect(dataStream6132_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
 	}
 	~Device6991() override = default;
 
@@ -272,12 +276,14 @@ public:
 		return ACQ_CSR_reg_.isAcqActive();
 	}
 	std::optional<uint32_t> controllerId() const noexcept {
-		return invokeCmd("SYSTem:LOCK?") ? std::optional{ response_.toUInt()} : std::nullopt;
+		if (auto lock = invokeQuery(QString("SYSTem:LOCK?")); lock)
+			return (*lock).toUInt();
+		return std::nullopt;
 	}
 public slots:
 	void deviceStateRequest() noexcept {
-		if (invokeCmd("SYSTem:STATe?")) {
-			auto devState = extractStatus(response_);
+		if (auto st = invokeQuery("SYSTem:STATe?"); st) {
+			auto devState = extractStatus(*st);
 			devState.setControllerId(controllerId());
 			emit state(devState);
 		}	
@@ -370,18 +376,21 @@ public slots:
 	}
 
 	std::optional<uint32_t> readFpgaRegister(uint32_t const address) const noexcept {
-		return invokeCmd(QString("*HW:FPGA? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
+		if (auto reg = invokeQuery(QString("*HW:FPGA? #h%1").arg(toHex(address, 8))); reg)
+			return (*reg).toUInt(nullptr, 16);
+		return std::nullopt;
 	}
 
 	std::optional<uint32_t> readFecRegister(uint32_t const fcId, uint32_t const address) const noexcept {
-		return invokeCmd(QString("*HW:FEC? %1, #h%2").arg(fcId).arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
+		if (auto reg = invokeQuery(QString("*HW:FEC? %1, #h%2").arg(fcId).arg(toHex(address, 8))); reg)
+			return (*reg).toUInt(nullptr, 16);
+		return std::nullopt;
 	}
 
 	std::optional<std::pair<uint32_t, uint32_t>> readBothFecRegisters(uint32_t const address) const noexcept {
-		auto success = invokeCmd(QString("*HW:FEC? 0, #h%1").arg(toHex(address, 8)));
-		if (success) {
-			auto list = response_.split(';');
-			return std::optional{ std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)} };
+		if (auto regs = invokeQuery(QString("*HW:FEC? 0, #h%1").arg(toHex(address, 8))); regs) {
+			auto list = (*regs).split(';');
+			return std::pair{list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16)};
 		}
 		return std::nullopt;
 	}
@@ -391,11 +400,9 @@ public slots:
 	}
 
 	std::optional<uint32_t> readCpuRegister(uint32_t const address) const noexcept {
-		return invokeCmd(QString("*HW:REG? #h%1").arg(toHex(address, 8))) ? std::optional{ response_.toUInt(nullptr, 16) } : std::nullopt;
-	}
-
-	void setStoreData(bool const state) noexcept {
-		dataStream_.setStoreData(state);
+		if (auto reg = invokeQuery(QString("*HW:REG? #h%1").arg(toHex(address, 8))); reg)
+			return (*reg).toUInt(nullptr, 16);
+		return std::nullopt;
 	}
 
 	bool testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds = 0x7FFFFFFF, uint32_t const breakTimeInMilliseconds = 0) {
@@ -409,10 +416,6 @@ public slots:
 		}
 		reportError("Timeout.");
 		return false;
-	}
-
-	void enableScpiCommandsPrints(bool const enable) noexcept {
-		enablePrint_ = enable;
 	}
 
 	std::optional<FecType::Type> readFecType(FecIdType::Type const fecId) noexcept {
@@ -437,6 +440,17 @@ public slots:
 		return fecType && DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fecId);
 	}
 public slots:
+	void handleSetStoreDataReq(bool const state) noexcept {
+		dataStreamFifo_.setStoreData(state);
+		dataStream6111_.setStoreData(state);
+		dataStream6132_.setStoreData(state);
+	}
+
+	void handleSetForwardDataReq(bool const state) noexcept {
+		dataStream6111_.setForwardData(state);
+		dataStream6132_.setForwardData(state);
+	}
+
 	void handleFpgaRegisterReadReq(uint32_t const address) const noexcept {
 		if (auto reg = readFpgaRegister(address); reg) {
 			emit fpgaRegisterReadResp(*reg);
@@ -498,18 +512,40 @@ public slots:
 			emit controlReleased();
 	}
 
+	//temporary solution TODO create and mantain only one stream
 	void handleConnectDataStreamReq(int const dataStreamId) {
 		auto ipResource = inputResources().back();
-		dataStream_.connect({ ipResource->load() }, 16100 + dataStreamId);
+		auto type1 = readFecType(FecIdType::_1);
+		auto type2 = readFecType(FecIdType::_2);
+		if (type1 && *type1 == FecType::_6111)
+			dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
+		else if (type1 && *type1 == FecType::_6132)
+			dataStream6132_.connect({ ipResource->load() }, 16100 + dataStreamId);
+		else if (type2 && *type2 == FecType::_6111)
+			dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
+		else if (type2 && *type2 == FecType::_6132)
+			dataStream6132_.connect({ ipResource->load() }, 16100 + dataStreamId);
+		else
+			reportError("Data stream connection is not supported if there is no frontend cards recognized!");
 	}
 
+	//temporary solution TODO create and mantain only one stream
 	void handleDisconnectDataStreamReq() {
-		dataStream_.disconnect();
+		if (dataStream6111_.isConnected())
+			dataStream6111_.disconnect();
+		else if (dataStream6132_.isConnected())
+			dataStream6132_.disconnect();
+		else if (dataStreamFifo_.isConnected())
+			dataStreamFifo_.disconnect();
+		return;
 	}
 
-	void handleConfigureDeviceReq(Configuration6991 const& config) const {
+	void handleConfigureDeviceReq(Configuration6991 const& config) {
+		invokeCmd("*DBG 0");
 		if (config.scanRate_)
 			setScanRate(*config.scanRate_);
+		if (config.scansPerDirectReadPacket_)
+			setScansNoPerDirectReadPacket(*config.scansPerDirectReadPacket_);
 		if (config.fansMode_)
 			setFansMode(*config.fansMode_);
 		if (config.startMode_.mode_) {
@@ -521,14 +557,26 @@ public slots:
 			setStopOnError(*config.stopMode_.stopOnError_);
 		if (config.stopMode_.scansThreshold_)
 			setScansTreshold(*config.stopMode_.scansThreshold_);
-		if (config.scansPerDirectReadPacket_)
-			setScansNoPerDirectReadPacket(*config.scansPerDirectReadPacket_);
 		if (config.timestamps_)
 			setTimeStamps(*config.timestamps_);
+		if (auto fecType = readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
+			for (auto i = 1; i < 33; ++i)
+				enableChannal(i);
+		else if (auto fecType = readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
+			for (auto i = 1; i < 33; ++i)
+				enableChannal(i);
+		if (auto fecType = readFecType(FecIdType::_1); fecType && *fecType == FecType::_6111)
+			for (auto i = 1; i < 256; ++i)
+				enableChannal(i);
+		else if (auto fecType = readFecType(FecIdType::_2); fecType && *fecType == FecType::_6111)
+			for (auto i = 1; i < 256; ++i)
+				enableChannal(i);
+		
+		
 	}
 
 	void handleStartAcqReq() {
-		if (auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && invokeCmd("MEASure:ASYNc")) {
+		if (/*auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && */invokeCmd("MEASure:ASYNc")) {
 			isAcqActive_ = true;
 			emit acquisitionStarted();
 		}
@@ -547,8 +595,32 @@ public slots:
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			setScansNoPerDirectReadPacket(10);
 			dlTest_.startTest(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1), request.clockFreq_);
-			if (request.model.at(TestTypeEnum::FIFO))
+
+			if (request.model.at(TestTypeEnum::FIFO)) {
+///// temporary solution TODO remove this and create only valid stream
+				if (dataStream6111_.isConnected()) {
+					portToReconnectAfterFifoTest = dataStream6111_.peerPort();
+					addressToRecnnectAfterFifoTest = dataStream6111_.peerAddress();
+					withStreamShouldReconnectAfterFifoTest = 6111;
+					dataStream6111_.disconnect();
+					dataStreamFifo_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
+					qDebug() << "6111 was connected!";
+				}
+				else if (dataStream6132_.isConnected()) {
+					portToReconnectAfterFifoTest = dataStream6132_.peerPort();
+					addressToRecnnectAfterFifoTest = dataStream6132_.peerAddress();
+					withStreamShouldReconnectAfterFifoTest = 6132;
+					dataStream6132_.disconnect();
+					dataStreamFifo_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
+					qDebug() << "6132 was connected!";
+				}
+				else
+					qDebug() << "no data stream connected!";
+
+//////////////////////////////////////////////////////////////////////
 				fifoTest_.startTest(request.fifoTestConfig_);
+			}
+
 			clTest_.startTest(request.model.at(TestTypeEnum::CL0), request.model.at(TestTypeEnum::CL1));
 			emit testsStarted();
 			invokeCmd("SYSTem:LOCK 0");
@@ -560,6 +632,13 @@ public slots:
 		if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 			clTest_.stopTest();
 			fifoTest_.stopTest();
+			if (withStreamShouldReconnectAfterFifoTest != 0) {
+				if (withStreamShouldReconnectAfterFifoTest == 6111)
+					dataStream6111_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
+				else if (withStreamShouldReconnectAfterFifoTest == 6132) 
+					dataStream6132_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
+				withStreamShouldReconnectAfterFifoTest = 0;
+			}
 			dlTest_.stopTest();		
 			invokeCmd("SYSTem:LOCK 0");
 		}

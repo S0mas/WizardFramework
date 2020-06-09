@@ -10,10 +10,9 @@ bool AbstractHardwareConnector::isSessionAvailable() const noexcept {
 }
 
 void AbstractHardwareConnector::sendConnectionStatus() const noexcept {
-	if (monitorConnection_) {
+	emit connectionStatus(isSessionAvailable() && isConnectionPossible());
+	if (monitorConnection_)
 		QTimer::singleShot(2000, this, &AbstractHardwareConnector::sendConnectionStatus);
-		emit connectionStatus(isSessionAvailable() && isConnectionPossible());
-	}
 }
 
 AbstractHardwareConnector::AbstractHardwareConnector(QObject* parent) noexcept : QObject(parent)  {}
@@ -27,7 +26,6 @@ void AbstractHardwareConnector::connect() noexcept {
 	connectImpl();
 	if (isSessionAvailable()) {
 		logMsg(QString("Connection established, viSession: %1").arg(vi()));
-		monitorConnection_ = true;
 		sendConnectionStatus();
 	}
 	else
@@ -38,8 +36,8 @@ void AbstractHardwareConnector::disconnect() noexcept {
 	if (isSessionAvailable()) {
 		disconnectImpl();
 		clearSession();
-		emit connectionStatus(false);
 		monitorConnection_ = false;
+		sendConnectionStatus();		
 	}
 }
 
