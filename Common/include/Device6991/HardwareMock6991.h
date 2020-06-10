@@ -151,14 +151,15 @@ class HardwareMock6991 : public QObject {
 	}
 
 	int packetNo_ = 0;
-	void sendMockData(QTcpSocket* socket) {
+
+	void mock6111(QTcpSocket* socket) {
 		uint32_t channelsToMeasure = 256;
 		uint32_t sampleSize = 1;
-		uint32_t scans = 5;
-	
+		uint32_t scans = 10;
+
 		HeaderPart6991 header_;
 		header_.id_ = 0x6111;
-		header_.options_ = 0;
+		header_.options_ = 1;
 		header_.runningNumber_ = packetNo_++;
 		header_.numberOfScans_ = scans;
 		header_.numberOfSamplesPerScan_ = channelsToMeasure;
@@ -167,16 +168,64 @@ class HardwareMock6991 : public QObject {
 		header_.status2_ = { 0 };
 
 		SignalPacket<Scan6111> packet(header_);
-
-		for (auto& scan : packet.data_.scans_)
+		static int seconds2 = 0;
+		for (auto& scan : packet.data_.scans_) {
+			if (header_.options_) {
+				scan.ts_.seconds_ = seconds2++;
+				scan.ts_.nanoseconds_ = 123456789;
+			}
 			for (auto& sample : scan.samples_)
 				sample.raw_ = QRandomGenerator::global()->bounded(0xFF);
+		}
+
 		if (socket->isOpen()) {
 			QDataStream stream(socket);
 			stream.setByteOrder(QDataStream::LittleEndian);
 			stream << header_;
 			stream << packet.data_;
 		}
+	}
+
+	void mock6132(QTcpSocket* socket) {
+		uint32_t channelsToMeasure = 32;
+		uint32_t sampleSize = 4;
+		uint32_t scans = 10;
+
+		HeaderPart6991 header_;
+		header_.id_ = 0x6132;
+		header_.options_ = 1;
+		header_.runningNumber_ = packetNo_++;
+		header_.numberOfScans_ = scans;
+		header_.numberOfSamplesPerScan_ = channelsToMeasure;
+		header_.dataSize_ = header_.numberOfSamplesPerScan_ * scans * sampleSize;
+		header_.status1_ = { 0 };
+		header_.status2_ = { 0 };
+
+		SignalPacket<Scan6132> packet(header_);
+		static int seconds1 = 0;
+		for (auto& scan : packet.data_.scans_) {
+			if (header_.options_) {
+				scan.ts_.seconds_ = seconds1++;
+				scan.ts_.nanoseconds_ = 123456789;
+			}
+			for (auto& sample : scan.samples_)
+				sample = QRandomGenerator::global()->bounded(-5, 5);
+		}
+
+		if (socket->isOpen()) {
+			QDataStream stream(socket);
+			stream.setByteOrder(QDataStream::LittleEndian);
+			stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+			stream << header_;
+			stream << packet.data_;
+		}
+	}
+
+	void sendMockData(QTcpSocket* socket) {
+		//REMEMBER TO CHANGE fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111  or = 0xbbbb6132;
+		//					 fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = SAME!!!!!!!! (line 230 and 231)
+		//mock6132(socket); 
+		mock6111(socket);
 	}
 
 public:
