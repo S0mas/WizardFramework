@@ -198,12 +198,6 @@ using Scan6111 = Scan<_6111_SamplesPack_8, Timestamp6991>;
 using Scan6132 = Scan<_6132Sample, Timestamp6991>;
 using ScanFifo = Scan<uint32_t, Timestamp6991>;
 
-enum DeviceType {
-	_6111 = 6111,
-	_6132 = 6132,
-	INVALID = -1
-};
-
 struct Status1Part {
 	uint32_t data_;
 	std::array<bool, 4> linksConnectionStatus() const noexcept {
