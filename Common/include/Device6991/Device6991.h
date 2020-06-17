@@ -105,19 +105,23 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
 	}
 
+	void showWarningAboutCommunicationWithDeviceDuringAcq() const noexcept {
+		sender_->waitForConfirmation("Please, keep in mind that any type of communication with the device during acquisition will have impact on the performance of the whole process.");
+	}
+
 	DeviceState extractStatus(QString const& stateData) noexcept {
 		auto list = stateData.split(',');
 		DeviceState state;
 		state.setState(DeviceStateEnum::fromString(list[0]));
 		//TODO UNCOMMENT WHEN RDY
-		//state.set(list[1]);
-		//if (auto acqRealState = isAcquisitionActive(); acqRealState) {
-		//	if (*acqRealState && !isAcqActive_) 
-		//		emit acquisitionStarted();
-		//	else if (!*acqRealState && isAcqActive_) 
-		//		emit acquisitionStopped();
-		//	isAcqActive_ = *acqRealState;
-		//}
+		state.set(list[1]);
+		if (auto acqRealState = isAcquisitionActive(); acqRealState) {
+			if (*acqRealState && !isAcqActive_) 
+				emit acquisitionStarted();
+			else if (!*acqRealState && isAcqActive_) 
+				emit acquisitionStopped();
+			isAcqActive_ = *acqRealState;
+		}
 			
 		return state;
 	}
@@ -282,10 +286,9 @@ public:
 	}
 public slots:
 	void deviceStateRequest() noexcept {
-		if (auto st = invokeQuery("SYSTem:STATe?"); st) {
-			auto devState = extractStatus(*st);
-			devState.setControllerId(controllerId());
-			emit state(devState);
+		if (auto st = status(); st) {
+			st->setControllerId(controllerId());
+			emit state(*st);
 		}	
 	}
 
@@ -494,7 +497,7 @@ public slots:
 			emit reportError(QString("Failed to write fec register, fecId:%1, address:%2, data:%3").arg(fecId).arg(toHex(address, 8), toHex(data, 8)));
 	}
 			
-	//TODO when implementation will be ready on the device
+	//TODO uncomment when implementation will be ready on the device
 	void handleFecStateReq(FecIdType::Type const fecId) const noexcept {
 		//if (auto present = BOARD_CSR1_reg_.isFecPresent(fecId); present && *present)
 		emit fecEnabledResp(fecId);
@@ -576,8 +579,9 @@ public slots:
 	}
 
 	void handleStartAcqReq() {
+		showWarningAboutCommunicationWithDeviceDuringAcq();
 		if (/*auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && */invokeCmd("MEASure:ASYNc")) {
-			isAcqActive_ = true;
+			isAcqActive_ = true;	
 			emit acquisitionStarted();
 		}
 	}

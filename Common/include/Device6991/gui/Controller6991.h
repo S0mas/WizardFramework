@@ -30,6 +30,7 @@
 #include "TestsController.h"
 #include "Controller6991.h"
 #include "RegisterController.h"
+#include "../../UserActionRequestController.h"
 
 class ConnectController;
 class Controller6132;
@@ -70,12 +71,15 @@ class Controller6991 : public QGroupBox {
 	bool dbgMode_ = false;
 	QStringList streams = { "1", "2", "3", "4" };
 	QThread* deviceThread_ = new QThread(this);
+	UserActionRequestController* actionRequestController_ = new UserActionRequestController(this);
+	QTimer* autoRefreshTimer_ = new QTimer(this);
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
 	void addController6132IfNeeded() noexcept;
 	Configuration6991 model() const noexcept;
 	void showError(QString const&) noexcept;
+	void showInformationToConfirmFromDevice(QString const&, MyPromiseVoid*) noexcept;
 	uint32_t id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;

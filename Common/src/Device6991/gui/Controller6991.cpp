@@ -24,22 +24,21 @@ void Controller6991::createConnections() noexcept {
 	connect(this, &Controller6991::configureDeviceReq, deviceIF_.get(), &Device6991::handleConfigureDeviceReq);
 	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetStoreDataReq);
 	connect(forwardDataCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetForwardDataReq);
+	connect(actionRequestController_, &UserActionRequestController::requestConfirmationReceived, this, &Controller6991::showInformationToConfirmFromDevice);
+	connect(autoRefreshTimer_, &QTimer::timeout, deviceIF_.get(), &Device6991::deviceStateRequest);
+	connect(statusAutoRefreshCheckBox_, &QCheckBox::stateChanged,
+		[this](int const state) {
+			state == Qt::Checked ? autoRefreshTimer_->start(500) : autoRefreshTimer_->stop();
+		}
+	);
+	connect(resfreshButton_, &QPushButton::clicked, deviceIF_.get(), &Device6991::deviceStateRequest);
 
 	connect(setModeButton_, &QPushButton::clicked,
 		[this]() {
 			if (comboBoxMode_->currentData().toInt() == ControlModeEnum::CONTROLLER)
 				emit takeControlReq(id());
 			else
-				emit releaseControlReq();
-
-			auto autoRefreshTimer = new QTimer(this);
-			connect(autoRefreshTimer, &QTimer::timeout, deviceIF_.get(), &Device6991::deviceStateRequest);
-			connect(statusAutoRefreshCheckBox_, &QCheckBox::stateChanged,
-				[autoRefreshTimer](int const state) {
-					state == Qt::Checked ? autoRefreshTimer->start(500) : autoRefreshTimer->stop();
-				}
-			);
-			connect(resfreshButton_, &QPushButton::clicked, deviceIF_.get(), &Device6991::deviceStateRequest);
+				emit releaseControlReq();		
 		}
 	);
 	initializeStateMachine();
@@ -165,6 +164,11 @@ void Controller6991::showError(QString const& msg) noexcept {
 	QMessageBox::critical(this, "Error", QString("Error Occured: %1").arg(msg));
 }
 
+void Controller6991::showInformationToConfirmFromDevice(QString const& msg, MyPromiseVoid* barrierPromise) noexcept {
+	QMessageBox::information(this, "Information", msg);
+	barrierPromise->set();
+}
+
 uint32_t Controller6991::id() const noexcept {
 	return idEdit_->value();
 }
@@ -192,6 +196,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	connectController_(new ConnectController(deviceIF_.get(), this)),
 	dbgMode_(dbgMode) {
 	deviceIF_->enableScpiCommandsPrints(true);
+	deviceIF_->setSender(actionRequestController_->createSender());
 	deviceIF_->moveToThread(deviceThread_);
 	deviceThread_->start();
 
