@@ -11,6 +11,12 @@ inline QString toHex(uint32_t const value, uint32_t const width = 2) noexcept {
 	return QString("0x%1").arg(value, width, 16, QLatin1Char('0'));
 }
 
+enum DeviceType {
+	_6111 = 6111,
+	_6132 = 6132,
+	INVALID = -1
+};
+
 struct ControlModeEnum {
 	enum Type {
 		LISTENER,

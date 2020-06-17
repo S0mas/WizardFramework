@@ -224,8 +224,8 @@ class HardwareMock6991 : public QObject {
 	void sendMockData(QTcpSocket* socket) {
 		//REMEMBER TO CHANGE fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111  or = 0xbbbb6132;
 		//					 fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = SAME!!!!!!!! (line 242 and 243)
-		//mock6132(socket); 
-		mock6111(socket);
+		mock6132(socket); 
+		//mock6111(socket);
 	}
 public:
 	HardwareMock6991(QObject* parent = nullptr) : QObject(parent) {
@@ -239,8 +239,8 @@ public:
 		fpgaRegs_[RegistersEnum::DFIFO_CSR_reg] = 8191;
 		fpgaRegs_[RegistersEnum::ACQ_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::BOARD_CSR1_reg] = 0x0000001F;
-		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111;
-		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6111;
+		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
+		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
 		checkTestsRegsTimer->start(500);
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
