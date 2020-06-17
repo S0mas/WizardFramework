@@ -286,10 +286,20 @@ public:
 	}
 public slots:
 	void deviceStateRequest() noexcept {
-		if (auto st = status(); st) {
-			st->setControllerId(controllerId());
-			emit state(*st);
-		}	
+		if (dataStream6111_.isConnected() && isAcqActive_)
+			emit state(dataStream6111_.deviceState());
+		else if (dataStream6132_.isConnected() && isAcqActive_) {
+			emit state(dataStream6132_.deviceState());
+		}
+		else if (dataStreamFifo_.isConnected() && isAcqActive_) {
+			emit state(dataStreamFifo_.deviceState());
+		}
+		else {
+			if (auto st = status(); st) {
+				st->setControllerId(controllerId());
+				emit state(*st);
+			}
+		}
 	}
 
 	void controllerKeyRequest() const noexcept {

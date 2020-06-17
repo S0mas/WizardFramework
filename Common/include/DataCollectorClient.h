@@ -57,7 +57,7 @@ public:
 
 	bool isConnected() const noexcept {
 		std::lock_guard lock(socketAccess_);
-		return socket_->isOpen();
+		return socket_->state() == QAbstractSocket::ConnectedState;
 	}
 
 	void showDataAvailable() {

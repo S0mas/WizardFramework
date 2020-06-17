@@ -143,11 +143,11 @@ class HardwareMock6991 : public QObject {
 	}
 
 	void startDataSending() const noexcept {
-		//dataSendingTimer->start(100);
+		dataSendingTimer->start(100);
 	}
 
 	void stopDataSending() const noexcept {
-		//dataSendingTimer->stop();
+		dataSendingTimer->stop();
 	}
 
 	int packetNo_ = 0;
@@ -232,7 +232,13 @@ public:
 		fpgaRegs_[ERROR_DEBUG_PRIVATE_REGISTER] = 0;
 		auto checkTestsRegsTimer = new QTimer(this);
 		connect(timer_, &QTimer::timeout, this, &HardwareMock6991::updateCounters);
-		connect(dataSendingTimer, &QTimer::timeout, [this]() {for (auto socket : sockets_) if (socket) { sendMockData(socket); }});
+		connect(dataSendingTimer, &QTimer::timeout, 
+			[this]() {
+				for (auto socket : sockets_) 
+					if (socket) 
+						sendMockData(socket); 
+			}
+		);
 		connect(checkTestsRegsTimer, &QTimer::timeout, this, &HardwareMock6991::checkTestsRegs);
 		fpgaRegs_[RegistersEnum::CL_SPI_CSR_reg] = 0;
 		fpgaRegs_[RegistersEnum::DL_SPI_CSR1_reg] = 0;
@@ -263,7 +269,6 @@ public:
 				}
 			);
 		}
-		dataSendingTimer->start(100);
 	}
 
 	QString readError() noexcept {

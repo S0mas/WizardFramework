@@ -210,25 +210,24 @@ struct Status1Part {
 		return bits[28 + linkIndex];
 	}
 
-	uint8_t lockKey() const noexcept {
-		return data_ && 0xFF;
+	bool fifoUnderflow() const noexcept {
+		return data_ & (1 << 16);
+	}
+
+	bool fifoOverflow() const noexcept {
+		return data_ & (1 << 17);
 	}
 };
 
 struct Status2Part {
 	uint32_t data_;
-	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		std::bitset<32> bits(data_);
-		return { bits[31], bits[30], bits[29], bits[28] };
-	}
-
-	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
-		std::bitset<32> bits(data_);
-		return bits[28 + linkIndex];
-	}
 
 	uint8_t lockKey() const noexcept {
-		return data_ && 0xFF;
+		return data_ & 0xFF000000;
+	}
+
+	uint16_t fifoCount() const noexcept {
+		return data_ & 0xFFFF;
 	}
 };
 
@@ -241,6 +240,17 @@ struct HeaderPart6991 {
 	uint16_t numberOfSamplesPerScan_;
 	Status1Part status1_;
 	Status2Part status2_;
+	DeviceState state() const noexcept {
+		DeviceState state;
+		state.setFifoUnderflow(status1_.fifoUnderflow());
+		state.setFifoOverflow(status1_.fifoOverflow());
+		state.setLinksConnectionStatus(status1_.linksConnectionStatus());
+		state.setControllerId(status2_.lockKey());
+		state.setNumberOfScansInFifo(status2_.fifoCount());
+		state.setState(DeviceStateEnum::ACQUISITION);
+		state.setAcquisitionStoppedOnError(false);
+		return state;
+	}
 };
 
 inline QDataStream& operator<<(QDataStream& stream, HeaderPart6991 const& header) {

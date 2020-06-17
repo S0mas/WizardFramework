@@ -279,7 +279,7 @@ public:
 		navigator = root->findCmd(std::vector<std::string>({ "MEASure" }));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ASYNc", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.startAcquisition();
+				QMetaObject::invokeMethod(&devMock_, &HardwareMock6991::startAcquisition, Qt::QueuedConnection);
 				return 0;
 			}
 		)));
@@ -291,7 +291,7 @@ public:
 		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ABORt", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
-				devMock_.stopAcquisition();
+				QMetaObject::invokeMethod(&devMock_, &HardwareMock6991::stopAcquisition, Qt::QueuedConnection);
 				return 0;
 			}
 		)));

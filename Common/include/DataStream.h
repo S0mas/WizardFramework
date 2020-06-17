@@ -5,6 +5,7 @@
 #include <QDataStream>
 #include <QString>
 #include <QFile>
+#include <mutex>
 #include "PacketReading.h"
 #include "DataCollectorClient.h"
 #include "LoggingObject.h"
@@ -14,12 +15,13 @@ class DataStream {
 	PacketReading<HeaderPart6991, ScanType> readingStrat_;
 	DataCollectorClient* client_;
 	QTcpSocket* forwardSocket_;
-
+	mutable std::mutex stateUpdateLock_;
+	DeviceState state_;
 	QFile* dataFile_;
 	
 	bool storeData_ = false;
 	bool forwardData_ = false;
-	uint32_t forwardingPort_ = 0c;
+	uint32_t forwardingPort_ = 0;
 	std::vector<std::function<void(HeaderPart6991 const&, SignalPacketData<ScanType> const&)>> callbacks_;
 	
 	void storeData(SignalPacketData<ScanType> const& data) noexcept {
@@ -33,7 +35,7 @@ class DataStream {
 
 	void forwardData(HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) noexcept {
 		if (forwardData_) {
-			if(forwardSocket_->state() != QTcpSocket::ConnectedState)
+			if(forwardSocket_->state() == QTcpSocket::SocketState::UnconnectedState)
 				forwardSocket_->connectToHost(QHostAddress("127.0.0.1"), forwardingPort_);
 
 			QDataStream stream(forwardSocket_);
@@ -47,6 +49,11 @@ class DataStream {
 		}
 	}
 
+	void updateDeviceState(HeaderPart6991 const& header) noexcept {
+		std::lock_guard l(stateUpdateLock_);
+		state_ = header.state();
+	}
+
 	void doWithData(HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) {
 		for (auto const& callback : callbacks_)
 			callback(header, data);
@@ -58,6 +65,7 @@ public:
 		readingStrat_.setEndianness(QDataStream::LittleEndian);
 		readingStrat_.setDataReadingCallback([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { doWithData(header, data); });
 		callbacks_.push_back([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { storeData(data); });	
+		callbacks_.push_back([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { updateDeviceState(header); });	
 		if (forwardingPort_ != 0) {
 			forwardSocket_ = new QTcpSocket(membersParent);
 			callbacks_.push_back([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { forwardData(header, data); });
@@ -74,7 +82,7 @@ public:
 		client_->disconnect();
 	}
 
-	bool isConnected() noexcept {
+	bool isConnected() const noexcept {
 		return client_->isConnected();
 	}
 
@@ -97,11 +105,6 @@ public:
 	void addCallback(std::function<void(HeaderPart6991 const&, SignalPacketData<ScanType> const&)> const& callback) {
 		callbacks_.push_back(callback);
 	}
-	//TODO: MAKE BETTER SOLUTION IT IS WORKAROUND
-	void removeFifoCallback() {
-		if (callbacks_.size() == 3)
-			callbacks_.pop_back();
-	}
 
 	DataCollectorClient* client() {
 		return client_;
@@ -113,5 +116,10 @@ public:
 
 	QHostAddress peerAddress() const noexcept {
 		return client_->peerAddress();
+	}
+
+	DeviceState deviceState() const noexcept {
+		std::lock_guard l(stateUpdateLock_);
+		return state_;
 	}
 };
