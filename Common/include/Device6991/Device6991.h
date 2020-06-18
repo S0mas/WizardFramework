@@ -98,8 +98,30 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	int portToReconnectAfterFifoTest = 0;
 	QHostAddress addressToRecnnectAfterFifoTest;
 	///////////////////////////////////////////////////
-
+	
 	bool isAcqActive_ = false;
+
+	QString toChannelList(std::vector<uint32_t> const& channelIds) const noexcept {
+		auto sortedIds = channelIds;
+		std::sort(sortedIds.begin(), sortedIds.end());
+		QString channels;
+		for (int i = 0; i < channelIds.size(); ++i) {
+			uint32_t startChannel = channelIds[i];
+			uint32_t nextChannel = i+1 == channelIds.size() ? 0 : channelIds[i+1];
+			uint32_t endChannel = startChannel;
+			while (i < (channelIds.size() - 1) && ((endChannel + 1) == nextChannel)) {
+				endChannel = nextChannel;
+				if(++i < (channelIds.size() - 1))
+					nextChannel = channelIds[i + 1];
+			}
+			channels += QString::number(startChannel);
+			if (startChannel != endChannel && startChannel != channelIds.back())
+				channels += QString(":%1").arg(endChannel);
+			if(i < (channelIds.size() - 1))
+				channels += ", ";				
+		}
+		return QString("(@%1)").arg(channels);
+	}
 
 	bool isAnyTestRunning() noexcept {
 		return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
@@ -153,6 +175,56 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 
 	bool setStartMode(AcquisitionStartModeEnum::Type const mode) const noexcept {
 		return invokeCmd(QString("CONFigure:TRIGger:STARt '%1'").arg(AcquisitionStartModeEnum::toString(mode)));
+	}
+
+	bool setFilter(FilterType6132::Type const filter, std::vector<uint32_t> const& channelsIds) const noexcept {
+		return invokeCmd(QString("CONFigure:FILTer %1, %2").arg(FilterType6132::toString(filter)).arg(toChannelList(channelsIds)));
+	}
+
+	bool setFilter(FilterType6132::Type const gain, uint32_t const& channelId) const noexcept {
+		return invokeCmd(QString("CONFigure%1:FILTer %2").arg(channelId).arg(FilterType6132::toString(gain)));
+	}
+
+	std::optional<std::vector<FilterType6132::Type>> filter(std::vector<uint32_t> const& channelsIds) const noexcept {
+		if (auto resp = invokeQuery(QString("CONFigure:FILTer? %1").arg(toChannelList(channelsIds))); resp) {
+			auto list = resp->split(',');
+			std::vector<FilterType6132::Type> filters;
+			for (auto const& str : list)
+				filters.push_back(FilterType6132::fromString(str));
+			return filters;
+		}		
+		return std::nullopt;
+	}
+
+	std::optional<FilterType6132::Type> filter(uint32_t const& channelsId) const noexcept {
+		if (auto resp = invokeQuery(QString("CONFigure:FILTer? %1").arg(channelsId)); resp)
+			return FilterType6132::fromString(*resp);
+		return std::nullopt;
+	}
+
+	bool setGain(GainType6132::Type const gain, std::vector<uint32_t> const& channelsIds) const noexcept {
+		return invokeCmd(QString("CONFigure:GAIN %1, %2").arg(GainType6132::toString(gain)).arg(toChannelList(channelsIds)));
+	}
+
+	bool setGain(GainType6132::Type const gain, uint32_t const& channelId) const noexcept {
+		return invokeCmd(QString("CONFigure%1:GAIN %2").arg(channelId).arg(GainType6132::toString(gain)));
+	}
+
+	std::optional<std::vector<GainType6132::Type>> gain(std::vector<uint32_t> const& channelsIds) const noexcept {
+		if (auto resp = invokeQuery(QString("CONFigure:GAIN? %1").arg(toChannelList(channelsIds))); resp) {
+			auto list = resp->split(',');
+			std::vector<GainType6132::Type> gains;
+			for (auto const& str : list)
+				gains.push_back(GainType6132::fromString(str));
+			return gains;
+		}
+		return std::nullopt;
+	}
+
+	std::optional<GainType6132::Type> gain(uint32_t const& channelsId) const noexcept {
+		if (auto resp = invokeQuery(QString("CONFigure:GAIN? %1").arg(channelsId)); resp)
+			return GainType6132::fromString(*resp);
+		return std::nullopt;
 	}
 
 	std::optional<PtpTime> ptpTime() const noexcept {
