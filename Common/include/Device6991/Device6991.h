@@ -157,6 +157,25 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 		return invokeCmd(QString("CONFigure%1:ENABled %2").arg(channelId).arg(state ? 1 : 0));
 	}
 
+	bool enableChannals(std::vector<uint32_t> const& channelIds, bool const state = true) noexcept {
+		return invokeCmd(QString("CONFigure:ENABled %1, %2").arg(state ? 1 : 0).arg(toChannelList(channelIds)));
+	}
+
+	std::optional<bool> isChannelEnabled(uint32_t const channelId) noexcept {
+		return invokeQuery(QString("CONFigure%1:ENABled?").arg(channelId))->toUInt() == 1;
+	}
+
+	std::optional<std::vector<bool>> areChannelsEnabled(std::vector<uint32_t> const& channelIds) noexcept {
+		if (auto resp = invokeQuery(QString("CONFigure:ENABled? %1").arg(toChannelList(channelIds))); resp) {
+			auto list = resp->split(',');
+			std::vector<bool> states;
+			for (auto const& str : list)
+				states.push_back(str.toUInt() == 1);
+			return states;
+		}
+		return std::nullopt;
+	}
+
 	std::optional<ScanRateModel> scanRate() const noexcept {
 		if (auto rate = invokeQuery(QString("CONFigure:SCAN:RATe?")); rate)
 			return ScanRateModel::fromString(*rate);
@@ -728,6 +747,18 @@ public slots:
 			dlTest_.stopTest();		
 			invokeCmd("SYSTem:LOCK 0");
 		}
+	}
+
+	void handleSetFiltersReq(FilterType6132::Type const filter, std::vector<uint32_t> const& channelIds) noexcept {
+		setFilter(filter, channelIds);
+	}
+
+	void handleSetGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) noexcept {
+		setGain(gain, channelIds);
+	}
+
+	void handleSetChannelsEnabledReq(bool const state, std::vector<uint32_t> const& channelIds) noexcept {
+		enableChannals(channelIds, state);
 	}
 signals:
 	void actualControllerKey(int const id) const;
