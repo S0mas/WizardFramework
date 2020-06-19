@@ -1,7 +1,6 @@
 #pragma once
 #include "../ScpiIF.h"
 #include <array>
-#include <bitset>
 #include <optional>
 #include <QDebug>
 #include <QDateTime>
@@ -664,90 +663,27 @@ struct DeviceStateEnum {
 };
 
 class DeviceState {
-	std::bitset<32> data_;
+	uint32_t data_;
 	DeviceStateEnum::Type state_;
 	std::optional<uint32_t> controllerId_;
 public:
-	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		return { data_[28], data_[29], data_[30], data_[31] };
-	}
-
-	void setLinksConnectionStatus(std::array<bool, 4> const& linksStatus) noexcept {
-		data_[31] = linksStatus[3];
-		data_[30] = linksStatus[2];
-		data_[29] = linksStatus[1];
-		data_[28] = linksStatus[0];
-	}
-
-	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
-		return data_[28 + linkIndex];
-	}
-
-	bool fifoUnderflow() const noexcept {
-		return data_[12];
-	}
-
-	bool fifoOverflow() const noexcept {
-		return data_[13];
-	}
-
-	void setFifoUnderflow(bool const state) noexcept {
-		data_[12] = state;
-	}
-
-	void setFifoOverflow(bool const state) noexcept {
-		data_[13] = state;
-	}
-
-	bool acquisitionStoppedOnError() const noexcept {
-		return data_[16];
-	}
-
-	void setAcquisitionStoppedOnError(bool const state) noexcept {
-		data_[16] = state;
-	}
-
-	uint32_t numberOfScansInFifo() const noexcept {
-		return data_.to_ulong() & 0xFFF;
-	}
-
-	void setNumberOfScansInFifo(uint32_t const numbersOfScansInFifo) noexcept {
-		data_ &= 0xFFFFF000;
-		data_ |= (numbersOfScansInFifo & 0xFFF);
-	}
-
-	void set(QString const& hexString) noexcept {
-		bool conversionStatus;
-		uint32_t data = hexString.toUInt(&conversionStatus, 16);
-		if (!conversionStatus)
-			qDebug() << "Conversion Error";
-		else
-			data_ = data;
-	}
-
-	void set(uint32_t const data) noexcept {
-		data_ = data;
-	}
-
-	DeviceStateEnum::Type state() const noexcept {
-		return state_;
-	}
-
-	void setState(DeviceStateEnum::Type const state) noexcept {
-		state_ = state;
-	}
-
-	uint32_t toUInt() const noexcept {
-		return data_.to_ulong();
-	}
-
-	void setControllerId(std::optional<uint32_t> const& controllerId) noexcept {
-		controllerId_ = controllerId;
-	}
-
-	std::optional<uint32_t> controllerId() const noexcept {
-		return controllerId_;
-	}
+	std::array<bool, 4> linksConnectionStatus() const noexcept;
+	void setLinksConnectionStatus(std::array<bool, 4> const& linksStatus) noexcept;
+	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept;
+	bool fifoUnderflow() const noexcept;
+	bool fifoOverflow() const noexcept;
+	void setFifoUnderflow(bool const state) noexcept;
+	void setFifoOverflow(bool const state) noexcept;
+	bool acquisitionStoppedOnError() const noexcept;
+	void setAcquisitionStoppedOnError(bool const state) noexcept;
+	uint32_t numberOfScansInFifo() const noexcept;
+	void setNumberOfScansInFifo(uint32_t const numbersOfScansInFifo) noexcept;
+	void set(QString const& hexString) noexcept;
+	DeviceStateEnum::Type state() const noexcept;
+	void setState(DeviceStateEnum::Type const state) noexcept;
+	uint32_t toUInt() const noexcept;
+	void setControllerId(std::optional<uint32_t> const& controllerId) noexcept;
+	std::optional<uint32_t> controllerId() const noexcept;
 };
 
 struct AcquisitionStartModeModel {
@@ -1341,26 +1277,26 @@ struct FilterType6132 {
 	static QString toString(Type const mode) noexcept {
 		switch (mode) {
 		case _10Hz:
-			return "10Hz";
+			return "10";
 		case _100Hz:
-			return "100Hz";
+			return "100";
 		case _1000Hz:
-			return "1000Hz";
+			return "1000";
 		case BYPASS:
-			return "BYPASS";
+			return "0";
 		default:
 			return "invalid";
 		}
 	}
 
 	static Type fromString(QString const& mode) noexcept {
-		if (mode == "10Hz")
+		if (mode == "10")
 			return _10Hz;
-		if (mode == "100Hz")
+		if (mode == "100")
 			return _100Hz;
-		if (mode == "1000Hz")
+		if (mode == "1000")
 			return _1000Hz;
-		if (mode == "BYPASS")
+		if (mode == "0")
 			return BYPASS;
 		return INVALID;
 	}
@@ -1413,4 +1349,10 @@ struct AdcCmdType {
 			return GAIN_SETUP;
 		return INVALID;
 	}
+};
+
+struct ChannelsConfiguration {
+	std::optional<std::vector<bool>> states_;
+	std::optional<std::vector<FilterType6132::Type>> filters_;
+	std::optional<std::vector<GainType6132::Type>> gains_;
 };

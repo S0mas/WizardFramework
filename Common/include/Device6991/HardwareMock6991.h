@@ -12,6 +12,7 @@
 #include "Defines6991.h"
 #include "Registers6991.h"
 #include "../SignalDataPacket.h"
+#include <bitset>
 #include <QRandomGenerator>
 #include <map>
 //dbg
@@ -32,6 +33,7 @@ class HardwareMock6991 : public QObject {
 	std::map<int, int> cpuRegs_;
 	std::array<std::map<int, int>, 2> fcRegs_;
 	uint32_t controllerId_ = 0;
+	ChannelsConfiguration channelsConfig_;
 
 	bool dbgModeOn_ = false;
 	bool areTestsRunning = false;
@@ -247,6 +249,13 @@ public:
 		fpgaRegs_[RegistersEnum::BOARD_CSR1_reg] = 0x0000001F;
 		fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
 		fcRegs_[FecIdType::_2 - 1][FecRegistersEnum::FE_ID_reg] = 0xbbbb6132;
+		if (fcRegs_[FecIdType::_1 - 1][FecRegistersEnum::FE_ID_reg] == 0xbbbb6132) {
+			channelsConfig_.states_ = std::vector<bool>(32, true);
+			channelsConfig_.filters_ = std::vector<FilterType6132::Type>(32, FilterType6132::Type::_10Hz);
+			channelsConfig_.gains_ = std::vector<GainType6132::Type>(32, GainType6132::Type::_1);
+		}
+		else
+			channelsConfig_.states_ = std::vector<bool>(256, true);
 		checkTestsRegsTimer->start(500);
 		for (int i = 0; i < servers_.size(); ++i) {
 			servers_[i] = new QTcpServer(this);
@@ -516,5 +525,33 @@ public:
 	void stopTests() noexcept {
 		timer_->stop();
 		areTestsRunning = false;
+	}
+
+	bool channelEnabled(uint32_t const channelId) const noexcept {
+		return channelsConfig_.states_->at(channelId);
+	}
+
+	GainType6132::Type gain(uint32_t const channelId) const noexcept {
+		return channelsConfig_.gains_->at(channelId);
+	}
+
+	FilterType6132::Type filter(uint32_t const channelId) const noexcept {
+		return channelsConfig_.filters_->at(channelId);
+	}
+
+	void setChannelEnabled(uint32_t const channelId, bool const state) noexcept {
+		channelsConfig_.states_->at(channelId) = state;
+	}
+
+	void setGain(uint32_t const channelId, GainType6132::Type const gain) noexcept {
+		channelsConfig_.gains_->at(channelId) = gain;
+	}
+
+	void setFilter(uint32_t const channelId, FilterType6132::Type const filter) noexcept {
+		channelsConfig_.filters_->at(channelId) = filter;
+	}
+
+	uint32_t channelsNo() const noexcept {
+		return channelsConfig_.states_->size();
 	}
 };

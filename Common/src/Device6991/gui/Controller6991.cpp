@@ -2,6 +2,7 @@
 #include "../../../include/gui/ConnectController.h"
 #include "../../../include/gui/Controller6132.h"
 #include <QThread>
+
 void Controller6991::createConnections() noexcept {
 	connect(deviceThread_, &QThread::finished, deviceThread_, &QObject::deleteLater);
 	connect(deviceIF_.get(), &Device6991::logMsg, [](QString const& msg) { qDebug() << "LOG: " << msg; });
@@ -126,14 +127,14 @@ void Controller6991::initializeStateMachine() noexcept {
 }
 
 void Controller6991::addController6132IfNeeded() noexcept {
-	Device6132* _6132AtFec1 = nullptr;
-	Device6132* _6132AtFec2 = nullptr;
+	bool _6132AtFec1 = false;
+	bool _6132AtFec2 = false;
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
-		_6132AtFec1 = new Device6132(FecIdType::_1, deviceIF_.get());
+		_6132AtFec1 = true;
 	if (auto fecType = deviceIF_->readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
-		_6132AtFec2 = new Device6132(FecIdType::_2, deviceIF_.get());
+		_6132AtFec2 = true;
 	if (_6132AtFec1 || _6132AtFec2) {
-		auto newController6132 = new Controller6132(_6132AtFec1, _6132AtFec2, this);
+		auto newController6132 = new Controller6132(deviceIF_.get(), this);
 		if (placeHolderForController6132_->layout()->itemAt(0)) {
 			auto item = placeHolderForController6132_->layout()->replaceWidget(controller6132_, newController6132);
 			delete item->widget();

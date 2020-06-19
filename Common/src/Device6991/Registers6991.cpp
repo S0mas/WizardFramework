@@ -1,5 +1,6 @@
 #include "../../include/Device6991/Registers6991.h"
 #include "../../include/Device6991/Device6991.h"
+#include <bitset>
 
 bool Register::readHw(uint32_t const mask, uint32_t const shiftRight) noexcept {
 	return readHwFunction_(mask, shiftRight);
@@ -15,9 +16,26 @@ bool Register::writeHw() noexcept {
 
 Register::Register(uint32_t address) : address_(address) {}
 
+void reset(uint32_t& data, uint32_t const bit) {
+	std::bitset<32> set(data);
+	set.reset(bit);
+	data = set.to_ulong();
+}
+
+void set(uint32_t& data, uint32_t const bit, bool const state = true) {
+	std::bitset<32> set(data);
+	set.set(bit);
+	data = set.to_ulong();
+}
+
+bool test(uint32_t const data, uint32_t const bit) {
+	std::bitset<32> set(data);
+	return set.test(bit);
+}
+
 std::optional<bool> Register::testBit(int const bit) noexcept {
 	if (readHw())
-		return data_.test(bit);
+		return std::bitset<32>(data_).test(bit);
 	return false;
 }
 
@@ -107,7 +125,7 @@ CL0_SPI_DATA_reg::CL0_SPI_DATA_reg(Device6991* deviceIF) : Register6991(Register
 CL1_SPI_DATA_reg::CL1_SPI_DATA_reg(Device6991* deviceIF) : Register6991(RegistersEnum::CL1_SPI_DATA_reg, deviceIF) {}
 
 bool CL_SPI_CSR_reg::isBusy() noexcept {
-	return data_.test(CL_START_CL_BUSY);
+	return test(data_, CL_START_CL_BUSY);
 }
 
 void CL_SPI_CSR_reg::setCommand(Command const cmd) noexcept {
@@ -119,13 +137,13 @@ CL_SPI_CSR_reg::CL_SPI_CSR_reg(Device6991* deviceIF) : Register6991(RegistersEnu
 bool CL_SPI_CSR_reg::startTests(bool const CL0, bool const CL1) noexcept {
 	if (CL0 || CL1) {
 		readHw();
-		data_.set(CL0_SEL, CL0);
-		data_.set(CL1_SEL, CL1);
+		set(data_, CL0_SEL, CL0);
+		set(data_, CL1_SEL, CL1);
 		setCommand(WRITE_LOOPBACK);
-		data_.set(CL_TEST_LOOP);
+		set(data_, CL_TEST_LOOP);
 
 		if (!isBusy()) {
-			data_.set(CL_START_CL_BUSY);
+			set(data_, CL_START_CL_BUSY);
 			return writeHw();
 		}
 	}
@@ -134,7 +152,7 @@ bool CL_SPI_CSR_reg::startTests(bool const CL0, bool const CL1) noexcept {
 
 bool CL_SPI_CSR_reg::stopTests() noexcept {
 	if (readHw()) {
-		data_.reset(CL_TEST_LOOP);
+		reset(data_, CL_TEST_LOOP);
 		return writeHw();
 	}
 	return false;
@@ -143,11 +161,11 @@ bool CL_SPI_CSR_reg::stopTests() noexcept {
 std::optional<bool> CL_SPI_CSR_reg::isTestRunning(TestTypeEnum::Type const type) noexcept {
 	if (readHw()) {
 		if (type == TestTypeEnum::CL0)
-			return data_.test(CL_TEST_LOOP) && data_.test(CL0_SEL);
+			return test(data_, CL_TEST_LOOP) && test(data_, CL0_SEL);
 		else if (type == TestTypeEnum::CL1)
-			return data_.test(CL_TEST_LOOP) && data_.test(CL1_SEL);
+			return test(data_, CL_TEST_LOOP) && test(data_, CL1_SEL);
 		else
-			return data_.test(CL_TEST_LOOP) && (data_.test(CL0_SEL) || data_.test(CL1_SEL));
+			return test(data_, CL_TEST_LOOP) && (test(data_, CL0_SEL) || test(data_, CL1_SEL));
 	}
 	return std::nullopt;
 }
@@ -162,9 +180,9 @@ DL_SPI_CSR1_reg::DL_SPI_CSR1_reg(Device6991* deviceIF) : Register6991(RegistersE
 
 bool DL_SPI_CSR1_reg::enableTestMode(FecIdType::Type const fcId) noexcept {
 	if (readHw()) {	
-		data_.set(DL0_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_1);
-		data_.set(DL1_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_2);
-		data_.set(DL_EN);
+		set(data_, DL0_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_1);
+		set(data_, DL1_TEST_MODE, fcId == FecIdType::BOTH || fcId == FecIdType::_2);
+		set(data_, DL_EN);
 		return writeHw();
 	}
 	return false;
@@ -172,9 +190,9 @@ bool DL_SPI_CSR1_reg::enableTestMode(FecIdType::Type const fcId) noexcept {
 
 bool DL_SPI_CSR1_reg::disableTestMode() noexcept {
 	if (readHw()) {
-		data_.reset(DL0_TEST_MODE);
-		data_.reset(DL1_TEST_MODE);
-		data_.reset(DL_EN);
+		reset(data_, DL0_TEST_MODE);
+		reset(data_, DL1_TEST_MODE);
+		reset(data_, DL_EN);
 		return writeHw();
 	}
 	return false;
@@ -183,11 +201,11 @@ bool DL_SPI_CSR1_reg::disableTestMode() noexcept {
 std::optional<bool> DL_SPI_CSR1_reg::isTestRunning(TestTypeEnum::Type const type) noexcept {
 	if (readHw()) {
 		if (type == TestTypeEnum::DL0)
-			return data_.test(DL_EN) && data_.test(DL0_TEST_MODE);
+			return test(data_, DL_EN) && test(data_, DL0_TEST_MODE);
 		else if (type == TestTypeEnum::DL1)
-			return data_.test(DL_EN) && data_.test(DL1_TEST_MODE);
+			return test(data_, DL_EN) && test(data_, DL1_TEST_MODE);
 		else 
-			return data_.test(DL_EN) && (data_.test(DL0_TEST_MODE) || data_.test(DL1_TEST_MODE));
+			return test(data_, DL_EN) && (test(data_, DL0_TEST_MODE) || test(data_, DL1_TEST_MODE));
 	}
 	return std::nullopt;
 }
@@ -289,7 +307,7 @@ bool DEBUG_CLK_RATE_reg::setRate(double const rateInNano) noexcept {
 }
 
 std::optional<double> DEBUG_CLK_RATE_reg::rate() noexcept {
-	return readHw() ? std::optional{ static_cast<double>(data_.to_ullong()) * RATE_STEP_NANO_SECS } : std::nullopt;
+	return readHw() ? std::optional{ static_cast<double>(data_) * RATE_STEP_NANO_SECS } : std::nullopt;
 }
 
 ACQ_CSR_reg::ACQ_CSR_reg(Device6991* deviceIF) : Register6991(RegistersEnum::ACQ_CSR_reg, deviceIF) {}
@@ -410,12 +428,12 @@ RegisterFec::RegisterFec(FecIdType::Type const id, uint32_t const address, Devic
 					return true;
 				else if (verbose)
 					reportErrorFunction_(QString("One of values is different than expected. Address: %1 Expected: %2, Read1:%3, Read2:%4, Mask:%5, ShiftedRight:%6")
-						.arg(toHex(address_, 8), toHex(expected, 8), toHex(data_.to_ulong(), 8), toHex(dataSecond_.to_ulong(), 8), toHex(mask, 8), QString::number(shiftRight)));
+						.arg(toHex(address_, 8), toHex(expected, 8), toHex(data_, 8), toHex(dataSecond_, 8), toHex(mask, 8), QString::number(shiftRight)));
 			}
 			return false;
 		};
 		//TODO replace impl with commented one after write both regs command with different data each will be ready
-		writeHwFunctionNoArgs_ = [this]() { return devIF_->writeFecRegister(FecIdType::BOTH, address_, data_.to_ulong());/*return devIF_->writeBothFecRegisters(address_, data_.to_ulong(), dataSecond_.to_ulong());*/};
+		writeHwFunctionNoArgs_ = [this]() { return devIF_->writeFecRegister(FecIdType::BOTH, address_, data_);/*return devIF_->writeBothFecRegisters(address_, data_.to_ulong(), dataSecond_.to_ulong());*/};
 	}
 	reportErrorFunction_ = [this](QString const& msg) { emit devIF_->reportError(msg); };
 }
@@ -465,7 +483,7 @@ std::optional<std::vector<FilterType6132::Type>> CHN_FILTER_reg::filters() noexc
 		return std::nullopt;
 	std::vector<FilterType6132::Type> filters;
 	for (auto id : { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
-		filters.push_back(static_cast<FilterType6132::Type>(data_.to_ulong() & (MASK_PER_CHANNEL << (id - 1))));
+		filters.push_back(static_cast<FilterType6132::Type>(data_ & (MASK_PER_CHANNEL << (id - 1))));
 	return filters;
 }
 
@@ -490,7 +508,7 @@ std::optional<std::vector<GainType6132::Type>> CHN_GAIN_reg::gains() noexcept {
 		return std::nullopt;
 	std::vector<GainType6132::Type> gains;
 	for (auto id : { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })
-		gains.push_back(static_cast<GainType6132::Type>(data_.to_ulong() & (MASK_PER_CHANNEL << (id - 1))));
+		gains.push_back(static_cast<GainType6132::Type>(data_ & (MASK_PER_CHANNEL << (id - 1))));
 	return gains;
 }
 

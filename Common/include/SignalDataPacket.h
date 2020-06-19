@@ -1,6 +1,5 @@
 #pragma once
 #include <array>
-#include <bitset>
 #include <vector>
 #include <QDebug>
 #include <QDataStream>
@@ -200,23 +199,10 @@ using ScanFifo = Scan<uint32_t, Timestamp6991>;
 
 struct Status1Part {
 	uint32_t data_;
-	std::array<bool, 4> linksConnectionStatus() const noexcept {
-		std::bitset<32> bits(data_);
-		return { bits[31], bits[30], bits[29], bits[28] };
-	}
-
-	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept {
-		std::bitset<32> bits(data_);
-		return bits[28 + linkIndex];
-	}
-
-	bool fifoUnderflow() const noexcept {
-		return data_ & (1 << 16);
-	}
-
-	bool fifoOverflow() const noexcept {
-		return data_ & (1 << 17);
-	}
+	std::array<bool, 4> linksConnectionStatus() const noexcept;
+	bool linksConnectionStatus(uint32_t const linkIndex) const noexcept;
+	bool fifoUnderflow() const noexcept;
+	bool fifoOverflow() const noexcept;
 };
 
 struct Status2Part {

@@ -164,15 +164,24 @@ public:
 		)));
 
 		navigator = root->findCmd(std::vector<std::string>({ "CONFigure" }));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ENABled", ScpiFunction::getScpiFunction<>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ENABled", ScpiFunction::getScpiFunction<double, std::vector<unsigned long long>>(
 			[this](std::vector<ScpiArg> const& args) {
-				qDebug() << "not mocked";
+				auto state = args[0].get<double>() == 1;
+				auto channelIds = args[1].get<std::vector<unsigned long long>>();
+				for (auto const& channelId : channelIds)
+					devMock_.setChannelEnabled(channelId-1, state);
 				return 0;
 			}
 		)));
-		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ENABled?", ScpiFunction::getScpiFunction<>(
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("ENABled?", ScpiFunction::getScpiFunction<double>(
 			[this](std::vector<ScpiArg> const& args) {
-				qDebug() << "not mocked";
+				if (args[0].get<double>() == 0) {
+					responseContainer_ = QString::number(devMock_.channelEnabled(0));
+					for (int i = 1; i < devMock_.channelsNo(); ++i)
+						responseContainer_ += QString(",%1").arg(devMock_.channelEnabled(i));
+				}
+				else
+					responseContainer_ = QString::number(devMock_.channelEnabled(args[0].get<double>() - 1));
 				return 0;
 			}
 		)));
@@ -199,6 +208,48 @@ public:
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("DIRectread?", ScpiFunction::getScpiFunction<>(
 			[this](std::vector<ScpiArg> const& args) {
 				responseContainer_ = QString::number(devMock_.scansNoPerDirectReadPacket());
+				return 0;
+			}
+		)));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("GAIN", ScpiFunction::getScpiFunction<double, std::vector<unsigned long long>>(
+			[this](std::vector<ScpiArg> const& args) {
+				auto gain = GainType6132::fromString(QString::number(args[0].get<double>()));
+				auto channelIds = args[1].get<std::vector<unsigned long long>>();
+				for (auto const& channelId : channelIds)
+					devMock_.setGain(channelId-1, gain);
+				return 0;
+			}
+		)));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("GAIN?", ScpiFunction::getScpiFunction<double>(
+			[this](std::vector<ScpiArg> const& args) {
+				if (args[0].get<double>() == 0) {
+					responseContainer_ = GainType6132::toString(devMock_.gain(0));
+					for (int i = 1; i < devMock_.channelsNo(); ++i)
+						responseContainer_ += QString(",%1").arg(GainType6132::toString(devMock_.gain(i)));
+				}
+				else
+					responseContainer_ = GainType6132::toString(devMock_.gain(args[0].get<double>() - 1));
+				return 0;
+			}
+		)));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FILTER", ScpiFunction::getScpiFunction<double, std::vector<unsigned long long>>(
+			[this](std::vector<ScpiArg> const& args) {
+				auto filter = FilterType6132::fromString(QString::number(args[0].get<double>()));
+				auto channelIds = args[1].get<std::vector<unsigned long long>>();
+				for (auto const& channelId : channelIds)
+					devMock_.setFilter(channelId-1, filter);
+				return 0;
+			}
+		)));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("FILTER?", ScpiFunction::getScpiFunction<double>(
+			[this](std::vector<ScpiArg> const& args) {
+				if (args[0].get<double>() == 0) {
+					responseContainer_ = FilterType6132::toString(devMock_.filter(0));
+					for (int i = 1; i < devMock_.channelsNo(); ++i)
+						responseContainer_ += QString(",%1").arg(FilterType6132::toString(devMock_.filter(i)));
+				}
+				else
+					responseContainer_ = FilterType6132::toString(devMock_.filter(args[0].get<double>() - 1));
 				return 0;
 			}
 		)));
@@ -246,7 +297,6 @@ public:
 				return 0;
 			}
 		)));
-
 		navigator = root->findCmd(std::vector<std::string>({ "CONFigure", "TRIGger" }));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("STARt", ScpiFunction::getScpiFunction<std::string>(
 			[this](std::vector<ScpiArg> const& args) {

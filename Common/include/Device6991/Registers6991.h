@@ -1,5 +1,4 @@
 #pragma once
-#include <bitset>
 #include <optional>
 #include "../../include/Device6991/Defines6991.h"
 
@@ -7,7 +6,7 @@ class Device6991;
 class Register {
 protected:
 	uint32_t address_;
-	std::bitset<32> data_;
+	uint32_t data_;
 	std::function<std::optional<uint32_t>(uint32_t)> readRegisterFunction_;
 	std::function<bool(uint32_t, uint32_t)> writeRegisterFunction_;
 	std::function<void(QString const&)> reportErrorFunction_;
@@ -21,7 +20,7 @@ protected:
 	};
 
 	std::function<bool()> writeHwFunctionNoArgs_ = [this]() {
-		auto result = writeRegisterFunction_(address_, data_.to_ulong());
+		auto result = writeRegisterFunction_(address_, data_);
 		if (!result)
 			reportErrorFunction_(QString("Faild to write register. Reg address: %1").arg(toHex(address_, 8)));
 		return result;
@@ -55,7 +54,7 @@ public:
 	Register(uint32_t const);
 	template<typename T = uint32_t>
 	std::optional<T> value(uint32_t const mask = 0xFFFFFFFF, uint32_t const shiftRight = 0) noexcept {
-		return readHw(mask, shiftRight) ? std::optional{ static_cast<T>(data_.to_ulong()) } : std::nullopt;
+		return readHw(mask, shiftRight) ? std::optional{ static_cast<T>(data_) } : std::nullopt;
 	}
 	std::optional<bool> testBit(int const bit) noexcept;
 	bool setBit(int const bit, bool const state) noexcept;
@@ -69,7 +68,7 @@ public:
 
 class RegisterFec: public Register {
 	FecIdType::Type id_;
-	std::bitset<32> dataSecond_;
+	uint32_t dataSecond_;
 	Device6991* devIF_;
 public:
 	RegisterFec(FecIdType::Type const id, uint32_t const address, Device6991* devIF);
