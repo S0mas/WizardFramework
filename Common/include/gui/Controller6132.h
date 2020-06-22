@@ -32,7 +32,7 @@ public:
         return data_.count();
     }
     int columnCount(const QModelIndex&) const noexcept override {
-        return 3;
+        return 4;
     }
     QVariant data(const QModelIndex& index, int role) const noexcept override {
         if (role != Qt::DisplayRole && role != Qt::EditRole)
@@ -90,12 +90,13 @@ public:
 class ChannelTableView : public QWidget {
     ChannelModel model_;
     uint32_t channelId = 1;
+    QTableView* view = new QTableView(this);
 public:
     ChannelTableView(QWidget* parent = nullptr) noexcept : QWidget(parent) {
         auto layout = new QVBoxLayout(this);
-        auto view = new QTableView;
         layout->addWidget(view);
         view->setModel(&model_);
+        setLayout(layout);
     }
 
     void createNewRecord() noexcept {
@@ -113,16 +114,23 @@ public:
     void setGain(uint32_t const index, GainType6132::Type const gain) noexcept {
         model_.setGain(index, gain);
     }
+
+    void update() noexcept {
+        view->viewport()->update();
+    }
 };
 
 class Controller6132 : public QGroupBox {
 	Q_OBJECT
+    const static int CHANNELS_NO_6132 = 32; // 2 frontends cards * 16 channels each
+    ChannelTableView* channelTable_ = new ChannelTableView(this);
+    QPushButton* channelConfigurationButton_ = new QPushButton("Configure Channels");
 	std::atomic<bool> fetched = false;
-	QTableView* view = new QTableView;
 	Device6991* devIF_ = nullptr;
 	ChannelStatuses statuses_;
-    ChannelTableView* channelTable_ = new ChannelTableView(this);
-	const static int CHANNELS_NO_6132 = 32; // 2 frontends cards * 16 channels each
+    void createConnections() noexcept;
+    QWidget* createConfigureChannelsWidget() noexcept;
+    QDialog* createChannelsConfigurationDialog() noexcept;
 signals:
 	void setFiltersReq(FilterType6132::Type const filter, std::vector<uint32_t> const& channelIds) const;
 	void setGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) const;
