@@ -72,7 +72,8 @@ inline QDataStream& operator>>(QDataStream& stream, _6132Sample& sample) {
 }
 
 inline QTextStream& operator<<(QTextStream& stream, _6132Sample const& sample) {
-	stream << sample.sample_;
+	QString formattedSample = QString("%1").arg(QString::number(sample.sample_, 'f', 9), 12, QLatin1Char('+'));
+	stream << formattedSample;
 	return stream;
 }
 

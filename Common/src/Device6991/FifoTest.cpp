@@ -58,8 +58,6 @@ bool FifoTest::startTest(FifoTestModel::Configuration const & config) noexcept {
 	count_ = 0;
 	errors_ = 0;
 	expected_ = 0;
-	dataFile_->resize(0);
-	devIF_->dataStreamFifo_.clearDataFile();
 	if (!devIF_->dataStreamFifo_.isConnected()) {
 		devIF_->reportError("Connection with data stream is not open/valid. Please open/fix it before starting the test.");
 		return false;

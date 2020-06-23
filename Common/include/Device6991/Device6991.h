@@ -98,7 +98,6 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	///////////////////////////////////////////////////
 	
 	bool isAcqActive_ = false;
-
 	QString toChannelList(std::vector<uint32_t> const& channelIds) const noexcept;
 	bool isAnyTestRunning() noexcept;
 	void showWarningAboutCommunicationWithDeviceDuringAcq() const noexcept;

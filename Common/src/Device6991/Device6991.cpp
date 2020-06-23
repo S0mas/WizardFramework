@@ -619,6 +619,11 @@ void Device6991::handleConfigureDeviceReq(Configuration6991 const& config) noexc
 
 void Device6991::handleStartAcqReq() noexcept {
 	showWarningAboutCommunicationWithDeviceDuringAcq();
+	auto states = areChannelsEnabled();
+	if (states) {
+		dataStream6111_.setDataFileHeaderWithChannelsIds(*states);
+		dataStream6132_.setDataFileHeaderWithChannelsIds(*states);
+	}
 	if (/*auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && */invokeCmd("MEASure:ASYNc")) {
 		isAcqActive_ = true;
 		emit acquisitionStarted();
@@ -647,7 +652,6 @@ void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept 
 				withStreamShouldReconnectAfterFifoTest = 6111;
 				dataStream6111_.disconnect();
 				dataStreamFifo_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
-				qDebug() << "6111 was connected!";
 			}
 			else if (dataStream6132_.isConnected()) {
 				portToReconnectAfterFifoTest = dataStream6132_.peerPort();
@@ -655,11 +659,7 @@ void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept 
 				withStreamShouldReconnectAfterFifoTest = 6132;
 				dataStream6132_.disconnect();
 				dataStreamFifo_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
-				qDebug() << "6132 was connected!";
 			}
-			else
-				qDebug() << "no data stream connected!";
-
 			//////////////////////////////////////////////////////////////////////
 			fifoTest_.startTest(request.fifoTestConfig_);
 		}
