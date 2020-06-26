@@ -80,10 +80,10 @@ uint32_t DeviceState::toUInt() const noexcept {
 	return data_;
 }
 
-void DeviceState::setControllerId(std::optional<uint32_t> const& controllerId) noexcept {
-	controllerId_ = controllerId;
+void DeviceState::setControllerId(std::optional<uint32_t> const& masterControllerId) noexcept {
+	masterControllerId_ = masterControllerId;
 }
 
-std::optional<uint32_t> DeviceState::controllerId() const noexcept {
-	return controllerId_;
+std::optional<uint32_t> DeviceState::masterControllerId() const noexcept {
+	return masterControllerId_;
 }

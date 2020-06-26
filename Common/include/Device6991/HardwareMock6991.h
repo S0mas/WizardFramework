@@ -155,7 +155,10 @@ class HardwareMock6991 : public QObject {
 	int packetNo_ = 0;
 
 	void mock6111(QTcpSocket* socket) {
-		uint32_t channelsToMeasure = 256;
+		int i = 0;
+		for (auto state : *channelsConfig_.states_)
+			if(state) i++;
+		uint32_t channelsToMeasure = i;
 		uint32_t sampleSize = 1;
 		uint32_t scans = 10;
 
@@ -174,7 +177,7 @@ class HardwareMock6991 : public QObject {
 		for (auto& scan : packet.data_.scans_) {
 			if (header_.options_) {
 				scan.ts_.seconds_ = seconds2++;
-				scan.ts_.nanoseconds_ = 123456789;
+				scan.ts_.nanoseconds_ = 124151;
 			}
 			for (auto& sample : scan.samples_)
 				sample.raw_ = QRandomGenerator::global()->bounded(0xFF);
@@ -189,7 +192,10 @@ class HardwareMock6991 : public QObject {
 	}
 
 	void mock6132(QTcpSocket* socket) {
-		uint32_t channelsToMeasure = 32;
+		int i = 0;
+		for (auto state : *channelsConfig_.states_)
+			if (state) i++;
+		uint32_t channelsToMeasure = i;
 		uint32_t sampleSize = 4;
 		uint32_t scans = 10;
 
@@ -208,7 +214,7 @@ class HardwareMock6991 : public QObject {
 		for (auto& scan : packet.data_.scans_) {
 			if (header_.options_) {
 				scan.ts_.seconds_ = seconds1++;
-				scan.ts_.nanoseconds_ = 123456789;
+				scan.ts_.nanoseconds_ = 192381;
 			}
 			for (auto& sample : scan.samples_)
 				sample = QRandomGenerator::global()->bounded(-5, 5);

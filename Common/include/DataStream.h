@@ -17,57 +17,50 @@ template<typename ScanType/*Scan6111 or Scan6132*/>
 class DataStream {
 	PacketReading<HeaderPart6991, ScanType> readingStrat_;
 	DataCollectorClient* client_;
-	QTimer* fileResetTimer_;
-	QString channelConfigHeader_;
-	void resetFileTimout() {
-		closeCurrentFile();
-		fileResetTimer_->stop();
-	}
-	void createFileForDataCollection() noexcept {
-		auto dateTime = QDateTime::currentDateTimeUtc().toString("dd.mm.yyyy_hh-mm-ss");
-		dataFile_ = std::make_unique<QFile>(QString("Data_%1.csv").arg(dateTime));
-		if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
-			return;
-		QTextStream in(dataFile_.get());
-		in << channelConfigHeader_ << '\n';
-		
-	}
 	QTcpSocket* forwardSocket_;
 	mutable std::mutex stateUpdateLock_;
 	DeviceState state_;
-	std::unique_ptr<QFile> dataFile_;
+	QFile* dataFile_ = nullptr;
+	QString header_;
+	std::vector<bool> channelsStates_;
 	
 	bool storeData_ = false;
 	bool forwardData_ = false;
+	bool shouldForwardChannelMask_ = true;
 	uint32_t forwardingPort_ = 0;
 	std::vector<std::function<void(HeaderPart6991 const&, SignalPacketData<ScanType> const&)>> callbacks_;
 
-	void closeCurrentFile() {
-		if (dataFile_) {
-			dataFile_->close();
-			dataFile_.reset();
-		}
+	void initializeFileWithHeader() noexcept {
+		QTextStream in(dataFile_);
+		in << header_;
 	}
 	
 	void storeData(SignalPacketData<ScanType> const& data) noexcept {
 		if (storeData_) {
-			if (!dataFile_)
-				createFileForDataCollection();
-			if (!dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
+			if (dataFile_ && !dataFile_->isOpen() && !dataFile_->open(QIODevice::WriteOnly | QIODevice::Text))
 				return;
-			QTextStream in(dataFile_.get());
+			if (dataFile_->size() == 0)
+				initializeFileWithHeader();
+			QTextStream in(dataFile_);
 			in << data;
-			fileResetTimer_->start(10000);
 		}
 	}
 
 	void forwardData(HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) noexcept {
 		if (forwardData_) {
-			if(forwardSocket_->state() == QTcpSocket::SocketState::UnconnectedState)
-				forwardSocket_->connectToHost(QHostAddress("127.0.0.1"), forwardingPort_);
+			if (forwardSocket_->state() == QTcpSocket::SocketState::UnconnectedState)
+				forwardSocket_->connectToHost(QHostAddress("127.0.0.1"), forwardingPort_);		
+			if(forwardSocket_->state() != QTcpSocket::SocketState::ConnectedState)
+				return;				
 
 			QDataStream stream(forwardSocket_);
 			SignalPacketHeader signalPacketHeader(header);
+			if (shouldForwardChannelMask_) {
+				shouldForwardChannelMask_ = false;
+				signalPacketHeader.containsChannelStates_ = true;
+				for (auto const state : channelsStates_)
+					signalPacketHeader.channelsStates_.push_back(state);
+			}
 			signalPacketHeader.deviceAddress_ = client_->peerAddress();
 			stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 			stream.startTransaction();
@@ -89,7 +82,6 @@ class DataStream {
 public:
 	DataStream(uint32_t const forwardingPort = 0, QObject* membersParent = nullptr) : forwardingPort_(forwardingPort) {
 		client_ = new DataCollectorClient(&readingStrat_, membersParent);
-		fileResetTimer_ =  new QTimer(membersParent);
 		readingStrat_.setEndianness(QDataStream::LittleEndian);
 		readingStrat_.setDataReadingCallback([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { doWithData(header, data); });
 		callbacks_.push_back([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { storeData(data); });	
@@ -98,11 +90,6 @@ public:
 			forwardSocket_ = new QTcpSocket(membersParent);
 			callbacks_.push_back([this](HeaderPart6991 const& header, SignalPacketData<ScanType> const& data) { forwardData(header, data); });
 		}
-
-		QObject::connect(fileResetTimer_, &QTimer::timeout, 
-			[this] {
-				resetFileTimout();
-			}); // temporary solution before feature with subscribing for info about acq stop msg will be implemented
 	}
 
 	void connect(QString const& address, uint32_t const port) noexcept {
@@ -124,8 +111,10 @@ public:
 
 	void setForwardData(bool const state) noexcept {
 		forwardData_ = state;
-		if (!forwardData_)
+		if (!forwardData_) {
 			forwardSocket_->disconnectFromHost();
+			shouldForwardChannelMask_ = true;
+		}
 		else 
 			forwardSocket_->connectToHost(QHostAddress("127.0.0.1"), forwardingPort_);
 	}
@@ -151,17 +140,18 @@ public:
 		return state_;
 	}
 
-	void setDataFileHeaderWithChannelsIds(std::vector<bool> const& channelStates) noexcept {
-		QString header = "|";
+	void setDataFile(QFile* dataFile) noexcept {
+		if (dataFile_ && dataFile_->isOpen())
+			dataFile_->close();
+		dataFile_ = dataFile;
+	}
 
-		for(int i = 0; i < channelStates.size(); ++i)
-			if (channelStates[i]) {
-				int channelId = i + 1;
-				double x = 12 - QString::number(channelId).size();
-				int additional = (QString::number(channelId).size() % 2 == 0) ? 0 : 1;
-				header += QString("%1%2%3|").arg(QString(x / 2, ' ')).arg(channelId).arg(QString(x / 2 + additional, ' '));
-			}
-				
-		channelConfigHeader_ = header;
+	void setHeader(QString const& header) noexcept {
+		header_ = header;
+	}
+
+	void setChannelConfiguration(std::vector<bool> const& channelsStates) noexcept {
+		channelsStates_ = channelsStates;
+		shouldForwardChannelMask_ = true;
 	}
 };

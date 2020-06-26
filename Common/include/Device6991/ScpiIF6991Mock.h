@@ -22,6 +22,12 @@ public:
 			}
 		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("*HW"));
+		navigator->children.push_back(std::make_unique<ScpiCmdNode>("*IDN?", ScpiFunction::getScpiFunction<>(
+			[this](std::vector<ScpiArg> const& args) {
+				responseContainer_ = "Bustec,DeviceType,123456789,1.0";
+				return 0;
+			}
+		)));
 		navigator->children.push_back(std::make_unique<ScpiCmdNode>("*DBG", ScpiFunction::getScpiFunction<double>(
 			[this](std::vector<ScpiArg> const& args) {
 				devMock_.setDbgMode(args[0].get<double>());

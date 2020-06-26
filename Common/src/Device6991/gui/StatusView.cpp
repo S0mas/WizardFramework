@@ -32,7 +32,7 @@ StatusView::StatusView(QWidget * parent) : QGroupBox("Device Status", parent) {
 }
 
 void StatusView::update(DeviceState const& state) noexcept {
-	if(auto masterId = state.controllerId(); masterId)
+	if(auto masterId = state.masterControllerId(); masterId)
 		masterIdValue_->setText(QString::number(*masterId));
 	
 	stateValue_->setText(DeviceStateEnum::toString(state.state()));

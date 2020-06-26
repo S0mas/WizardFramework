@@ -16,6 +16,31 @@
 #include <atomic>
 #include <optional>
 
+void Device6991::checkIfAcqWasStartedFromOtherClient() noexcept {
+	if (!isAcqActive_) {
+		replaceAcqDataFile(); // This solution is not perfect, possible problems : 1. The old data is still queued in the stream while signal about new acq arrived.(it will appear in new file) 2. Some new data already arrived before file opening procedure was triggered. (it wont be stored at all).
+		isAcqActive_ = true;
+		emit acquisitionStarted();
+	}
+}
+
+void Device6991::checkIfAcqWasStoppedFromOtherClient() noexcept {
+	if (isAcqActive_) {
+		isAcqActive_ = false;
+		emit acquisitionStopped();
+	}
+}
+
+bool Device6991::clearUserEvent() const noexcept {
+	return invokeCmd("SYST:USER 0");
+}
+
+std::optional<bool> Device6991::isThisTheMasterController() const noexcept {
+	if (auto id = masterControllerId(); id)
+		return *id == controllerId_;
+	return std::nullopt;
+}
+
 QString Device6991::toChannelList(std::vector<uint32_t> const& channelIds) const noexcept {
 	auto sortedIds = channelIds;
 	std::sort(sortedIds.begin(), sortedIds.end());
@@ -50,16 +75,7 @@ DeviceState Device6991::extractStatus(QString const& stateData) noexcept {
 	auto list = stateData.split(',');
 	DeviceState state;
 	state.setState(DeviceStateEnum::fromString(list[0]));
-	//TODO UNCOMMENT WHEN RDY
 	state.set(list[1]);
-	if (auto acqRealState = isAcquisitionActive(); acqRealState) {
-		if (*acqRealState && !isAcqActive_)
-			emit acquisitionStarted();
-		else if (!*acqRealState && isAcqActive_)
-			emit acquisitionStopped();
-		isAcqActive_ = *acqRealState;
-	}
-
 	return state;
 }
 
@@ -69,10 +85,14 @@ std::optional<DeviceState> Device6991::status() noexcept {
 }
 
 bool Device6991::enableChannal(uint32_t const channelId, bool const state) noexcept {
+	clearUserEvent();
+	setUserEvent();
 	return invokeCmd(QString("CONFigure%1:ENABled %2").arg(channelId).arg(state ? 1 : 0));
 }
 
 bool Device6991::enableChannals(std::vector<uint32_t> const& channelIds, bool const state) noexcept {
+	clearUserEvent();
+	setUserEvent();
 	return invokeCmd(QString("CONFigure:ENABled %1, %2").arg(state ? 1 : 0).arg(toChannelList(channelIds)));
 }
 
@@ -287,6 +307,59 @@ bool Device6991::setScansNoPerDirectReadPacket(uint32_t const scansNo) const noe
 	return invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 }
 
+bool Device6991::setUserEvent() const noexcept {
+	auto result = invokeCmd("SYST:USER 1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	return result;
+}
+
+QString Device6991::prepareDataFileHeader() noexcept {
+	QString header;
+	auto type = readFecType(FecIdType::_1);
+	header += QString("Device Type: %1\n").arg(type ? FecType::toString(*type) : "read error");
+	QString serialnumber = "read error";
+	if (auto devInfo = invokeQuery("*IDN?"); devInfo) {
+		auto list = devInfo->split(',');
+		if (list.size() == 4)
+			serialnumber = list[2];
+	}
+	header += QString("Serial Number: %1\n").arg(serialnumber);
+	header += QString("IP Address: %1\n").arg(QString::fromStdString(connector_->resources().back()->value().toStdString()));
+	header += QString("Scan Rate: %1\n").arg(lastConfig_.scanRate_ ? lastConfig_.scanRate_->toString() : "read error");
+
+	if (auto channelStates = areChannelsEnabled(); channelStates) {
+		header += "          TIMESTAMPS[s]         |";
+		for (int i = 0; i < channelStates->size(); ++i) {
+			if (channelStates->at(i)) {
+				int channelId = i + 1;
+				double x = 12 - QString::number(channelId).size();
+				int additional = (QString::number(channelId).size() % 2 == 0) ? 0 : 1;
+				header += QString("%1%2%3|").arg(QString(x / 2, ' ')).arg(channelId).arg(QString(x / 2 + additional, ' '));
+			}
+		}
+		header += '\n';
+	}
+	return header;
+}
+
+QFile* Device6991::createFileForDataCollection(QString const& name) noexcept {
+	auto dateTime = QDateTime::currentDateTimeUtc().toString("dd.MM.yyyy_hh-mm-ss");
+	return new QFile(QString("%1_%2.csv").arg(name).arg(dateTime), this);
+}
+
+void Device6991::replaceAcqDataFile() noexcept {
+	auto file = createFileForDataCollection("ACQ");
+	auto header = prepareDataFileHeader();
+	dataStream6111_.setHeader(header);
+	dataStream6132_.setHeader(header);
+	dataStream6111_.setDataFile(file);
+	dataStream6132_.setDataFile(file);
+	if (auto channels = areChannelsEnabled(); channels) {
+		dataStream6111_.setChannelConfiguration(*channels);
+		dataStream6132_.setChannelConfiguration(*channels);
+	}
+}
+
 Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
 	QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
 	QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
@@ -305,10 +378,10 @@ Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connect
 	QObject::connect(dataStream6132_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
 }
 
-std::optional<bool> Device6991::isAcquisitionActive() noexcept {
-	return ACQ_CSR_reg_.isAcqActive();
+bool Device6991::isAcquisitionActive() noexcept {
+	return isAcqActive_;
 }
-std::optional<uint32_t> Device6991::controllerId() const noexcept {
+std::optional<uint32_t> Device6991::masterControllerId() const noexcept {
 	if (auto lock = invokeQuery(QString("SYSTem:LOCK?")); lock)
 		return (*lock).toUInt();
 	return std::nullopt;
@@ -325,18 +398,18 @@ void Device6991::deviceStateRequest() noexcept {
 	}
 	else {
 		if (auto st = status(); st) {
-			st->setControllerId(controllerId());
+			st->setControllerId(masterControllerId());
 			emit state(*st);
 		}
 	}
 }
 
 void Device6991::controllerKeyRequest() const noexcept {
-	if (auto id = controllerId(); id)
+	if (auto id = masterControllerId(); id)
 		emit actualControllerKey(*id);
 }
 
-void Device6991::configurationDataRequest() const noexcept {
+void Device6991::handleDeviceConfigurationReq() noexcept {
 	Configuration6991 config;
 	config.scanRate_ = scanRate();
 	config.startMode_.mode_ = startMode();
@@ -350,7 +423,8 @@ void Device6991::configurationDataRequest() const noexcept {
 	config.timestamps_ = timestamps();
 	config.fansMode_ = fansMode();
 	config.ptpTime_ = ptpTime();
-	emit configuration(config);
+	lastConfig_ = config;
+	emit deviceConfiguration(config);
 }
 
 void Device6991::testCountersRequest() noexcept {
@@ -601,29 +675,13 @@ void Device6991::handleConfigureDeviceReq(Configuration6991 const& config) noexc
 		setScansTreshold(*config.stopMode_.scansThreshold_);
 	if (config.timestamps_)
 		setTimeStamps(*config.timestamps_);
-	if (auto fecType = readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
-		for (auto i = 1; i < 33; ++i)
-			enableChannal(i);
-	else if (auto fecType = readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
-		for (auto i = 1; i < 33; ++i)
-			enableChannal(i);
-	if (auto fecType = readFecType(FecIdType::_1); fecType && *fecType == FecType::_6111)
-		for (auto i = 1; i < 256; ++i)
-			enableChannal(i);
-	else if (auto fecType = readFecType(FecIdType::_2); fecType && *fecType == FecType::_6111)
-		for (auto i = 1; i < 256; ++i)
-			enableChannal(i);
-
-
+	setUserEvent();
+	handleDeviceConfigurationReq();
 }
 
 void Device6991::handleStartAcqReq() noexcept {
 	showWarningAboutCommunicationWithDeviceDuringAcq();
-	auto states = areChannelsEnabled();
-	if (states) {
-		dataStream6111_.setDataFileHeaderWithChannelsIds(*states);
-		dataStream6132_.setDataFileHeaderWithChannelsIds(*states);
-	}
+	replaceAcqDataFile();
 	if (/*auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && */invokeCmd("MEASure:ASYNc")) {
 		isAcqActive_ = true;
 		emit acquisitionStarted();
@@ -640,7 +698,7 @@ void Device6991::handleStopAcqReq() noexcept {
 void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept {
 	handleStopTestsReq();
 	//starting tests order matters, fifo test cant be run with dl test and dl test must be started before cl
-	if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
+	if (auto id = masterControllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 		setScansNoPerDirectReadPacket(10);
 		dlTest_.startTest(request.model.at(TestTypeEnum::DL0), request.model.at(TestTypeEnum::DL1), request.clockFreq_);
 
@@ -661,6 +719,7 @@ void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept 
 				dataStreamFifo_.connect(addressToRecnnectAfterFifoTest.toString(), portToReconnectAfterFifoTest);
 			}
 			//////////////////////////////////////////////////////////////////////
+			dataStreamFifo_.setDataFile(createFileForDataCollection("FIFO_TEST"));
 			fifoTest_.startTest(request.fifoTestConfig_);
 		}
 
@@ -672,7 +731,7 @@ void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept 
 
 void Device6991::handleStopTestsReq() noexcept {
 	//stopping tests order matters, cl test must be stopped first
-	if (auto id = controllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
+	if (auto id = masterControllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 		clTest_.stopTest();
 		fifoTest_.stopTest();
 		if (withStreamShouldReconnectAfterFifoTest != 0) {
@@ -707,4 +766,8 @@ void Device6991::handleChannelsConfigurationReq() noexcept {
 	}
 	configuration.states_ = areChannelsEnabled();
 	emit channelConfiguration(configuration);
+}
+
+void Device6991::handleIdChanged(uint32_t const id) noexcept {
+	controllerId_ = id;
 }

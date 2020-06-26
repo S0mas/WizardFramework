@@ -56,6 +56,14 @@ public:
 		return res;
 	}
 
+	std::vector<uint32_t> allIds() const noexcept {
+		std::vector<uint32_t> res;
+		res.reserve(size());
+		for (auto const& status : statuses_)
+			res.push_back(status.first);
+		return res;
+	}
+
 	std::vector<uint32_t> allEnabled() const noexcept {
 		std::vector<uint32_t> res;
 		res.reserve(size());

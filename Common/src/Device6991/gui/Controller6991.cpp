@@ -2,6 +2,7 @@
 #include "../../../include/gui/ConnectController.h"
 #include "../../../include/gui/Controller6132.h"
 #include <QThread>
+#include <QMetaObject>
 
 void Controller6991::createConnections() noexcept {
 	connect(deviceThread_, &QThread::finished, deviceThread_, &QObject::deleteLater);
@@ -14,7 +15,7 @@ void Controller6991::createConnections() noexcept {
 	connect(deviceIF_.get(), &Device6991::connectedDataStream, this, &Controller6991::disableDataStreamCmbBox);
 	connect(deviceIF_.get(), &Device6991::disconnectedDataStream, this, &Controller6991::enableDataStreamCmbBox);
 	connect(deviceIF_.get(), &Device6991::state, statusView_, &StatusView::update);
-	connect(deviceIF_.get(), &Device6991::configuration, this, &Controller6991::setModel);
+	connect(deviceIF_.get(), &Device6991::deviceConfiguration, this, &Controller6991::setModel);
 	connect(deviceIF_.get(), &Device6991::reportError, this, &Controller6991::showError);
 	connect(this, &Controller6991::takeControlReq, deviceIF_.get(), &Device6991::handleTakeControlReq);
 	connect(this, &Controller6991::releaseControlReq, deviceIF_.get(), &Device6991::handleReleaseControlReq);
@@ -23,6 +24,7 @@ void Controller6991::createConnections() noexcept {
 	connect(this, &Controller6991::startAcqReq, deviceIF_.get(), &Device6991::handleStartAcqReq);
 	connect(this, &Controller6991::stopAcqReq, deviceIF_.get(), &Device6991::handleStopAcqReq);
 	connect(this, &Controller6991::configureDeviceReq, deviceIF_.get(), &Device6991::handleConfigureDeviceReq);
+	connect(this, &Controller6991::controllerIdChanged, deviceIF_.get(), &Device6991::handleIdChanged);
 	connect(dataStorageCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetStoreDataReq);
 	connect(forwardDataCheckBox_, &QCheckBox::stateChanged, deviceIF_.get(), &Device6991::handleSetForwardDataReq);
 	connect(actionRequestController_, &UserActionRequestController::requestConfirmationReceived, this, &Controller6991::showInformationToConfirmFromDevice);
@@ -95,6 +97,7 @@ void Controller6991::initializeStateMachine() noexcept {
 			statusAutoRefreshCheckBox_->setEnabled(true);
 			idEdit_->setEnabled(false);
 			connectDisconnectButton_->setEnabled(true);
+			emit controllerIdChanged(idEdit_->value());
 			if (dbgMode_) {
 				resgisterControllerFrontend_->setEnabled(true);
 				resgisterController6991_->setEnabled(true);
@@ -103,6 +106,8 @@ void Controller6991::initializeStateMachine() noexcept {
 				scpiController_->setLedIndicatorState(true);
 			}
 			addController6132IfNeeded();
+			if (controller6132_)
+				controller6132_->setEnabled(false);
 		}
 	);
 	connect(controller, &QState::entered,
@@ -112,6 +117,8 @@ void Controller6991::initializeStateMachine() noexcept {
 			startModeView_->setEnabled(true);
 			stopModeView_->setEnabled(true);
 			acqStartStopButton_->setEnabled(true);
+			if (controller6132_)
+				controller6132_->setEnabled(true);
 		}
 	);
 	connect(controller, &QState::exited,
@@ -120,6 +127,8 @@ void Controller6991::initializeStateMachine() noexcept {
 			startModeView_->setEnabled(false);
 			stopModeView_->setEnabled(false);
 			acqStartStopButton_->setEnabled(false);
+			if (controller6132_)
+				controller6132_->setEnabled(false);
 		}
 	);
 	sm_.setInitialState(disconnected);

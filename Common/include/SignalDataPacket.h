@@ -119,18 +119,17 @@ inline QDataStream& operator>>(QDataStream& stream, Timestamp6991& timestamp) {
 }
 
 inline QTextStream& operator<<(QTextStream& stream, Timestamp6991 const& timestamp) {
-	stream << QString::number(timestamp.seconds_) << ",";
-	stream << QString::number(timestamp.nanoseconds_);
+	auto ts = QString("%1.%2").arg(timestamp.seconds_, 21, 10, QLatin1Char(' ')).arg(timestamp.nanoseconds_, 9, 10, QLatin1Char('0'));
+	stream << ts;
 	return stream;
 }
 
 inline QTextStream& operator>>(QTextStream& stream, Timestamp6991& timestamp) {
 	QString word;
 	stream >> word;
-	timestamp.seconds_ = word.toDouble();
-	stream >> word;//comma ","
-	stream >> word;
-	timestamp.nanoseconds_ = word.toDouble();
+	auto list = word.split('.');
+	timestamp.seconds_ = list[0].toDouble();
+	timestamp.nanoseconds_ = list[1].toDouble();
 	return stream;
 }
 
@@ -163,7 +162,9 @@ inline QDataStream& operator>>(QDataStream& stream, Scan<SampleType, TimestampTy
 template<typename SampleType, typename TimestampType>
 inline QTextStream& operator<<(QTextStream& stream, Scan<SampleType, TimestampType> const& scan) {
 	if (!scan.ignoreTimestamp)
-		stream <<  "timestamp[s,ns]," << scan.ts_ << '\n';
+		stream << scan.ts_ << ',';
+	else
+		stream << "-------------------------------,";
 
 	if (!scan.samples_.empty())
 		stream << scan.samples_[0];
@@ -175,22 +176,20 @@ inline QTextStream& operator<<(QTextStream& stream, Scan<SampleType, TimestampTy
 template<typename SampleType, typename TimestampType>
 inline QTextStream& operator>>(QTextStream& stream, Scan<SampleType, TimestampType>& scan) {
 	QString line = stream.readLine();
+	auto tokens = line.split(',');
 
 	//read timestamp first if it is there
-	if (!line.isEmpty() && line[0] == 't') {
-		auto list = line.split(',');
+	if (!line.isEmpty() && line[0] != '-') {		
 		scan.ignoreTimestamp = false;
-		scan.ts_.seconds_ = list[2].toDouble();
-		scan.ts_.nanoseconds_ = list[3].toDouble();
-		line = stream.readLine();
+		QTextStream s(&tokens[0]);
+		s >> scan.ts_;
 	}
 	else 
 		scan.ignoreTimestamp = true;
 
-	auto list = line.split(',');
-	scan.samples_.resize(list.size());
-	for (int i = 0; i < list.size(); ++i)
-		scan.samples_[i] = list[i];
+	scan.samples_.resize(tokens.size() - 1);
+	for (int i = 1; i < tokens.size(); ++i)
+		scan.samples_[i-1] = tokens[i];
 	return stream;
 }
 
@@ -271,22 +270,28 @@ inline QDataStream& operator>>(QDataStream& stream, HeaderPart6991& header) {
 struct SignalPacketHeader {
 	DeviceType deviceType_ = DeviceType::INVALID;
 	uint32_t scansNo_;
-	uint32_t samplesPerScan_; //aka channel number
+	uint32_t samplesPerScan_;
 	uint32_t dataSize_;
 	QHostAddress deviceAddress_;
+	bool containsChannelStates_;
+	uint32_t channelsCount_;
 	bool timestamps_;
+	std::vector<bool> channelsStates_;;
 	//enabled channels
 
 	SignalPacketHeader() {}
 
 	SignalPacketHeader(HeaderPart6991 const& header) {
+		containsChannelStates_ = false;
 		if (header.id_ == 0x6111) {
 			deviceType_ = DeviceType::_6111;
 			samplesPerScan_ = header.numberOfSamplesPerScan_ / 8;
+			channelsCount_ = 256;
 		}
 		else if (header.id_ == 0x6132) {
 			deviceType_ = DeviceType::_6132;
 			samplesPerScan_ = header.numberOfSamplesPerScan_;
+			channelsCount_ = 32;
 		}
 		else
 			samplesPerScan_ = header.numberOfSamplesPerScan_;
@@ -305,6 +310,12 @@ inline QDataStream& operator<<(QDataStream& stream, SignalPacketHeader const& he
 	stream << header.dataSize_;
 	stream << header.deviceAddress_;
 	stream << header.timestamps_;
+	stream << header.containsChannelStates_;
+	if (header.containsChannelStates_) {
+		stream << header.channelsCount_;
+		for(auto const state : header.channelsStates_)
+			stream << state;
+	}
 	return stream;
 }
 
@@ -317,6 +328,16 @@ inline QDataStream& operator>>(QDataStream& stream, SignalPacketHeader& header) 
 	stream >> header.dataSize_;
 	stream >> header.deviceAddress_;
 	stream >> header.timestamps_;
+	stream >> header.containsChannelStates_;
+	if (header.containsChannelStates_) {
+		stream >> header.channelsCount_;
+		header.channelsStates_.clear();
+		for (int i = 0; i < header.channelsCount_; ++i) {
+			bool state;
+			stream >> state;
+			header.channelsStates_.push_back(state);
+		}
+	}
 	return stream;
 }
 

@@ -665,7 +665,7 @@ struct DeviceStateEnum {
 class DeviceState {
 	uint32_t data_;
 	DeviceStateEnum::Type state_;
-	std::optional<uint32_t> controllerId_;
+	std::optional<uint32_t> masterControllerId_;
 public:
 	std::array<bool, 4> linksConnectionStatus() const noexcept;
 	void setLinksConnectionStatus(std::array<bool, 4> const& linksStatus) noexcept;
@@ -683,7 +683,7 @@ public:
 	void setState(DeviceStateEnum::Type const state) noexcept;
 	uint32_t toUInt() const noexcept;
 	void setControllerId(std::optional<uint32_t> const& controllerId) noexcept;
-	std::optional<uint32_t> controllerId() const noexcept;
+	std::optional<uint32_t> masterControllerId() const noexcept;
 };
 
 struct AcquisitionStartModeModel {

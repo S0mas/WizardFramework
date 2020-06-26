@@ -81,6 +81,9 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	DFIFO_PFLAG_THR_reg DFIFO_PFLAG_THR_reg_{ this };
 	DFIFO_WR_reg DFIFO_WR_reg_{ this };
 	DFIFO DFIFO_{ this };
+	Configuration6991 lastConfig_;
+
+	uint32_t controllerId_ = 0;
 
 	std::array<FecRegs, 3> fecRegs_{ FecRegs{FecIdType::BOTH, this}, FecRegs{FecIdType::_1, this}, FecRegs{FecIdType::_2, this} };
 
@@ -96,7 +99,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	int portToReconnectAfterFifoTest = 0;
 	QHostAddress addressToRecnnectAfterFifoTest;
 	///////////////////////////////////////////////////
-	
+
 	bool isAcqActive_ = false;
 	QString toChannelList(std::vector<uint32_t> const& channelIds) const noexcept;
 	bool isAnyTestRunning() noexcept;
@@ -140,6 +143,10 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	bool setPtpAlarm(PtpTime const alarmTime) const noexcept;
 	std::optional<uint32_t> scansNoPerDirectReadPacket() const noexcept;
 	bool setScansNoPerDirectReadPacket(uint32_t const scansNo) const noexcept;
+	bool setUserEvent() const noexcept;
+	QString prepareDataFileHeader() noexcept;
+	QFile* createFileForDataCollection(QString const& name) noexcept;
+	void replaceAcqDataFile() noexcept;
 public:
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent = nullptr) noexcept;
 	~Device6991() override = default;
@@ -152,11 +159,16 @@ public:
 	QString loadSerialnumber() const override { return ""; }
 	QString loadFirmwareRevision() const override { return ""; }
 	QString loadDriverRevision() const override { return ""; }
-	std::optional<bool> isAcquisitionActive() noexcept;std::optional<uint32_t> controllerId() const noexcept;
+	bool isAcquisitionActive() noexcept;
+	void checkIfAcqWasStartedFromOtherClient() noexcept;
+	void checkIfAcqWasStoppedFromOtherClient() noexcept;
+	bool clearUserEvent() const noexcept; //it can be invoked by multiple clients (when it is already cleared) the problem is - if it is possible that one client will clear this event before another will handle it..
+	std::optional<bool> isThisTheMasterController() const noexcept;
+	std::optional<uint32_t> masterControllerId() const noexcept;
+	uint32_t controllerId() const noexcept { return controllerId_; }
 public slots:
 	void deviceStateRequest() noexcept;
 	void controllerKeyRequest() const noexcept;
-	void configurationDataRequest() const noexcept;
 	void testCountersRequest() noexcept;
 	bool writeFpgaRegister(uint32_t const address, uint32_t const data) const noexcept;
 	bool writeFecRegister(uint32_t const fcId, uint32_t const address, uint32_t const data) const noexcept;
@@ -197,6 +209,8 @@ public slots:
 	void handleSetGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) noexcept;
 	void handleSetChannelsEnabledReq(bool const state, std::vector<uint32_t> const& channelIds) noexcept;
 	void handleChannelsConfigurationReq() noexcept;
+	void handleDeviceConfigurationReq() noexcept;
+	void handleIdChanged(uint32_t const id) noexcept;
 signals:
 	void actualControllerKey(int const id) const;
 	void acquisitionStarted() const;
@@ -206,7 +220,7 @@ signals:
 	void controlReleased() const;
 	void disconnectedDataStream() const;
 	void state(DeviceState const state) const;
-	void configuration(Configuration6991 const configuration) const;
+	void deviceConfiguration(Configuration6991 const configuration) const;
 	void testsStarted() const;
 	void testsStopped() const;
 	void testCounters(TestsStatus const& status) const;

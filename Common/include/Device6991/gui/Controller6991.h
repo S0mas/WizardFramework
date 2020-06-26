@@ -97,6 +97,7 @@ signals:
 	void configureDeviceReq(Configuration6991 const& config) const;
 	void startAcqReq() const;
 	void stopAcqReq() const;
+	void controllerIdChanged(uint32_t const id) const;
 public:
 	Controller6991(std::unique_ptr<Device6991>& devIF, bool const dbgMode = false, QWidget* parent = nullptr);
 	~Controller6991() override;
