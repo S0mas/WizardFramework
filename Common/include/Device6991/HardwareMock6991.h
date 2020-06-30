@@ -4,7 +4,6 @@
 #include <QTimer>
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QRandomGenerator>
 #include <array>
 #include <algorithm>
 #include <vector>
@@ -13,7 +12,6 @@
 #include "Registers6991.h"
 #include "../SignalDataPacket.h"
 #include <bitset>
-#include <QRandomGenerator>
 #include <map>
 //dbg
 #include <thread>
@@ -52,7 +50,7 @@ class HardwareMock6991 : public QObject {
 		}
 	}
 
-	void checkTestsRegs() noexcept {
+	void checkTestsRegs() {
 		bool testsStarted = false;
 		bool testsStopped = true;
 		const int CL0_SEL = 24;
@@ -111,23 +109,23 @@ class HardwareMock6991 : public QObject {
 		checkError();
 	}
 
-	void updateCounters() noexcept {
+	void updateCounters() {
 		std::vector<RegistersEnum::Type> countersRegsToUpdate;
 		if (testSelectionModel_[TestTypeEnum::CL0] || testSelectionModel_[TestTypeEnum::CL1]) {
 			countersRegsToUpdate.push_back(RegistersEnum::CL_SPI_TLCNT_reg);
-			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL0])
+			if (qrand() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL0])
 				countersRegsToUpdate.push_back(RegistersEnum::CL0_SPI_TLERR_reg);
-			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL1])
+			if (qrand() % 4 == 0 && testSelectionModel_[TestTypeEnum::CL1])
 				countersRegsToUpdate.push_back(RegistersEnum::CL1_SPI_TLERR_reg);
 		}
 		if (testSelectionModel_[TestTypeEnum::DL0]) {
 			countersRegsToUpdate.push_back(RegistersEnum::DL0_SPI_TMCNT_reg);
-			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL0])
+			if (qrand() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL0])
 				countersRegsToUpdate.push_back(RegistersEnum::DL0_SPI_TMERR_reg);
 		}
 		if (testSelectionModel_[TestTypeEnum::DL1]) {
 			countersRegsToUpdate.push_back(RegistersEnum::DL1_SPI_TMCNT_reg);
-			if (QRandomGenerator::global()->generate() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL1])
+			if (qrand() % 4 == 0 && testSelectionModel_[TestTypeEnum::DL1])
 				countersRegsToUpdate.push_back(RegistersEnum::DL1_SPI_TMERR_reg);
 		}
 		for (auto regType : countersRegsToUpdate)
@@ -180,7 +178,7 @@ class HardwareMock6991 : public QObject {
 				scan.ts_.nanoseconds_ = 124151;
 			}
 			for (auto& sample : scan.samples_)
-				sample.raw_ = QRandomGenerator::global()->bounded(0xFF);
+				sample.raw_ = qrand()%0x100;
 		}
 
 		if (socket->isOpen()) {
@@ -217,7 +215,7 @@ class HardwareMock6991 : public QObject {
 				scan.ts_.nanoseconds_ = 192381;
 			}
 			for (auto& sample : scan.samples_)
-				sample = QRandomGenerator::global()->bounded(-5, 5);
+				sample = qrand() % 5;
 		}
 
 		if (socket->isOpen()) {
@@ -353,7 +351,7 @@ public:
 
 	PtpTime ptpTime() const noexcept {
 		PtpTime time;
-		time.seconds_ = static_cast<int>(QDateTime::currentDateTime().currentSecsSinceEpoch());
+		time.seconds_ = static_cast<int>(QDateTime::currentDateTime().currentMSecsSinceEpoch()/1000);
 		return time;
 	}
 
@@ -437,7 +435,7 @@ public:
 		state ? fpgaRegs_[RegistersEnum::ACQ_CSR_reg] |= 0x80000000 : fpgaRegs_[RegistersEnum::ACQ_CSR_reg] &= 0x7FFFFFFF;
 	}
 
-	void startAcquisition() noexcept {
+	void startAcquisition() {
 		if (!isAcqActive()) {
 			setAcqActive(true);
 			acquisitionStoppedOnError_ = false;

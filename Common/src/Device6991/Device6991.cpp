@@ -16,7 +16,7 @@
 #include <atomic>
 #include <optional>
 
-void Device6991::checkIfAcqWasStartedFromOtherClient() noexcept {
+void Device6991::checkIfAcqWasStartedFromOtherClient() {
 	if (!isAcqActive_) {
 		replaceAcqDataFile(); // This solution is not perfect, possible problems : 1. The old data is still queued in the stream while signal about new acq arrived.(it will appear in new file) 2. Some new data already arrived before file opening procedure was triggered. (it wont be stored at all).
 		isAcqActive_ = true;
@@ -24,24 +24,24 @@ void Device6991::checkIfAcqWasStartedFromOtherClient() noexcept {
 	}
 }
 
-void Device6991::checkIfAcqWasStoppedFromOtherClient() noexcept {
+void Device6991::checkIfAcqWasStoppedFromOtherClient() {
 	if (isAcqActive_) {
 		isAcqActive_ = false;
 		emit acquisitionStopped();
 	}
 }
 
-bool Device6991::clearUserEvent() const noexcept {
+bool Device6991::clearUserEvent() const {
 	return invokeCmd("SYST:USER 0");
 }
 
-std::optional<bool> Device6991::isThisTheMasterController() const noexcept {
+std::optional<bool> Device6991::isThisTheMasterController() const {
 	if (auto id = masterControllerId(); id)
 		return *id == controllerId_;
 	return std::nullopt;
 }
 
-QString Device6991::toChannelList(std::vector<uint32_t> const& channelIds) const noexcept {
+QString Device6991::toChannelList(std::vector<uint32_t> const& channelIds) const {
 	auto sortedIds = channelIds;
 	std::sort(sortedIds.begin(), sortedIds.end());
 	QString channels;
@@ -63,15 +63,15 @@ QString Device6991::toChannelList(std::vector<uint32_t> const& channelIds) const
 	return QString("(@%1)").arg(channels);
 }
 
-bool Device6991::isAnyTestRunning() noexcept {
+bool Device6991::isAnyTestRunning() {
 	return clTest_.isRunning() || dlTest_.isRunning() || fifoTest_.isRunning();
 }
 
-void Device6991::showWarningAboutCommunicationWithDeviceDuringAcq() const noexcept {
+void Device6991::showWarningAboutCommunicationWithDeviceDuringAcq() const {
 	sender_->waitForConfirmation("Please, keep in mind that any type of communication with the device during acquisition will have impact on the performance of the whole process.");
 }
 
-DeviceState Device6991::extractStatus(QString const& stateData) noexcept {
+DeviceState Device6991::extractStatus(QString const& stateData) {
 	auto list = stateData.split(',');
 	DeviceState state;
 	state.setState(DeviceStateEnum::fromString(list[0]));
@@ -79,24 +79,24 @@ DeviceState Device6991::extractStatus(QString const& stateData) noexcept {
 	return state;
 }
 
-std::optional<DeviceState> Device6991::status() noexcept {
+std::optional<DeviceState> Device6991::status() {
 	auto resp = invokeQuery(QString("SYSTem:STATe?"));
 	return resp ? std::optional{ extractStatus(*resp) } : std::nullopt;
 }
 
-bool Device6991::enableChannal(uint32_t const channelId, bool const state) noexcept {
+bool Device6991::enableChannal(uint32_t const channelId, bool const state) {
 	clearUserEvent();
 	setUserEvent();
 	return invokeCmd(QString("CONFigure%1:ENABled %2").arg(channelId).arg(state ? 1 : 0));
 }
 
-bool Device6991::enableChannals(std::vector<uint32_t> const& channelIds, bool const state) noexcept {
+bool Device6991::enableChannals(std::vector<uint32_t> const& channelIds, bool const state) {
 	clearUserEvent();
 	setUserEvent();
 	return invokeCmd(QString("CONFigure:ENABled %1, %2").arg(state ? 1 : 0).arg(toChannelList(channelIds)));
 }
 
-bool Device6991::enableChannals(std::vector<bool> const& states) noexcept {
+bool Device6991::enableChannals(std::vector<bool> const& states) {
 	clearUserEvent();
 	setUserEvent();
 	std::vector<uint32_t> toEnable;
@@ -109,11 +109,11 @@ bool Device6991::enableChannals(std::vector<bool> const& states) noexcept {
 	return enableChannals(toEnable) && enableChannals(toDisable, false);
 }
 
-std::optional<bool> Device6991::isChannelEnabled(uint32_t const channelId) noexcept {
+std::optional<bool> Device6991::isChannelEnabled(uint32_t const channelId) {
 	return invokeQuery(QString("CONFigure%1:ENABled?").arg(channelId))->toUInt() == 1;
 }
 
-std::optional<std::vector<bool>> Device6991::areChannelsEnabled(std::vector<uint32_t> const& channelIds) noexcept {
+std::optional<std::vector<bool>> Device6991::areChannelsEnabled(std::vector<uint32_t> const& channelIds) {
 	if (auto resp = invokeQuery(QString("CONFigure:ENABled? %1").arg(toChannelList(channelIds))); resp) {
 		auto list = resp->split(',');
 		std::vector<bool> states;
@@ -124,7 +124,7 @@ std::optional<std::vector<bool>> Device6991::areChannelsEnabled(std::vector<uint
 	return std::nullopt;
 }
 
-std::optional<std::vector<bool>> Device6991::areChannelsEnabled() noexcept {
+std::optional<std::vector<bool>> Device6991::areChannelsEnabled() {
 	if (auto resp = invokeQuery(QString("CONFigure0:ENABled?")); resp) {
 		auto list = resp->split(',');
 		std::vector<bool> states;
@@ -135,31 +135,31 @@ std::optional<std::vector<bool>> Device6991::areChannelsEnabled() noexcept {
 	return std::nullopt;
 }
 
-std::optional<ScanRateModel> Device6991::scanRate() const noexcept {
+std::optional<ScanRateModel> Device6991::scanRate() const {
 	if (auto rate = invokeQuery(QString("CONFigure:SCAN:RATe?")); rate)
 		return ScanRateModel::fromString(*rate);
 	return std::nullopt;
 }
 
-bool Device6991::setScanRate(ScanRateModel const scanRate) const noexcept {
+bool Device6991::setScanRate(ScanRateModel const scanRate) const {
 	return invokeCmd(QString("CONFigure:SCAN:RATe %1,%2").arg(scanRate.value_).arg(ScanRateUnitsEnum::toString(scanRate.units_)));
 }
 
-std::optional<AcquisitionStartModeEnum::Type> Device6991::startMode() const noexcept {
+std::optional<AcquisitionStartModeEnum::Type> Device6991::startMode() const {
 	if (auto mode = invokeQuery(QString("CONFigure:TRIGger:STARt?")); mode)
 		return std::optional(AcquisitionStartModeEnum::fromString(*mode));
 	return std::nullopt;
 }
 
-bool Device6991::setStartMode(AcquisitionStartModeEnum::Type const mode) const noexcept {
+bool Device6991::setStartMode(AcquisitionStartModeEnum::Type const mode) const {
 	return invokeCmd(QString("CONFigure:TRIGger:STARt '%1'").arg(AcquisitionStartModeEnum::toString(mode)));
 }
 
-bool Device6991::setFilter(FilterType6132::Type const filter, std::vector<uint32_t> const& channelsIds) const noexcept {
+bool Device6991::setFilter(FilterType6132::Type const filter, std::vector<uint32_t> const& channelsIds) const {
 	return invokeCmd(QString("CONFigure:FILTer %1, %2").arg(FilterType6132::toString(filter)).arg(toChannelList(channelsIds)));
 }
 
-bool Device6991::setFilters(std::vector<FilterType6132::Type> const& filters) const noexcept {
+bool Device6991::setFilters(std::vector<FilterType6132::Type> const& filters) const {
 	std::map<FilterType6132::Type, std::vector<uint32_t>> sortedFilters;
 	for (int channelId = 1; channelId <= filters.size(); ++channelId)
 		sortedFilters[filters[channelId - 1]].push_back(channelId);
@@ -169,11 +169,11 @@ bool Device6991::setFilters(std::vector<FilterType6132::Type> const& filters) co
 		&& (sortedFilters[FilterType6132::_1000Hz].empty() || setFilter(FilterType6132::_1000Hz, sortedFilters[FilterType6132::_1000Hz]));
 }
 
-bool Device6991::setFilter(FilterType6132::Type const gain, uint32_t const& channelId) const noexcept {
+bool Device6991::setFilter(FilterType6132::Type const gain, uint32_t const& channelId) const {
 	return invokeCmd(QString("CONFigure%1:FILTer %2").arg(channelId).arg(FilterType6132::toString(gain)));
 }
 
-std::optional<std::vector<FilterType6132::Type>> Device6991::filter(std::vector<uint32_t> const& channelsIds) const noexcept {
+std::optional<std::vector<FilterType6132::Type>> Device6991::filter(std::vector<uint32_t> const& channelsIds) const {
 	if (auto resp = invokeQuery(QString("CONFigure:FILTer? %1").arg(toChannelList(channelsIds))); resp) {
 		auto list = resp->split(',');
 		std::vector<FilterType6132::Type> filters;
@@ -184,13 +184,13 @@ std::optional<std::vector<FilterType6132::Type>> Device6991::filter(std::vector<
 	return std::nullopt;
 }
 
-std::optional<FilterType6132::Type> Device6991::filter(uint32_t const& channelsId) const noexcept {
+std::optional<FilterType6132::Type> Device6991::filter(uint32_t const& channelsId) const {
 	if (auto resp = invokeQuery(QString("CONFigure:FILTer? %1").arg(channelsId)); resp)
 		return FilterType6132::fromString(*resp);
 	return std::nullopt;
 }
 
-std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const noexcept {
+std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const {
 	if (auto resp = invokeQuery(QString("CONFigure0:FILTer?")); resp) {
 		auto list = resp->split(',');
 		std::vector<FilterType6132::Type> filters;
@@ -201,11 +201,11 @@ std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const noex
 	return std::nullopt;
 }
 
-bool Device6991::setGain(GainType6132::Type const gain, std::vector<uint32_t> const& channelsIds) const noexcept {
+bool Device6991::setGain(GainType6132::Type const gain, std::vector<uint32_t> const& channelsIds) const {
 	return invokeCmd(QString("CONFigure:GAIN %1, %2").arg(GainType6132::toString(gain)).arg(toChannelList(channelsIds)));
 }
 
-bool Device6991::setGains(std::vector<GainType6132::Type> const& gains) const noexcept{
+bool Device6991::setGains(std::vector<GainType6132::Type> const& gains) const{
 	std::map<GainType6132::Type, std::vector<uint32_t>> sortedGains;
 	for (int channelId = 1; channelId <= gains.size(); ++channelId)
 		sortedGains[gains[channelId - 1]].push_back(channelId);
@@ -215,11 +215,11 @@ bool Device6991::setGains(std::vector<GainType6132::Type> const& gains) const no
 		&& (sortedGains[GainType6132::_8].empty() || setGain(GainType6132::_8, sortedGains[GainType6132::_8]));
 }
 
-bool Device6991::setGain(GainType6132::Type const gain, uint32_t const& channelId) const noexcept {
+bool Device6991::setGain(GainType6132::Type const gain, uint32_t const& channelId) const {
 	return invokeCmd(QString("CONFigure%1:GAIN %2").arg(channelId).arg(GainType6132::toString(gain)));
 }
 
-std::optional<std::vector<GainType6132::Type>> Device6991::gain(std::vector<uint32_t> const& channelsIds) const noexcept {
+std::optional<std::vector<GainType6132::Type>> Device6991::gain(std::vector<uint32_t> const& channelsIds) const {
 	if (auto resp = invokeQuery(QString("CONFigure:GAIN? %1").arg(toChannelList(channelsIds))); resp) {
 		auto list = resp->split(',');
 		std::vector<GainType6132::Type> gains;
@@ -230,13 +230,13 @@ std::optional<std::vector<GainType6132::Type>> Device6991::gain(std::vector<uint
 	return std::nullopt;
 }
 
-std::optional<GainType6132::Type> Device6991::gain(uint32_t const& channelsId) const noexcept {
+std::optional<GainType6132::Type> Device6991::gain(uint32_t const& channelsId) const {
 	if (auto resp = invokeQuery(QString("CONFigure:GAIN? %1").arg(channelsId)); resp)
 		return GainType6132::fromString(*resp);
 	return std::nullopt;
 }
 
-std::optional<std::vector<GainType6132::Type>> Device6991::gain() const noexcept {
+std::optional<std::vector<GainType6132::Type>> Device6991::gain() const {
 	if (auto resp = invokeQuery(QString("CONFigure0:GAIN?")); resp) {
 		auto list = resp->split(',');
 		std::vector<GainType6132::Type> gains;
@@ -247,78 +247,78 @@ std::optional<std::vector<GainType6132::Type>> Device6991::gain() const noexcept
 	return std::nullopt;
 }
 
-std::optional<PtpTime> Device6991::ptpTime() const noexcept {
+std::optional<PtpTime> Device6991::ptpTime() const {
 	if (auto ptpTime = invokeQuery(QString("SYSTem:PTPTime?")); ptpTime)
 		return PtpTime::fromString(*ptpTime);
 	return std::nullopt;
 }
 
-std::optional<bool> Device6991::stopOnError() const noexcept {
+std::optional<bool> Device6991::stopOnError() const {
 	if (auto stopOnError = invokeQuery(QString("CONFigure:STOPonerr?")); stopOnError)
 		return (*stopOnError).toUInt() == 1;
 	return std::nullopt;
 }
 
-bool Device6991::setStopOnError(bool const stopOnError) const noexcept {
+bool Device6991::setStopOnError(bool const stopOnError) const {
 	return invokeCmd(QString("CONFigure:STOPonerr %1").arg(stopOnError ? 1 : 0));
 }
 
-std::optional<uint32_t> Device6991::scansTreshold() const noexcept {
+std::optional<uint32_t> Device6991::scansTreshold() const {
 	if (auto scanTreshold = invokeQuery(QString("CONFigure:SCAN:POST?")); scanTreshold)
 		return (*scanTreshold).toUInt();
 	return std::nullopt;
 }
 
-bool Device6991::setScansTreshold(uint32_t const scansTreshold) const noexcept {
+bool Device6991::setScansTreshold(uint32_t const scansTreshold) const {
 	return invokeCmd(QString("CONFigure:SCAN:POST %1").arg(scansTreshold));
 }
 
-std::optional<bool> Device6991::timestamps() const noexcept {
+std::optional<bool> Device6991::timestamps() const {
 	if (auto timestamp = invokeQuery(QString("CONFigure:SCAN:TIMestamp?")); timestamp)
 		return (*timestamp).toUInt() == 1;
 	return std::nullopt;
 }
 
-bool Device6991::setTimeStamps(bool const mode) const noexcept {
+bool Device6991::setTimeStamps(bool const mode) const {
 	return invokeCmd(QString("CONFigure:SCAN:TIMestamp %1").arg(mode ? 1 : 0));
 }
 
-std::optional<DeviceState> Device6991::channelState() const noexcept { // TODO
+std::optional<DeviceState> Device6991::channelState() const { // TODO
 	return std::nullopt;
 }
 
-std::optional<Temperature> Device6991::temperature(TemperaturesEnum::Type const source) const noexcept {
+std::optional<Temperature> Device6991::temperature(TemperaturesEnum::Type const source) const {
 	if (auto temp = invokeQuery(QString("SYSTem:TEMPerature? '%1'").arg(TemperaturesEnum::toString(source))); temp)
 		return Temperature{ (*temp).toUInt(), source };//TODO check temp response format
 	return std::nullopt;
 }
 
-std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> Device6991::temperatures() const noexcept {
+std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> Device6991::temperatures() const {
 	std::array<std::optional<Temperature>, TemperaturesEnum::TYPES.size()> temps;
 	for (auto source : TemperaturesEnum::TYPES)
 		temps[source] = temperature(source);
 	return temps;
 }
 
-std::optional<FansModeEnum::Type> Device6991::fansMode() const noexcept {
+std::optional<FansModeEnum::Type> Device6991::fansMode() const {
 	if (auto fansMode = invokeQuery(QString("SYSTem:FAN?")); fansMode)
 		return FansModeEnum::fromString(*fansMode);
 	return std::nullopt;
 }
 
-bool Device6991::setFansMode(FansModeEnum::Type const mode) const noexcept {
+bool Device6991::setFansMode(FansModeEnum::Type const mode) const {
 	return invokeCmd(QString("SYSTem:FAN %1").arg(mode));
 }
 
-std::optional<ClockSourceEnum::Type> Device6991::clockSource() const noexcept { // TODO
+std::optional<ClockSourceEnum::Type> Device6991::clockSource() const { // TODO
 	return std::nullopt;
 }
 
-void Device6991::setClockSource(ClockSourceEnum::Type const source) const noexcept { // TODO
+void Device6991::setClockSource(ClockSourceEnum::Type const source) const { // TODO
 
 }
 
-std::optional<PtpTime> Device6991::ptpAlarm() const noexcept {
+std::optional<PtpTime> Device6991::ptpAlarm() const {
 	if (auto ptpAlarm = invokeQuery(QString("CONFigure:TRIGger:PTP:ALARm?")); ptpAlarm) {
 		auto list = (*ptpAlarm).split(',');
 		return PtpTime{ list[0].toUInt(), list[1].toUInt() };
@@ -326,27 +326,27 @@ std::optional<PtpTime> Device6991::ptpAlarm() const noexcept {
 	return std::nullopt;
 }
 
-bool Device6991::setPtpAlarm(PtpTime const alarmTime) const noexcept {
+bool Device6991::setPtpAlarm(PtpTime const alarmTime) const {
 	return invokeCmd(QString("CONFigure:TRIGger:PTP:ALARm %1,%2").arg(alarmTime.seconds_).arg(alarmTime.nanoseconds_));
 }
 
-std::optional<uint32_t> Device6991::scansNoPerDirectReadPacket() const noexcept {
+std::optional<uint32_t> Device6991::scansNoPerDirectReadPacket() const {
 	if (auto scansPerPacket = invokeQuery(QString("CONFigure:DIRectread?")); scansPerPacket)
 		return (*scansPerPacket).toUInt();
 	return std::nullopt;
 }
 
-bool Device6991::setScansNoPerDirectReadPacket(uint32_t const scansNo) const noexcept {
+bool Device6991::setScansNoPerDirectReadPacket(uint32_t const scansNo) const {
 	return invokeCmd(QString("CONFigure:DIRectread %1").arg(scansNo));
 }
 
-bool Device6991::setUserEvent() const noexcept {
+bool Device6991::setUserEvent() const {
 	auto result = invokeCmd("SYST:USER 1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	return result;
 }
 
-QString Device6991::prepareDataFileHeader() noexcept {
+QString Device6991::prepareDataFileHeader() {
 	QString header;
 	auto type = readFecType(FecIdType::_1);
 	header += QString("Device Type: %1\n").arg(type ? FecType::toString(*type) : "read error");
@@ -375,12 +375,12 @@ QString Device6991::prepareDataFileHeader() noexcept {
 	return header;
 }
 
-QFile* Device6991::createFileForDataCollection(QString const& name) noexcept {
+QFile* Device6991::createFileForDataCollection(QString const& name) {
 	auto dateTime = QDateTime::currentDateTimeUtc().toString("dd.MM.yyyy_hh-mm-ss");
 	return new QFile(QString("%1_%2.csv").arg(name).arg(dateTime), this);
 }
 
-void Device6991::replaceAcqDataFile() noexcept {
+void Device6991::replaceAcqDataFile() {
 	auto file = createFileForDataCollection("ACQ");
 	auto header = prepareDataFileHeader();
 	dataStream6111_.setHeader(header);
@@ -393,17 +393,17 @@ void Device6991::replaceAcqDataFile() noexcept {
 	}
 }
 
-bool Device6991::is6111() noexcept {
+bool Device6991::is6111() {
 	auto fecType = readFecType(FecIdType::_1); //6991 should always have the same cards on both slots (and always 2 slots should be occupied)
 	return fecType ? *fecType == FecType::_6111 : false;
 }
 
-bool Device6991::is6132() noexcept {
+bool Device6991::is6132() {
 	auto fecType = readFecType(FecIdType::_1); //6991 should always have the same cards on both slots (and always 2 slots should be occupied)
 	return fecType ? *fecType == FecType::_6132 : false;
 }
 
-Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
+Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent) : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
 	QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::connected, this, &Device6991::connectedDataStream);
 	QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::disconnected, this, &Device6991::disconnectedDataStream);
 	QObject::connect(dataStreamFifo_.client(), &DataCollectorClient::logMsg, this, &Device6991::logMsg);
@@ -421,16 +421,16 @@ Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connect
 	QObject::connect(dataStream6132_.client(), &DataCollectorClient::reportError, this, &Device6991::reportError);
 }
 
-bool Device6991::isAcquisitionActive() noexcept {
+bool Device6991::isAcquisitionActive() {
 	return isAcqActive_;
 }
-std::optional<uint32_t> Device6991::masterControllerId() const noexcept {
+std::optional<uint32_t> Device6991::masterControllerId() const {
 	if (auto lock = invokeQuery(QString("SYSTem:LOCK?")); lock)
 		return (*lock).toUInt();
 	return std::nullopt;
 }
 
-void Device6991::deviceStateRequest() noexcept {
+void Device6991::deviceStateRequest() {
 	if (dataStream6111_.isConnected() && isAcqActive_)
 		emit state(dataStream6111_.deviceState());
 	else if (dataStream6132_.isConnected() && isAcqActive_) {
@@ -447,12 +447,12 @@ void Device6991::deviceStateRequest() noexcept {
 	}
 }
 
-void Device6991::controllerKeyRequest() const noexcept {
+void Device6991::controllerKeyRequest() const {
 	if (auto id = masterControllerId(); id)
 		emit actualControllerKey(*id);
 }
 
-void Device6991::handleDeviceConfigurationReq() noexcept {
+void Device6991::handleDeviceConfigurationReq() {
 	Configuration6991 config;
 	config.scanRate_ = scanRate();
 	config.startMode_.mode_ = startMode();
@@ -470,7 +470,7 @@ void Device6991::handleDeviceConfigurationReq() noexcept {
 	emit deviceConfiguration(config);
 }
 
-void Device6991::testCountersRequest() noexcept {
+void Device6991::testCountersRequest() {
 	if (!isAnyTestRunning()) {
 		emit testsStopped();
 		return;
@@ -522,31 +522,31 @@ void Device6991::testCountersRequest() noexcept {
 	emit testCounters(status);
 }
 
-bool Device6991::writeFpgaRegister(uint32_t const address, uint32_t const data) const noexcept {
+bool Device6991::writeFpgaRegister(uint32_t const address, uint32_t const data) const {
 	return invokeCmd(QString("*HW:FPGA #h%1, #h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 }
 
-bool Device6991::writeFecRegister(uint32_t const fcId, uint32_t const address, uint32_t const data) const noexcept {
+bool Device6991::writeFecRegister(uint32_t const fcId, uint32_t const address, uint32_t const data) const {
 	return invokeCmd(QString("*HW:FEC %1, #h%2, #h%3").arg(fcId).arg(toHex(address, 8)).arg(toHex(data, 8)));
 }
 
-bool Device6991::writeCpuRegister(uint32_t const address, uint32_t const data) const noexcept {
+bool Device6991::writeCpuRegister(uint32_t const address, uint32_t const data) const {
 	return invokeCmd(QString("*HW:REG #h%1, #h%2").arg(toHex(address, 8)).arg(toHex(data, 8)));
 }
 
-std::optional<uint32_t> Device6991::readFpgaRegister(uint32_t const address) const noexcept {
+std::optional<uint32_t> Device6991::readFpgaRegister(uint32_t const address) const {
 	if (auto reg = invokeQuery(QString("*HW:FPGA? #h%1").arg(toHex(address, 8))); reg)
 		return (*reg).toUInt(nullptr, 16);
 	return std::nullopt;
 }
 
-std::optional<uint32_t> Device6991::readFecRegister(uint32_t const fcId, uint32_t const address) const noexcept {
+std::optional<uint32_t> Device6991::readFecRegister(uint32_t const fcId, uint32_t const address) const {
 	if (auto reg = invokeQuery(QString("*HW:FEC? %1, #h%2").arg(fcId).arg(toHex(address, 8))); reg)
 		return (*reg).toUInt(nullptr, 16);
 	return std::nullopt;
 }
 
-std::optional<std::pair<uint32_t, uint32_t>> Device6991::readBothFecRegisters(uint32_t const address) const noexcept {
+std::optional<std::pair<uint32_t, uint32_t>> Device6991::readBothFecRegisters(uint32_t const address) const {
 	if (auto regs = invokeQuery(QString("*HW:FEC? 0, #h%1").arg(toHex(address, 8))); regs) {
 		auto list = (*regs).split(';');
 		return std::pair{ list[0].toUInt(nullptr, 16), list[1].toUInt(nullptr, 16) };
@@ -554,17 +554,17 @@ std::optional<std::pair<uint32_t, uint32_t>> Device6991::readBothFecRegisters(ui
 	return std::nullopt;
 }
 
-bool Device6991::writeBothFecRegisters(uint32_t const address, uint32_t const data1, uint32_t const data2) const noexcept {
+bool Device6991::writeBothFecRegisters(uint32_t const address, uint32_t const data1, uint32_t const data2) const {
 	return invokeCmd(QString("*HW:FEC 0, #h%1, #h%2, #h%3").arg(toHex(address, 8), toHex(data1, 8), toHex(data2, 8)));
 }
 
-std::optional<uint32_t> Device6991::readCpuRegister(uint32_t const address) const noexcept {
+std::optional<uint32_t> Device6991::readCpuRegister(uint32_t const address) const {
 	if (auto reg = invokeQuery(QString("*HW:REG? #h%1").arg(toHex(address, 8))); reg)
 		return (*reg).toUInt(nullptr, 16);
 	return std::nullopt;
 }
 
-bool Device6991::testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds, uint32_t const breakTimeInMilliseconds) noexcept {
+bool Device6991::testWithTimeout(std::function<bool()> const& functionCondition, uint32_t const timeoutInMilliseconds, uint32_t const breakTimeInMilliseconds) {
 	QTime startTime;
 	startTime.start();
 	while (startTime.elapsed() < timeoutInMilliseconds) {
@@ -577,40 +577,40 @@ bool Device6991::testWithTimeout(std::function<bool()> const& functionCondition,
 	return false;
 }
 
-std::optional<FecType::Type> Device6991::readFecType(FecIdType::Type const fecId) noexcept {
+std::optional<FecType::Type> Device6991::readFecType(FecIdType::Type const fecId) {
 	return fecRegs_[fecId].FE_ID_reg_.fecType();
 }
 
-bool Device6991::isFecIdle(FecIdType::Type fecId, FecType::Type const type) noexcept {
+bool Device6991::isFecIdle(FecIdType::Type fecId, FecType::Type const type) {
 	return fecRegs_[fecId].BOARD_CSR_reg_.isIdle(type);
 }
 
-bool Device6991::isFecIdle(FecIdType::Type fecId) noexcept {
+bool Device6991::isFecIdle(FecIdType::Type fecId) {
 	auto fecType = readFecType(fecId);
 	return fecType && fecRegs_[fecId].BOARD_CSR_reg_.isIdle(*fecType);
 }
 
-bool Device6991::setProperDlFrame(FecIdType::Type fecId, FecType::Type const type) noexcept {
+bool Device6991::setProperDlFrame(FecIdType::Type fecId, FecType::Type const type) {
 	return DL_SPI_CSR2_reg_.setDlFrameLength(type, fecId);
 }
 
-bool Device6991::setProperDlFrame(FecIdType::Type fecId) noexcept {
+bool Device6991::setProperDlFrame(FecIdType::Type fecId) {
 	auto fecType = readFecType(fecId);
 	return fecType && DL_SPI_CSR2_reg_.setDlFrameLength(*fecType, fecId);
 }
 
-void Device6991::handleSetStoreDataReq(bool const state) noexcept {
+void Device6991::handleSetStoreDataReq(bool const state) {
 	dataStreamFifo_.setStoreData(state);
 	dataStream6111_.setStoreData(state);
 	dataStream6132_.setStoreData(state);
 }
 
-void Device6991::handleSetForwardDataReq(bool const state) noexcept {
+void Device6991::handleSetForwardDataReq(bool const state) {
 	dataStream6111_.setForwardData(state);
 	dataStream6132_.setForwardData(state);
 }
 
-void Device6991::handleFpgaRegisterReadReq(uint32_t const address) const noexcept {
+void Device6991::handleFpgaRegisterReadReq(uint32_t const address) const {
 	if (auto reg = readFpgaRegister(address); reg) {
 		emit fpgaRegisterReadResp(*reg);
 		emit logMsg(QString("Fpga register read successful, address:%1, data:%2").arg(toHex(address, 8), toHex(*reg, 8)));
@@ -619,7 +619,7 @@ void Device6991::handleFpgaRegisterReadReq(uint32_t const address) const noexcep
 		emit reportError(QString("Failed to read fpga register, address:%1").arg(toHex(address, 8)));
 }
 
-void Device6991::handleFecRegisterReadReq(FecIdType::Type const fecId, uint32_t const address) const noexcept {
+void Device6991::handleFecRegisterReadReq(FecIdType::Type const fecId, uint32_t const address) const {
 	if (fecId != FecIdType::BOTH) {
 		if (auto reg = readFecRegister(fecId, address); reg) {
 			emit fecRegisterReadResp(fecId, *reg);
@@ -639,14 +639,14 @@ void Device6991::handleFecRegisterReadReq(FecIdType::Type const fecId, uint32_t 
 	}
 }
 
-void Device6991::handleFpgaRegisterWriteReq(uint32_t const address, uint32_t const data) const noexcept {
+void Device6991::handleFpgaRegisterWriteReq(uint32_t const address, uint32_t const data) const {
 	if (writeFpgaRegister(address, data))
 		emit logMsg(QString("Fpga register write successful, address:%1, data:%2").arg(toHex(address, 8), toHex(data, 8)));
 	else
 		emit reportError(QString("Failed to write fpga register, address:%1, data:%2").arg(toHex(address, 8), toHex(data, 8)));
 }
 
-void Device6991::handleFecRegisterWriteReq(FecIdType::Type const fecId, uint32_t const address, uint32_t const data) const noexcept {
+void Device6991::handleFecRegisterWriteReq(FecIdType::Type const fecId, uint32_t const address, uint32_t const data) const {
 	if (writeFecRegister(fecId, address, data))
 		emit logMsg(QString("Fec register write successful, fecId:%1, address:%2, data:%3").arg(fecId).arg(toHex(address, 8), toHex(data, 8)));
 	else
@@ -654,25 +654,25 @@ void Device6991::handleFecRegisterWriteReq(FecIdType::Type const fecId, uint32_t
 }
 
 //TODO uncomment when implementation will be ready on the device
-void Device6991::handleFecStateReq(FecIdType::Type const fecId) const noexcept {
+void Device6991::handleFecStateReq(FecIdType::Type const fecId) const {
 	//if (auto present = BOARD_CSR1_reg_.isFecPresent(fecId); present && *present)
 	emit fecEnabledResp(fecId);
 	//else
 	//	emit fcCardDisabled(fecId);
 }
 
-void Device6991::handleTakeControlReq(int const id) const noexcept {
+void Device6991::handleTakeControlReq(int const id) const {
 	if (invokeCmd(QString("SYSTem:LOCK %1").arg(id)))
 		emit controlGranted();
 }
 
-void Device6991::handleReleaseControlReq() const noexcept {
+void Device6991::handleReleaseControlReq() const {
 	if (invokeCmd("SYSTem:LOCK 0"))
 		emit controlReleased();
 }
 
 //temporary solution TODO create and mantain only one stream
-void Device6991::handleConnectDataStreamReq(int const dataStreamId) noexcept {
+void Device6991::handleConnectDataStreamReq(int const dataStreamId) {
 	auto ipResource = inputResources().back();
 	if (is6111())
 		dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
@@ -683,7 +683,7 @@ void Device6991::handleConnectDataStreamReq(int const dataStreamId) noexcept {
 }
 
 //temporary solution TODO create and mantain only one stream
-void Device6991::handleDisconnectDataStreamReq() noexcept {
+void Device6991::handleDisconnectDataStreamReq() {
 	if (dataStream6111_.isConnected())
 		dataStream6111_.disconnect();
 	else if (dataStream6132_.isConnected())
@@ -693,7 +693,7 @@ void Device6991::handleDisconnectDataStreamReq() noexcept {
 	return;
 }
 
-void Device6991::handleConfigureDeviceReq(Configuration6991 const& config) noexcept {
+void Device6991::handleConfigureDeviceReq(Configuration6991 const& config) {
 	invokeCmd("*DBG 0");
 	if (config.scanRate_)
 		setScanRate(*config.scanRate_);
@@ -716,7 +716,7 @@ void Device6991::handleConfigureDeviceReq(Configuration6991 const& config) noexc
 	handleDeviceConfigurationReq();
 }
 
-void Device6991::handleStartAcqReq() noexcept {
+void Device6991::handleStartAcqReq() {
 	showWarningAboutCommunicationWithDeviceDuringAcq();
 	replaceAcqDataFile();
 	if (/*auto mode = startMode(); mode && *mode == AcquisitionStartModeEnum::IMMEDIATE && */invokeCmd("MEASure:ASYNc")) {
@@ -725,14 +725,14 @@ void Device6991::handleStartAcqReq() noexcept {
 	}
 }
 
-void Device6991::handleStopAcqReq() noexcept {
+void Device6991::handleStopAcqReq() {
 	if (invokeCmd("MEASure:ABORt")) {
 		isAcqActive_ = false;
 		emit acquisitionStopped();
 	}
 }
 
-void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept {
+void Device6991::handleStartTestsReq(StartTestsRequest const& request) {
 	handleStopTestsReq();
 	//starting tests order matters, fifo test cant be run with dl test and dl test must be started before cl
 	if (auto id = masterControllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
@@ -766,7 +766,7 @@ void Device6991::handleStartTestsReq(StartTestsRequest const& request) noexcept 
 	}
 }
 
-void Device6991::handleStopTestsReq() noexcept {
+void Device6991::handleStopTestsReq() {
 	//stopping tests order matters, cl test must be stopped first
 	if (auto id = masterControllerId(); id && *id == 80 || invokeCmd(QString("SYSTem:LOCK %1").arg(80))) {
 		clTest_.stopTest();
@@ -783,19 +783,19 @@ void Device6991::handleStopTestsReq() noexcept {
 	}
 }
 
-void Device6991::handleSetFiltersReq(FilterType6132::Type const filter, std::vector<uint32_t> const& channelIds) noexcept {
+void Device6991::handleSetFiltersReq(FilterType6132::Type const filter, std::vector<uint32_t> const& channelIds) {
 	setFilter(filter, channelIds);
 }
 
-void Device6991::handleSetGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) noexcept {
+void Device6991::handleSetGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) {
 	setGain(gain, channelIds);
 }
 
-void Device6991::handleSetChannelsEnabledReq(bool const state, std::vector<uint32_t> const& channelIds) noexcept {
+void Device6991::handleSetChannelsEnabledReq(bool const state, std::vector<uint32_t> const& channelIds) {
 	enableChannals(channelIds, state);
 }
 
-void Device6991::handleChannelsConfigurationReq() noexcept {
+void Device6991::handleChannelsConfigurationReq() {
 	ChannelsConfiguration configuration;
 	if (is6132()) {
 		configuration.gains_ = gain();
@@ -805,11 +805,11 @@ void Device6991::handleChannelsConfigurationReq() noexcept {
 	emit channelConfiguration(configuration);
 }
 
-void Device6991::handleIdChanged(uint32_t const id) noexcept {
+void Device6991::handleIdChanged(uint32_t const id) {
 	controllerId_ = id;
 }
 
-void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName) noexcept {
+void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName) {
 	QFile configurationFile(fileName);
 	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		reportError("The configuration file could not be opened.");
@@ -853,7 +853,7 @@ void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName
 	}
 }
 
-void Device6991::handleLoadChannelConfigurationFromFileReq(QString const& fileName) noexcept {
+void Device6991::handleLoadChannelConfigurationFromFileReq(QString const& fileName) {
 	QFile configurationFile(fileName);
 	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		reportError("The configuration file could not be opened.");

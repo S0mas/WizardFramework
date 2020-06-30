@@ -9,7 +9,7 @@ bool AbstractHardwareConnector::isSessionAvailable() const noexcept {
 	return vi_ != 0;
 }
 
-void AbstractHardwareConnector::sendConnectionStatus() const noexcept {
+void AbstractHardwareConnector::sendConnectionStatus() const {
 	emit connectionStatus(isSessionAvailable() && isConnectionPossible());
 	if (monitorConnection_)
 		QTimer::singleShot(2000, this, &AbstractHardwareConnector::sendConnectionStatus);

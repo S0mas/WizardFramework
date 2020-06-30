@@ -1,7 +1,7 @@
 #include "../../../include/Device6991/gui/RegisterController.h"
 #include <QMessageBox>
 
-void TargetFrontendCardView::handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const noexcept {
+void TargetFrontendCardView::handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const {
 	if (fecId == index_)
 		dataLineEdit_->setText(toHex(data, 8));;
 }
@@ -98,7 +98,7 @@ void TargetFrontendCardView::sendCommand(Commands1Enum::Type const cmd, unsigned
 	}
 }
 
-void TargetFrontendCardView::sendStateReq() const noexcept {
+void TargetFrontendCardView::sendStateReq() const {
 	emit stateReq(index_);
 }
 
@@ -134,7 +134,7 @@ RegisterControllerFrontend::RegisterControllerFrontend(Device6991* devIF, QWidge
 	createConnections();
 }
 
-void RegisterController6991::handleRegisterReadResp(unsigned int const data) const noexcept {
+void RegisterController6991::handleRegisterReadResp(unsigned int const data) const {
 	dataLineEdit_->setText(toHex(data, 8));
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QtGlobal>
 #include "ReadingStrategy.h"
 #include <mutex>
 
@@ -13,7 +14,7 @@ class DataCollectorClient : public QObject {
 		QObject::connect(socket_, &QAbstractSocket::connected, this, &DataCollectorClient::connected);
 		QObject::connect(socket_, &QIODevice::readyRead, this, &DataCollectorClient::readData);
 		QObject::connect(socket_, &QAbstractSocket::disconnected, this, &DataCollectorClient::disconnected);
-		QObject::connect(socket_, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), this, &DataCollectorClient::displayError);
+		QObject::connect(socket_, static_cast<void(QAbstractSocket::*)(QAbstractSocket::SocketError)>(&QAbstractSocket::error), this, &DataCollectorClient::displayError);
 	}
 
 	void displayError() {

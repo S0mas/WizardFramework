@@ -4,7 +4,7 @@
 #include <QLabel>
 
 void EnumSelector::createConnections() const noexcept {
-	QObject::connect(comboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	QObject::connect(comboBox_, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
 		[this](int const index) {
 			lineEdit_->setText(toHex(comboBox_->currentData().toUInt(), 8));
 			isCustomSelected() ? lineEdit_->setEnabled(true) : lineEdit_->setDisabled(true);

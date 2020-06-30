@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include <functional>
 #include "../../include/Device6991/Defines6991.h"
 
 class Device6991;

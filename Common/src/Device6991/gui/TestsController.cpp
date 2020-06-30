@@ -168,7 +168,7 @@ void TestsController::initializeStateMachine() noexcept {
 	sm_.start();
 }
 
-void TestsController::updateTime() const noexcept {
+void TestsController::updateTime() const {
 	auto msecs = time_.elapsed();
 	auto seconds = (msecs / 1000) % 60;
 	auto minutes = (msecs / 60000) % 60;

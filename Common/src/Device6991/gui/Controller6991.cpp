@@ -5,7 +5,7 @@
 #include <QThread>
 #include <QMetaObject>
 
-void Controller6991::createConnections() noexcept {
+void Controller6991::createConnections() {
 	connect(deviceThread_, &QThread::finished, deviceThread_, &QObject::deleteLater);
 	connect(deviceIF_.get(), &Device6991::logMsg, [](QString const& msg) { qDebug() << "LOG: " << msg; });
 	connect(deviceIF_.get(), &Device6991::reportError, [](QString const& msg) { qDebug() << "ERR: " << msg; });
@@ -48,7 +48,7 @@ void Controller6991::createConnections() noexcept {
 	initializeStateMachine();
 }
 
-void Controller6991::initializeStateMachine() noexcept {
+void Controller6991::initializeStateMachine() {
 	auto connected = new QState();
 	auto disconnected = new QState();
 	auto controller = new QState(connected);
@@ -136,7 +136,7 @@ void Controller6991::initializeStateMachine() noexcept {
 	sm_.start();
 }
 
-void Controller6991::addChannelConfigurationController() noexcept {
+void Controller6991::addChannelConfigurationController() {
 	auto fecType = deviceIF_->readFecType(FecIdType::_1);
 	QWidget* controller = nullptr;
 	if (fecType && *fecType == FecType::_6111)
@@ -157,7 +157,7 @@ void Controller6991::addChannelConfigurationController() noexcept {
 	}
 }
 
-Configuration6991 Controller6991::model() const noexcept {
+Configuration6991 Controller6991::model() const {
 	Configuration6991 config;
 	config.scanRate_ = scanRateView_->model();
 	config.startMode_ = startModeView_->model();
@@ -170,28 +170,28 @@ Configuration6991 Controller6991::model() const noexcept {
 	return config;
 }
 
-void Controller6991::showError(QString const& msg) noexcept {
+void Controller6991::showError(QString const& msg) {
 	QMessageBox::critical(this, "Error", QString("Error Occured: %1").arg(msg));
 }
 
-void Controller6991::showInformationToConfirmFromDevice(QString const& msg, MyPromiseVoid* barrierPromise) noexcept {
+void Controller6991::showInformationToConfirmFromDevice(QString const& msg, MyPromiseVoid* barrierPromise) {
 	QMessageBox::information(this, "Information", msg);
 	barrierPromise->set();
 }
 
-uint32_t Controller6991::id() const noexcept {
+uint32_t Controller6991::id() const {
 	return idEdit_->value();
 }
 
-void Controller6991::disableDataStreamCmbBox() const noexcept {
+void Controller6991::disableDataStreamCmbBox() const {
 	dataStreamComboBox_->setDisabled(true);
 }
 
-void Controller6991::enableDataStreamCmbBox() const noexcept {
+void Controller6991::enableDataStreamCmbBox() const {
 	dataStreamComboBox_->setEnabled(true);
 }
 
-void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
+void Controller6991::setModel(Configuration6991 const& configuration) {
 	if (configuration.scanRate_)
 		scanRateView_->setModel(*configuration.scanRate_);
 	scansPerPacketView_->setValue(*configuration.scansPerDirectReadPacket_);

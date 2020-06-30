@@ -60,7 +60,7 @@ QWidget* Controller6132::createConfigureChannelsWidget() noexcept {
 
 	layout->addLayout(hlayout);
 
-	connect(comboBoxAction, QOverload<QString const&>::of(&QComboBox::currentIndexChanged),
+	connect(comboBoxAction, static_cast<void(QComboBox::*)(QString const&)>(&QComboBox::currentIndexChanged),
 		[comboBoxValue](QString const& action) {
 			comboBoxValue->clear();
 			if (action == "Set Gain")
@@ -110,7 +110,7 @@ QDialog* Controller6132::createChannelsConfigurationDialog() noexcept {
 	return showChannelsConfigurationDialog;
 }
 
-void Controller6132::handleChannelConfiguration(ChannelsConfiguration const& configuration) noexcept {
+void Controller6132::handleChannelConfiguration(ChannelsConfiguration const& configuration) {
 	if (configuration.states_ && configuration.filters_ && configuration.gains_) {
 		for (int i = 0; i < configuration.states_->size(); ++i) {
 			channelTable_->setState(i, configuration.states_->at(i));

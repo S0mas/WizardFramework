@@ -7,7 +7,7 @@
 class CheckedTransition : public QSignalTransition {
 public:
 	CheckedTransition(QCheckBox* checkBox)
-		: QSignalTransition(checkBox, &QCheckBox::stateChanged) {}
+		: QSignalTransition(checkBox, SIGNAL(stateChanged(int))) {}
 	virtual ~CheckedTransition() = default;
 protected:
 	bool eventTest(QEvent* e) override {
@@ -18,7 +18,7 @@ protected:
 class UncheckedTransition : public QSignalTransition {
 public:
 	UncheckedTransition(QCheckBox* checkBox)
-		: QSignalTransition(checkBox, &QCheckBox::stateChanged) {}
+		: QSignalTransition(checkBox, SIGNAL(stateChanged(int))) {}
 	virtual ~UncheckedTransition() = default;
 protected:
 	bool eventTest(QEvent* e) override {

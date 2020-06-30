@@ -32,9 +32,9 @@ signals:
 	void registerReadReq(FecIdType::Type const fecId, unsigned int const address) const;
 	void registerWriteReq(FecIdType::Type const fecId, unsigned int const address, unsigned int const data) const;
 private slots:
-	void handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const noexcept;
+	void handleRegisterReadResp(FecIdType::Type const fecId, unsigned int const data) const;
 public slots:
-	void sendStateReq() const noexcept;
+	void sendStateReq() const;
 public:
 	TargetFrontendCardView(EnumSelector* parentCommandSelector, Device6991* devIF, FecIdType::Type const index, QWidget* parent = nullptr);
 	QLineEdit* dataLineEdit_ = new QLineEdit;
@@ -63,7 +63,7 @@ class RegisterController6991 : public QGroupBox {
 	Device6991* deviceIF_;
 	void createConnections() noexcept;
 private slots:
-	void handleRegisterReadResp(unsigned int const data) const noexcept;
+	void handleRegisterReadResp(unsigned int const data) const;
 signals:
 	void registerReadReq(unsigned int const address) const;
 	void registerWriteReq(unsigned int const address, unsigned int const data) const;

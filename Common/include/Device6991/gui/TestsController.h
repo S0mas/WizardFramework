@@ -99,7 +99,7 @@ class TestsController : public QGroupBox {
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
-	void updateTime() const noexcept;
+	void updateTime() const;
 signals:
 	void startTestReq(StartTestsRequest const& request) const;
 	void stopTestReq() const;

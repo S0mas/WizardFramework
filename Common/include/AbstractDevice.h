@@ -28,7 +28,7 @@ private slots:
 	/// @param 	status	The new value.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void setConnectionStatus(const bool status) noexcept;
+	void setConnectionStatus(const bool status);
 protected:
 	AbstractHardwareConnector* connector_;
 public:

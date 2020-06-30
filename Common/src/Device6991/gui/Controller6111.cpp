@@ -55,7 +55,7 @@ QWidget* Controller6111::createConfigureChannelsWidget() noexcept {
 
 	layout->addLayout(hlayout);
 
-	connect(comboBoxAction, QOverload<QString const&>::of(&QComboBox::currentIndexChanged),
+	connect(comboBoxAction, static_cast<void(QComboBox::*)(QString const&)>(&QComboBox::currentIndexChanged),
 		[comboBoxValue](QString const& action) {
 			comboBoxValue->clear();
 			if (action == "Set Enabled")
@@ -116,7 +116,7 @@ QDialog* Controller6111::createChannelsConfigurationDialog() noexcept {
 	return showChannelsConfigurationDialog;
 }
 
-void Controller6111::handleChannelConfiguration(ChannelsConfiguration const& configuration) noexcept {
+void Controller6111::handleChannelConfiguration(ChannelsConfiguration const& configuration) {
 	if (configuration.states_ && configuration.filters_ && configuration.gains_) {
 		for (int i = 0; i < configuration.states_->size(); ++i)
 			channelTable_->setState(i, configuration.states_->at(i));	

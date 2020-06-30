@@ -74,17 +74,17 @@ class Controller6991 : public QGroupBox {
 	UserActionRequestController* actionRequestController_ = new UserActionRequestController(this);
 	QTimer* autoRefreshTimer_ = new QTimer(this);
 private:
-	void createConnections() noexcept;
-	void initializeStateMachine() noexcept;
-	void addChannelConfigurationController() noexcept;
-	Configuration6991 model() const noexcept;
-	void showError(QString const&) noexcept;
-	void showInformationToConfirmFromDevice(QString const&, MyPromiseVoid*) noexcept;
-	uint32_t id() const noexcept;
+	void createConnections();
+	void initializeStateMachine();
+	void addChannelConfigurationController();
+	Configuration6991 model() const;
+	void showError(QString const&);
+	void showInformationToConfirmFromDevice(QString const&, MyPromiseVoid*);
+	uint32_t id() const;
 private slots:
-	void setModel(Configuration6991 const& model) noexcept;
-	void disableDataStreamCmbBox() const noexcept;
-	void enableDataStreamCmbBox() const noexcept;
+	void setModel(Configuration6991 const& model);
+	void disableDataStreamCmbBox() const;
+	void enableDataStreamCmbBox() const;
 signals:
 	void takeControlReq(int const id) const;
 	void releaseControlReq() const;
