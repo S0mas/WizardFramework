@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 #include <QDebug>
-#include "../../../../trunk/visa/include/visa.h"
+#include "visa.h"
 
 class HardwareConnector6991 : public AbstractHardwareConnector {
 	std::shared_ptr<AbstractDataResource> ipResource;

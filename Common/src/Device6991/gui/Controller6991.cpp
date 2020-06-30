@@ -1,6 +1,7 @@
 #include "../../../include/Device6991/gui/Controller6991.h"
 #include "../../../include/gui/ConnectController.h"
 #include "../../../include/gui/Controller6132.h"
+#include "../../../include/gui/Controller6111.h"
 #include <QThread>
 #include <QMetaObject>
 
@@ -87,7 +88,7 @@ void Controller6991::initializeStateMachine() noexcept {
 				scpiController_->setEnabled(false);
 				scpiController_->setLedIndicatorState(false);
 			}
-			placeHolderForController6132_->hide();
+			placeHolderForChannelConfigurationController_->hide();
 		}
 	);
 	connect(connected, &QState::entered,
@@ -105,9 +106,9 @@ void Controller6991::initializeStateMachine() noexcept {
 				scpiController_->setEnabled(true);
 				scpiController_->setLedIndicatorState(true);
 			}
-			addController6132IfNeeded();
-			if (controller6132_)
-				controller6132_->setEnabled(false);
+			addChannelConfigurationController();
+			if (channelConfigurationController_)
+				channelConfigurationController_->setEnabled(false);
 		}
 	);
 	connect(controller, &QState::entered,
@@ -117,8 +118,8 @@ void Controller6991::initializeStateMachine() noexcept {
 			startModeView_->setEnabled(true);
 			stopModeView_->setEnabled(true);
 			acqStartStopButton_->setEnabled(true);
-			if (controller6132_)
-				controller6132_->setEnabled(true);
+			if (channelConfigurationController_)
+				channelConfigurationController_->setEnabled(true);
 		}
 	);
 	connect(controller, &QState::exited,
@@ -127,33 +128,32 @@ void Controller6991::initializeStateMachine() noexcept {
 			startModeView_->setEnabled(false);
 			stopModeView_->setEnabled(false);
 			acqStartStopButton_->setEnabled(false);
-			if (controller6132_)
-				controller6132_->setEnabled(false);
+			if (channelConfigurationController_)
+				channelConfigurationController_->setEnabled(false);
 		}
 	);
 	sm_.setInitialState(disconnected);
 	sm_.start();
 }
 
-void Controller6991::addController6132IfNeeded() noexcept {
-	bool _6132AtFec1 = false;
-	bool _6132AtFec2 = false;
-	if (auto fecType = deviceIF_->readFecType(FecIdType::_1); fecType && *fecType == FecType::_6132)
-		_6132AtFec1 = true;
-	if (auto fecType = deviceIF_->readFecType(FecIdType::_2); fecType && *fecType == FecType::_6132)
-		_6132AtFec2 = true;
-	if (_6132AtFec1 || _6132AtFec2) {
-		auto newController6132 = new Controller6132(deviceIF_.get(), this);
-		if (placeHolderForController6132_->layout()->itemAt(0)) {
-			auto item = placeHolderForController6132_->layout()->replaceWidget(controller6132_, newController6132);
+void Controller6991::addChannelConfigurationController() noexcept {
+	auto fecType = deviceIF_->readFecType(FecIdType::_1);
+	QWidget* controller = nullptr;
+	if (fecType && *fecType == FecType::_6111)
+		controller = new Controller6111(deviceIF_.get(), this);
+	else if (fecType && *fecType == FecType::_6132)
+		controller = new Controller6132(deviceIF_.get(), this);
+	
+	if (controller) {	
+		if (placeHolderForChannelConfigurationController_->layout()->itemAt(0)) {
+			auto item = placeHolderForChannelConfigurationController_->layout()->replaceWidget(channelConfigurationController_, controller);
 			delete item->widget();
 			delete item;
 		}
 		else
-			placeHolderForController6132_->layout()->addWidget(newController6132);
-
-		placeHolderForController6132_->show();
-		controller6132_ = newController6132;
+			placeHolderForChannelConfigurationController_->layout()->addWidget(controller);
+		placeHolderForChannelConfigurationController_->show();
+		channelConfigurationController_ = controller;
 	}
 }
 
@@ -183,6 +183,14 @@ uint32_t Controller6991::id() const noexcept {
 	return idEdit_->value();
 }
 
+void Controller6991::disableDataStreamCmbBox() const noexcept {
+	dataStreamComboBox_->setDisabled(true);
+}
+
+void Controller6991::enableDataStreamCmbBox() const noexcept {
+	dataStreamComboBox_->setEnabled(true);
+}
+
 void Controller6991::setModel(Configuration6991 const& configuration) noexcept {
 	if (configuration.scanRate_)
 		scanRateView_->setModel(*configuration.scanRate_);
@@ -210,10 +218,10 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	deviceIF_->moveToThread(deviceThread_);
 	deviceThread_->start();
 
-	placeHolderForController6132_->hide();
+	placeHolderForChannelConfigurationController_->hide();
 	auto controller6132Layout = new QVBoxLayout;
 	controller6132Layout->setContentsMargins(0, 0, 0, 0);
-	placeHolderForController6132_->setLayout(controller6132Layout);
+	placeHolderForChannelConfigurationController_->setLayout(controller6132Layout);
 	comboBoxMode_->setMaximumWidth(100);
 	for (auto mode : ControlModeEnum::TYPES)
 		comboBoxMode_->addItem(ControlModeEnum::toString(mode), mode);
@@ -255,7 +263,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	vlayout->addLayout(hlayout);
 	vlayout->addWidget(startModeView_);
 	vlayout->addWidget(stopModeView_);
-	vlayout->addWidget(placeHolderForController6132_);
+	vlayout->addWidget(placeHolderForChannelConfigurationController_);
 	vlayout->addStretch(0);
 	vlayout->addWidget(dataStorageCheckBox_);
 	vlayout->addWidget(forwardDataCheckBox_);
