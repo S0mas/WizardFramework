@@ -112,7 +112,7 @@ std::optional<std::vector<bool>> Device6991::areChannelsEnabled(std::vector<uint
 }
 
 std::optional<std::vector<bool>> Device6991::areChannelsEnabled() noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:ENABled? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:ENABled?")); resp) {
 		auto list = resp->split(',');
 		std::vector<bool> states;
 		for (auto const& str : list)
@@ -168,7 +168,7 @@ std::optional<FilterType6132::Type> Device6991::filter(uint32_t const& channelsI
 }
 
 std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:FILTer? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:FILTer?")); resp) {
 		auto list = resp->split(',');
 		std::vector<FilterType6132::Type> filters;
 		for (auto const& str : list)
@@ -204,7 +204,7 @@ std::optional<GainType6132::Type> Device6991::gain(uint32_t const& channelsId) c
 }
 
 std::optional<std::vector<GainType6132::Type>> Device6991::gain() const noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:GAIN? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:GAIN?")); resp) {
 		auto list = resp->split(',');
 		std::vector<GainType6132::Type> gains;
 		for (auto const& str : list)
