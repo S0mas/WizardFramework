@@ -108,6 +108,7 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	std::optional<DeviceState> status() noexcept;
 	bool enableChannal(uint32_t const channelId, bool const state = true) noexcept;
 	bool enableChannals(std::vector<uint32_t> const& channelIds, bool const state = true) noexcept;
+	bool enableChannals(std::vector<bool> const& states) noexcept;
 	std::optional<bool> isChannelEnabled(uint32_t const channelId) noexcept;
 	std::optional<std::vector<bool>> areChannelsEnabled(std::vector<uint32_t> const& channelIds) noexcept;
 	std::optional<std::vector<bool>> areChannelsEnabled() noexcept;
@@ -116,11 +117,13 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	std::optional<AcquisitionStartModeEnum::Type> startMode() const noexcept;
 	bool setStartMode(AcquisitionStartModeEnum::Type const mode) const noexcept;
 	bool setFilter(FilterType6132::Type const filter, std::vector<uint32_t> const& channelsIds) const noexcept;
+	bool setFilters(std::vector<FilterType6132::Type> const& gains) const noexcept;
 	bool setFilter(FilterType6132::Type const gain, uint32_t const& channelId) const noexcept;
 	std::optional<std::vector<FilterType6132::Type>> filter(std::vector<uint32_t> const& channelsIds) const noexcept;
 	std::optional<FilterType6132::Type> filter(uint32_t const& channelsId) const noexcept;
 	std::optional<std::vector<FilterType6132::Type>> filter() const noexcept;
 	bool setGain(GainType6132::Type const gain, std::vector<uint32_t> const& channelsIds) const noexcept;
+	bool setGains(std::vector<GainType6132::Type> const& gains) const noexcept;
 	bool setGain(GainType6132::Type const gain, uint32_t const& channelId) const noexcept;
 	std::optional<std::vector<GainType6132::Type>> gain(std::vector<uint32_t> const& channelsIds) const noexcept;
 	std::optional<GainType6132::Type> gain(uint32_t const& channelsId) const noexcept;
@@ -147,6 +150,8 @@ class Device6991 : public ScpiDevice, public DeviceIdentityResourcesIF {
 	QString prepareDataFileHeader() noexcept;
 	QFile* createFileForDataCollection(QString const& name) noexcept;
 	void replaceAcqDataFile() noexcept;
+	bool is6111() noexcept;
+	bool is6132() noexcept;
 public:
 	Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent = nullptr) noexcept;
 	~Device6991() override = default;
@@ -211,6 +216,8 @@ public slots:
 	void handleChannelsConfigurationReq() noexcept;
 	void handleDeviceConfigurationReq() noexcept;
 	void handleIdChanged(uint32_t const id) noexcept;
+	void handleSaveChannelConfigurationToFileReq(QString const& fileName) noexcept;
+	void handleLoadChannelConfigurationFromFileReq(QString const& fileName) noexcept;
 signals:
 	void actualControllerKey(int const id) const;
 	void acquisitionStarted() const;

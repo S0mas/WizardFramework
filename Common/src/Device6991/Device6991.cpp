@@ -96,6 +96,19 @@ bool Device6991::enableChannals(std::vector<uint32_t> const& channelIds, bool co
 	return invokeCmd(QString("CONFigure:ENABled %1, %2").arg(state ? 1 : 0).arg(toChannelList(channelIds)));
 }
 
+bool Device6991::enableChannals(std::vector<bool> const& states) noexcept {
+	clearUserEvent();
+	setUserEvent();
+	std::vector<uint32_t> toEnable;
+	std::vector<uint32_t> toDisable;
+	for (int channelId = 1; channelId <= states.size(); ++channelId)
+		if (states[channelId - 1])
+			toEnable.push_back(channelId);
+		else
+			toDisable.push_back(channelId);
+	return enableChannals(toEnable) && enableChannals(toDisable, false);
+}
+
 std::optional<bool> Device6991::isChannelEnabled(uint32_t const channelId) noexcept {
 	return invokeQuery(QString("CONFigure%1:ENABled?").arg(channelId))->toUInt() == 1;
 }
@@ -112,7 +125,7 @@ std::optional<std::vector<bool>> Device6991::areChannelsEnabled(std::vector<uint
 }
 
 std::optional<std::vector<bool>> Device6991::areChannelsEnabled() noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:ENABled? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:ENABled?")); resp) {
 		auto list = resp->split(',');
 		std::vector<bool> states;
 		for (auto const& str : list)
@@ -146,6 +159,16 @@ bool Device6991::setFilter(FilterType6132::Type const filter, std::vector<uint32
 	return invokeCmd(QString("CONFigure:FILTer %1, %2").arg(FilterType6132::toString(filter)).arg(toChannelList(channelsIds)));
 }
 
+bool Device6991::setFilters(std::vector<FilterType6132::Type> const& filters) const noexcept {
+	std::map<FilterType6132::Type, std::vector<uint32_t>> sortedFilters;
+	for (int channelId = 1; channelId <= filters.size(); ++channelId)
+		sortedFilters[filters[channelId - 1]].push_back(channelId);
+	return (sortedFilters[FilterType6132::BYPASS].empty() || setFilter(FilterType6132::BYPASS, sortedFilters[FilterType6132::BYPASS]))
+		&& (sortedFilters[FilterType6132::_10Hz].empty() || setFilter(FilterType6132::_10Hz, sortedFilters[FilterType6132::_10Hz]))
+		&& (sortedFilters[FilterType6132::_100Hz].empty() || setFilter(FilterType6132::_100Hz, sortedFilters[FilterType6132::_100Hz]))
+		&& (sortedFilters[FilterType6132::_1000Hz].empty() || setFilter(FilterType6132::_1000Hz, sortedFilters[FilterType6132::_1000Hz]));
+}
+
 bool Device6991::setFilter(FilterType6132::Type const gain, uint32_t const& channelId) const noexcept {
 	return invokeCmd(QString("CONFigure%1:FILTer %2").arg(channelId).arg(FilterType6132::toString(gain)));
 }
@@ -168,7 +191,7 @@ std::optional<FilterType6132::Type> Device6991::filter(uint32_t const& channelsI
 }
 
 std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:FILTer? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:FILTer?")); resp) {
 		auto list = resp->split(',');
 		std::vector<FilterType6132::Type> filters;
 		for (auto const& str : list)
@@ -180,6 +203,16 @@ std::optional<std::vector<FilterType6132::Type>> Device6991::filter() const noex
 
 bool Device6991::setGain(GainType6132::Type const gain, std::vector<uint32_t> const& channelsIds) const noexcept {
 	return invokeCmd(QString("CONFigure:GAIN %1, %2").arg(GainType6132::toString(gain)).arg(toChannelList(channelsIds)));
+}
+
+bool Device6991::setGains(std::vector<GainType6132::Type> const& gains) const noexcept{
+	std::map<GainType6132::Type, std::vector<uint32_t>> sortedGains;
+	for (int channelId = 1; channelId <= gains.size(); ++channelId)
+		sortedGains[gains[channelId - 1]].push_back(channelId);
+	return (sortedGains[GainType6132::_1].empty() || setGain(GainType6132::_1, sortedGains[GainType6132::_1]))
+		&& (sortedGains[GainType6132::_2].empty() || setGain(GainType6132::_2, sortedGains[GainType6132::_2]))
+		&& (sortedGains[GainType6132::_4].empty() || setGain(GainType6132::_4, sortedGains[GainType6132::_4]))
+		&& (sortedGains[GainType6132::_8].empty() || setGain(GainType6132::_8, sortedGains[GainType6132::_8]));
 }
 
 bool Device6991::setGain(GainType6132::Type const gain, uint32_t const& channelId) const noexcept {
@@ -204,7 +237,7 @@ std::optional<GainType6132::Type> Device6991::gain(uint32_t const& channelsId) c
 }
 
 std::optional<std::vector<GainType6132::Type>> Device6991::gain() const noexcept {
-	if (auto resp = invokeQuery(QString("CONFigure:GAIN? 0")); resp) {
+	if (auto resp = invokeQuery(QString("CONFigure0:GAIN?")); resp) {
 		auto list = resp->split(',');
 		std::vector<GainType6132::Type> gains;
 		for (auto const& str : list)
@@ -358,6 +391,16 @@ void Device6991::replaceAcqDataFile() noexcept {
 		dataStream6111_.setChannelConfiguration(*channels);
 		dataStream6132_.setChannelConfiguration(*channels);
 	}
+}
+
+bool Device6991::is6111() noexcept {
+	auto fecType = readFecType(FecIdType::_1); //6991 should always have the same cards on both slots (and always 2 slots should be occupied)
+	return fecType ? *fecType == FecType::_6111 : false;
+}
+
+bool Device6991::is6132() noexcept {
+	auto fecType = readFecType(FecIdType::_1); //6991 should always have the same cards on both slots (and always 2 slots should be occupied)
+	return fecType ? *fecType == FecType::_6132 : false;
 }
 
 Device6991::Device6991(const QString& nameId, AbstractHardwareConnector* connector, ScpiIF* scpiIF, QObject* parent) noexcept : ScpiDevice(nameId, connector, scpiIF, parent), DeviceIdentityResourcesIF(nameId) {
@@ -631,18 +674,12 @@ void Device6991::handleReleaseControlReq() const noexcept {
 //temporary solution TODO create and mantain only one stream
 void Device6991::handleConnectDataStreamReq(int const dataStreamId) noexcept {
 	auto ipResource = inputResources().back();
-	auto type1 = readFecType(FecIdType::_1);
-	auto type2 = readFecType(FecIdType::_2);
-	if (type1 && *type1 == FecType::_6111)
+	if (is6111())
 		dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
-	else if (type1 && *type1 == FecType::_6132)
-		dataStream6132_.connect({ ipResource->load() }, 16100 + dataStreamId);
-	else if (type2 && *type2 == FecType::_6111)
-		dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
-	else if (type2 && *type2 == FecType::_6132)
+	else if (is6132())
 		dataStream6132_.connect({ ipResource->load() }, 16100 + dataStreamId);
 	else
-		reportError("Data stream connection is not supported if there is no frontend cards recognized!");
+		reportError("Data stream connection is not supported if frontend cards can not be recognized!");
 }
 
 //temporary solution TODO create and mantain only one stream
@@ -760,7 +797,7 @@ void Device6991::handleSetChannelsEnabledReq(bool const state, std::vector<uint3
 
 void Device6991::handleChannelsConfigurationReq() noexcept {
 	ChannelsConfiguration configuration;
-	if (auto const& [fc1, fc2] = std::pair{ readFecType(FecIdType::_1), readFecType(FecIdType::_2) }; (fc1 && *fc1 == FecType::_6132) || (fc2 && *fc2 == FecType::_6132)) {
+	if (is6132()) {
 		configuration.gains_ = gain();
 		configuration.filters_ = filter();
 	}
@@ -770,4 +807,77 @@ void Device6991::handleChannelsConfigurationReq() noexcept {
 
 void Device6991::handleIdChanged(uint32_t const id) noexcept {
 	controllerId_ = id;
+}
+
+void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName) noexcept {
+	QFile configurationFile(fileName);
+	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		reportError("The configuration file could not be opened.");
+		return;
+	}
+	configurationFile.resize(0);
+	QTextStream s(&configurationFile);
+	{
+		auto channelsStates = areChannelsEnabled();
+		if (!channelsStates) {
+			reportError("Faild to save channels configuration - can't read channels states from the device.");
+			return;
+		}
+
+		for (auto const& state : *channelsStates) {
+			QChar c = state ? '1' : '0';
+			s << c;
+		}
+		s << '\n';
+	}
+	if (is6132()) {
+		{
+			auto gains = gain();
+			if (!gains) {
+				reportError("Faild to save channels configuration - can't read gains from the device.");
+				return;
+			}
+			for (auto const& gain : *gains)
+				s << GainType6132::toString(gain);
+			s << '\n';
+		}
+		{
+			auto filters = filter();
+			if (!filters) {
+				reportError("Faild to save channels configuration - can't read filters from the device.");
+				return;
+			}
+			for (auto const& filter : *filters)
+				s << FilterType6132::toString(filter);
+		}
+	}
+}
+
+void Device6991::handleLoadChannelConfigurationFromFileReq(QString const& fileName) noexcept {
+	QFile configurationFile(fileName);
+	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		reportError("The configuration file could not be opened.");
+		return;
+	}
+	QTextStream s(&configurationFile);
+	QString enabledChannelsLine = s.readLine();	
+	std::vector<bool> channelsStates;
+	for (auto const& state : enabledChannelsLine)
+		channelsStates.push_back(state == '1');
+	auto status = enableChannals(channelsStates);
+	if (is6132()) {
+		QString gainsLine = s.readLine();
+		std::vector<GainType6132::Type> gains;
+		for (auto const& gain : gainsLine)
+			gains.push_back(GainType6132::fromString(gain));
+		status &= setGains(gains);
+
+		QString filtersLine = s.readLine();
+		std::vector<FilterType6132::Type> filters;
+		for (auto const& filter : filtersLine)
+			filters.push_back(FilterType6132::fromString(filter));
+		status &= setFilters(filters);
+	}
+	if (!status)
+		reportError("Loading channels configuration failed.");
 }

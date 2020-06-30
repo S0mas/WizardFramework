@@ -62,8 +62,8 @@ class Controller6991 : public QGroupBox {
 	QCheckBox* forwardDataCheckBox_ = new QCheckBox("Forward Data To Plotter");
 	QCheckBox* statusAutoRefreshCheckBox_ = new QCheckBox("Auto Status Refresh");
 	StatusView* statusView_ = new StatusView;
-	QWidget* placeHolderForController6132_ = new QWidget;
-	Controller6132* controller6132_;
+	QWidget* placeHolderForChannelConfigurationController_ = new QWidget;
+	QWidget* channelConfigurationController_ = nullptr;
 	RegisterControllerFrontend* resgisterControllerFrontend_ = nullptr;
 	RegisterController6991* resgisterController6991_ = nullptr;
 	TestsController* testController_ = nullptr;
@@ -76,19 +76,15 @@ class Controller6991 : public QGroupBox {
 private:
 	void createConnections() noexcept;
 	void initializeStateMachine() noexcept;
-	void addController6132IfNeeded() noexcept;
+	void addChannelConfigurationController() noexcept;
 	Configuration6991 model() const noexcept;
 	void showError(QString const&) noexcept;
 	void showInformationToConfirmFromDevice(QString const&, MyPromiseVoid*) noexcept;
 	uint32_t id() const noexcept;
 private slots:
 	void setModel(Configuration6991 const& model) noexcept;
-	void disableDataStreamCmbBox() const noexcept {
-		dataStreamComboBox_->setDisabled(true);
-	}
-	void enableDataStreamCmbBox() const noexcept {
-		dataStreamComboBox_->setEnabled(true);
-	}
+	void disableDataStreamCmbBox() const noexcept;
+	void enableDataStreamCmbBox() const noexcept;
 signals:
 	void takeControlReq(int const id) const;
 	void releaseControlReq() const;

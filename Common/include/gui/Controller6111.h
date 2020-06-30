@@ -7,32 +7,26 @@
 #include <QSortFilterProxyModel>
 #include <atomic>
 
-class Channel {
+class Channel6111 {
     uint32_t id_;
-    FilterType6132::Type filter_;
-    GainType6132::Type gain_;
     bool state_;
 public:
-    Channel(uint32_t const id, FilterType6132::Type const filter, GainType6132::Type const gain) noexcept :
-        id_{ id }, filter_{ filter }, gain_{ gain } {}
+    Channel6111(uint32_t const id) noexcept :
+        id_{ id }{}
     QString id() const noexcept { return QString::number(id_); }
     QString state() const noexcept { return state_ ? "Enabled" : "Disabled"; }
-    QString filter() const noexcept { return FilterType6132::toString(filter_); }
-    QString gain() const noexcept { return GainType6132::toString(gain_); }
     void setState(bool const state) noexcept { state_ = state; }
-    void setFilter(FilterType6132::Type const filter) noexcept { filter_ = filter; }  
-    void setGain(GainType6132::Type const gain) noexcept { gain_ = gain; }
 };
 
-class ChannelModel : public QAbstractTableModel {
-    QList<Channel> data_;
+class ChannelModel6111 : public QAbstractTableModel {
+    QList<Channel6111> data_;
 public:
-    ChannelModel(QObject* parent = {}) noexcept : QAbstractTableModel{ parent } {}
+    ChannelModel6111(QObject* parent = {}) noexcept : QAbstractTableModel{ parent } {}
     int rowCount(const QModelIndex&) const noexcept override {
         return data_.count();
     }
     int columnCount(const QModelIndex&) const noexcept override {
-        return 4;
+        return 2;
     }
     QVariant data(const QModelIndex& index, int role) const noexcept override {
         if (role != Qt::DisplayRole && role != Qt::EditRole)
@@ -43,10 +37,6 @@ public:
             return channel.id();
         case 1:
             return channel.state();
-        case 2:
-            return channel.filter();
-        case 3:
-            return channel.gain();
         default:
             return {};
         };
@@ -59,16 +49,12 @@ public:
             return "Id";
         case 1:
             return "State";
-        case 2:
-            return "Filter";
-        case 3:
-            return "Gain";
         default:
             return {};
         }
     }
 
-    void append(Channel const& channel) noexcept {
+    void append(Channel6111 const& channel) noexcept {
         beginInsertRows({}, data_.count(), data_.count());
         data_.append(channel);
         endInsertRows();
@@ -77,22 +63,14 @@ public:
     void setState(uint32_t const index, bool const state) noexcept {
         data_[index].setState(state);
     }
-
-    void setFilter(uint32_t const index, FilterType6132::Type const filter) noexcept {
-        data_[index].setFilter(filter);
-    }
-
-    void setGain(uint32_t const index, GainType6132::Type const gain) noexcept {
-        data_[index].setGain(gain);
-    }
 };
 
-class ChannelTableView : public QWidget {
-    ChannelModel model_;
+class ChannelTableView6111 : public QWidget {
+    ChannelModel6111 model_;
     uint32_t channelId = 1;
     QTableView* view = new QTableView(this);
 public:
-    ChannelTableView(QWidget* parent = nullptr) noexcept : QWidget(parent) {
+    ChannelTableView6111(QWidget* parent = nullptr) noexcept : QWidget(parent) {
         auto layout = new QVBoxLayout(this);
         layout->addWidget(view);
         view->setModel(&model_);
@@ -100,19 +78,11 @@ public:
     }
 
     void createNewRecord() noexcept {
-        model_.append({ channelId++, FilterType6132::INVALID, GainType6132::INVALID });
+        model_.append({ channelId++});
     }
 
     void setState(uint32_t const index, bool const state) noexcept {
         model_.setState(index, state);
-    }
-
-    void setFilter(uint32_t const index, FilterType6132::Type const filter) noexcept {
-        model_.setFilter(index, filter);
-    }
-
-    void setGain(uint32_t const index, GainType6132::Type const gain) noexcept {
-        model_.setGain(index, gain);
     }
 
     void update() noexcept {
@@ -120,10 +90,10 @@ public:
     }
 };
 
-class Controller6132 : public QGroupBox {
+class Controller6111: public QGroupBox {
 	Q_OBJECT
-    const static int CHANNELS_NO_6132 = 32; // 2 frontends cards * 16 channels each
-    ChannelTableView* channelTable_ = new ChannelTableView(this);
+    const static int CHANNELS_NO_6111 = 256; // 2 frontends cards * 128 channels each
+    ChannelTableView6111* channelTable_ = new ChannelTableView6111(this);
     QPushButton* channelConfigurationButton_ = new QPushButton("Configure Channels");
 	std::atomic<bool> fetched = false;
 	Device6991* devIF_ = nullptr;
@@ -132,8 +102,6 @@ class Controller6132 : public QGroupBox {
     QWidget* createConfigureChannelsWidget() noexcept;
     QDialog* createChannelsConfigurationDialog() noexcept;
 signals:
-	void setFiltersReq(FilterType6132::Type const filter, std::vector<uint32_t> const& channelIds) const;
-	void setGainsReq(GainType6132::Type const gain, std::vector<uint32_t> const& channelIds) const;
 	void setChannelsEnabledReq(bool const state, std::vector<uint32_t> const& channelIds) const;
 	void channelConfigurationReq() const;
     void saveConfigurationToFileReq(QString const& fileName);
@@ -141,5 +109,5 @@ signals:
 private slots:
 	void handleChannelConfiguration(ChannelsConfiguration const& configuration) noexcept;
 public:
-	Controller6132(Device6991* const devIF, QWidget* parent = nullptr);
+	Controller6111(Device6991* const devIF, QWidget* parent = nullptr);
 };

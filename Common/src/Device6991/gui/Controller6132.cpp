@@ -30,6 +30,8 @@ void Controller6132::createConnections() noexcept {
 	connect(this, &Controller6132::setGainsReq, devIF_, &Device6991::handleSetGainsReq);
 	connect(this, &Controller6132::setChannelsEnabledReq, devIF_, &Device6991::handleSetChannelsEnabledReq);
 	connect(this, &Controller6132::channelConfigurationReq, devIF_, &Device6991::handleChannelsConfigurationReq);
+	connect(this, &Controller6132::saveConfigurationToFileReq, devIF_, &Device6991::handleSaveChannelConfigurationToFileReq);
+	connect(this, &Controller6132::loadConfigurationFromFileReq, devIF_, &Device6991::handleLoadChannelConfigurationFromFileReq);
 	connect(devIF_, &Device6991::channelConfiguration, this, &Controller6132::handleChannelConfiguration);
 
 	auto showChannelsConfigurationDialog = createChannelsConfigurationDialog();
