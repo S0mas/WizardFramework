@@ -60,6 +60,7 @@ class Controller6991 : public QGroupBox {
 	QPushButton* startButton_ = new QPushButton("Start");
 	QCheckBox* dataStorageCheckBox_ = new QCheckBox("Data Storage");
 	QCheckBox* forwardDataCheckBox_ = new QCheckBox("Forward Data To Plotter");
+	QCheckBox* timestampsCheckBox_ = new QCheckBox("Enable Timestamps");
 	QCheckBox* statusAutoRefreshCheckBox_ = new QCheckBox("Auto Status Refresh");
 	StatusView* statusView_ = new StatusView;
 	QWidget* placeHolderForChannelConfigurationController_ = new QWidget;

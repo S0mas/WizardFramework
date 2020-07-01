@@ -76,6 +76,8 @@ void Controller6991::initializeStateMachine() {
 			acqStartStopButton_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setEnabled(false);
 			statusAutoRefreshCheckBox_->setChecked(false);
+			timestampsCheckBox_->setEnabled(false);
+			timestampsCheckBox_->setChecked(false);
 			// TODO REMOVE THIS AFTER REPLACE DATA STREAM TEMPORARY SOLUTION WITH ONE STREAM SOLUTION ALSO CONNECTING/DISCONNECTING STREAM WILL BE AVAILABLE WITHOUT ACTIVE CONNECTION WITH DEVICE
 			if (connectDisconnectButton_->text() == "Disconnect")
 				emit disconnectDataStreamReq(); 
@@ -118,6 +120,7 @@ void Controller6991::initializeStateMachine() {
 			startModeView_->setEnabled(true);
 			stopModeView_->setEnabled(true);
 			acqStartStopButton_->setEnabled(true);
+			timestampsCheckBox_->setEnabled(true);
 			if (channelConfigurationController_)
 				channelConfigurationController_->setEnabled(true);
 		}
@@ -163,10 +166,7 @@ Configuration6991 Controller6991::model() const {
 	config.startMode_ = startModeView_->model();
 	config.stopMode_ = stopModeView_->model(*config.scanRate_);
 	config.scansPerDirectReadPacket_ = scansPerPacketView_->value();
-	//TODO
-	//config.timestamps_ =
-	//config.scansPerDirectReadPacket_ = 
-	//config.fansMode_ =
+	config.timestamps_ = timestampsCheckBox_->isChecked();
 	return config;
 }
 
@@ -197,15 +197,7 @@ void Controller6991::setModel(Configuration6991 const& configuration) {
 	scansPerPacketView_->setValue(*configuration.scansPerDirectReadPacket_);
 	startModeView_->setModel(configuration.startMode_);
 	stopModeView_->setModel(configuration.stopMode_);
-	//TODO
-	//if (configuration.fansMode_)
-	//	//
-	//if (configuration.timestamps_)
-	//	//
-	//if (configuration.scansPerDirectReadPacket_)
-	//	//
-	//if (configuration.ptpTime_)
-	//	//
+	timestampsCheckBox_->setChecked(*configuration.timestamps_);
 }
 
 Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const dbgMode, QWidget* parent)
@@ -265,6 +257,7 @@ Controller6991::Controller6991(std::unique_ptr<Device6991>& devIF, bool const db
 	vlayout->addWidget(stopModeView_);
 	vlayout->addWidget(placeHolderForChannelConfigurationController_);
 	vlayout->addStretch(0);
+	vlayout->addWidget(timestampsCheckBox_);
 	vlayout->addWidget(dataStorageCheckBox_);
 	vlayout->addWidget(forwardDataCheckBox_);
 	vlayout->addWidget(statusAutoRefreshCheckBox_);
