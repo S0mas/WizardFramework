@@ -106,7 +106,7 @@ bool Device6991::enableChannals(std::vector<bool> const& states) noexcept {
 			toEnable.push_back(channelId);
 		else
 			toDisable.push_back(channelId);
-	return enableChannals(toEnable) && enableChannals(toDisable, false);
+	return (toEnable.empty() || enableChannals(toEnable)) && (toDisable.empty() || enableChannals(toDisable, false));
 }
 
 std::optional<bool> Device6991::isChannelEnabled(uint32_t const channelId) noexcept {
@@ -810,9 +810,9 @@ void Device6991::handleIdChanged(uint32_t const id) noexcept {
 }
 
 void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName) noexcept {
-	QFile configurationFile(fileName);
-	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		reportError("The configuration file could not be opened.");
+	QFile configurationFile(fileName+".txt");
+	if (!configurationFile.isOpen() && !configurationFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		reportError("The configuration file could not be created.");
 		return;
 	}
 	configurationFile.resize(0);
@@ -838,7 +838,7 @@ void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName
 				return;
 			}
 			for (auto const& gain : *gains)
-				s << GainType6132::toString(gain);
+				s << gain;
 			s << '\n';
 		}
 		{
@@ -846,16 +846,16 @@ void Device6991::handleSaveChannelConfigurationToFileReq(QString const& fileName
 			if (!filters) {
 				reportError("Faild to save channels configuration - can't read filters from the device.");
 				return;
-			}
+			}	
 			for (auto const& filter : *filters)
-				s << FilterType6132::toString(filter);
+				s << filter;
 		}
 	}
 }
 
 void Device6991::handleLoadChannelConfigurationFromFileReq(QString const& fileName) noexcept {
 	QFile configurationFile(fileName);
-	if (!configurationFile.isOpen() || !configurationFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	if (!configurationFile.isOpen() && !configurationFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		reportError("The configuration file could not be opened.");
 		return;
 	}
@@ -866,16 +866,16 @@ void Device6991::handleLoadChannelConfigurationFromFileReq(QString const& fileNa
 		channelsStates.push_back(state == '1');
 	auto status = enableChannals(channelsStates);
 	if (is6132()) {
-		QString gainsLine = s.readLine();
+		QString line = s.readLine();
 		std::vector<GainType6132::Type> gains;
-		for (auto const& gain : gainsLine)
-			gains.push_back(GainType6132::fromString(gain));
+		for (auto const& gain : line)
+			gains.push_back(static_cast<GainType6132::Type>(gain.unicode() - '0'));
 		status &= setGains(gains);
 
-		QString filtersLine = s.readLine();
+		line = s.readLine();
 		std::vector<FilterType6132::Type> filters;
-		for (auto const& filter : filtersLine)
-			filters.push_back(FilterType6132::fromString(filter));
+		for (auto const& filter : line)
+			filters.push_back(static_cast<FilterType6132::Type>(filter.unicode() - '0'));
 		status &= setFilters(filters);
 	}
 	if (!status)

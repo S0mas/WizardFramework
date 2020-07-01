@@ -9,6 +9,7 @@
 #include <QMessageBox>
 #include <QtSql>
 #include <QSqlTableModel>
+#include <QFileDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QCoreApplication>
@@ -97,12 +98,35 @@ QWidget* Controller6132::createConfigureChannelsWidget() noexcept {
 QDialog* Controller6132::createChannelsConfigurationDialog() noexcept {
 	QDialog* showChannelsConfigurationDialog = new QDialog(this, Qt::Sheet);
 	showChannelsConfigurationDialog->setModal(true);
-	auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-	connect(buttonBox, &QDialogButtonBox::accepted, showChannelsConfigurationDialog, &QDialog::accept);
+	auto buttonSave = new QPushButton("Save");
+	auto buttonLoad = new QPushButton("Load");
+	auto buttonOk = new QPushButton("Ok");
+	auto hlayout = new QHBoxLayout;
+	hlayout->addStretch();
+	hlayout->addWidget(buttonSave);
+	hlayout->addWidget(buttonLoad);
+	hlayout->addWidget(buttonOk);
+	connect(buttonSave, &QPushButton::clicked,
+		[this, showChannelsConfigurationDialog]() {
+			auto fileName = QInputDialog::getText(showChannelsConfigurationDialog, "Input file name", "File name:", QLineEdit::Normal, "channels configuration");
+			emit saveConfigurationToFileReq(fileName);
+		}
+	);
+	connect(buttonLoad, &QPushButton::clicked,
+		[this, showChannelsConfigurationDialog]() {
+			auto fileName = QFileDialog::getOpenFileName(this, tr("Open Configuration File"),
+				QDir::currentPath(),
+				tr("Text (*.txt)"));
+			emit loadConfigurationFromFileReq(fileName);
+			emit channelConfigurationReq();
+			channelTable_->update();
+		}
+	);
+	connect(buttonOk, &QPushButton::clicked, showChannelsConfigurationDialog, &QDialog::accept);
 	auto layout = new QVBoxLayout(showChannelsConfigurationDialog);
 	layout->addWidget(channelTable_);
 	layout->addWidget(createConfigureChannelsWidget());
-	layout->addWidget(buttonBox);
+	layout->addLayout(hlayout);
 
 	showChannelsConfigurationDialog->setLayout(layout);
 	showChannelsConfigurationDialog->setMinimumSize(465, 740);

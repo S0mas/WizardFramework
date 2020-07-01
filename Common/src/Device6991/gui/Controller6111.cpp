@@ -85,7 +85,7 @@ QDialog* Controller6111::createChannelsConfigurationDialog() noexcept {
 	auto buttonSave = new QPushButton("Save");
 	auto buttonLoad = new QPushButton("Load");
 	auto buttonOk = new QPushButton("Ok");
-	auto hlayout = new QHBoxLayout(this);
+	auto hlayout = new QHBoxLayout;
 	hlayout->addStretch();
 	hlayout->addWidget(buttonSave);
 	hlayout->addWidget(buttonLoad);
@@ -102,6 +102,8 @@ QDialog* Controller6111::createChannelsConfigurationDialog() noexcept {
 				QDir::currentPath(),
 				tr("Text (*.txt)"));
 			emit loadConfigurationFromFileReq(fileName);
+			emit channelConfigurationReq();
+			channelTable_->update();
 		}
 	);
 	connect(buttonOk, &QPushButton::clicked, showChannelsConfigurationDialog, &QDialog::accept);
