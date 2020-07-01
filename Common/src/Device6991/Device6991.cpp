@@ -677,7 +677,6 @@ void Device6991::handleConnectDataStreamReq(int const dataStreamId) {
 	if (is6111())
 		dataStream6111_.connect({ ipResource->load() }, 16100 + dataStreamId);
 	else if (is6132())
-	else if (is6132())
 		dataStream6132_.connect({ ipResource->load() }, 16100 + dataStreamId);
 	else
 		reportError("Data stream connection is not supported if frontend cards can not be recognized!");
