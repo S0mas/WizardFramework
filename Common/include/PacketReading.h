@@ -18,12 +18,8 @@ class PacketReading : public ReadingStrategy {
 		if (auto bytes = dataStream_.device()->bytesAvailable(); bytes < header_.dataSize_)
 			qDebug() << QString("Waiting for full packet data... have %1 bytes, expected data size: %2").arg(bytes).arg(header_.dataSize_);
 		else {
-			dataStream_.startTransaction();
 			dataStream_ >> packet_.data_;
-			if (!dataStream_.commitTransaction())
-				qDebug() << "Reading packet data from socket error.";
-			else
-				transaction_.dataReaded_ = true;
+			transaction_.dataReaded_ = true;
 		}
 	}
 
@@ -31,13 +27,9 @@ class PacketReading : public ReadingStrategy {
 		if (auto bytes = dataStream_.device()->bytesAvailable(); bytes < sizeof(HeaderType))
 			qDebug() << QString("Waiting for full packet header... have %1 bytes, expected header size: %2").arg(bytes).arg(sizeof(HeaderType));
 		else {
-			dataStream_.startTransaction();	
 			dataStream_ >> header_;
 			packet_ = SignalPacket<ScanType>(header_);
-			if (!dataStream_.commitTransaction())
-				qDebug() << "Reading packet header from socket error.";
-			else
-				transaction_.headerReaded_ = true;
+			transaction_.headerReaded_ = true;
 		}
 	}
 public:

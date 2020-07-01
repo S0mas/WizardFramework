@@ -3,7 +3,7 @@
 #include <QHBoxLayout>
 
 void ScanRateView::createConnections() noexcept {
-	connect(unitComboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	connect(unitComboBox_, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
 		[this]() {
 			if (unitComboBox_->currentData().toInt() == static_cast<int>(ScanRateUnitsEnum::HZ)) {
 				valueSpinBox_->setSingleStep(HZ_STEP);

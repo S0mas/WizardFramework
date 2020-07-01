@@ -63,10 +63,8 @@ class DataStream {
 			}
 			signalPacketHeader.deviceAddress_ = client_->peerAddress();
 			stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-			stream.startTransaction();
 			stream << signalPacketHeader;
 			stream << data;
-			stream.commitTransaction();
 		}
 	}
 

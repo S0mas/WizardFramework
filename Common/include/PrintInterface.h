@@ -54,7 +54,7 @@ public:
 	/// @date	03.02.2020
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void printingProcess() const noexcept {
+	void printingProcess() const {
 		while (!QThread::currentThread()->isInterruptionRequested()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			if (!logs.isEmpty()) {
@@ -76,7 +76,7 @@ public slots:
 	/// @param 	msg	The message.
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void addLog(const QString& msg) const noexcept {
+	void addLog(const QString& msg) const {
 		logs += msg + "\n";
 	}
 signals:

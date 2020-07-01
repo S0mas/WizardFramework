@@ -1,7 +1,7 @@
 #pragma once
 #include "../include/AbstractDevice.h"
 
-void AbstractDevice::setConnectionStatus(const bool status) noexcept {
+void AbstractDevice::setConnectionStatus(const bool status) {
 	if (connected_ != status) {
 		connected_ = status;
 		emit connectionStatusChanged(nameId_, connected_);

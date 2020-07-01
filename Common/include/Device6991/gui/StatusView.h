@@ -18,5 +18,5 @@ class StatusView : public QGroupBox {
 public:
 	StatusView(QWidget* parent = nullptr);
 public slots:
-	void update(DeviceState const& status) noexcept;
+	void update(DeviceState const& status);
 };

@@ -107,7 +107,7 @@ signals:
     void saveConfigurationToFileReq(QString const& fileName);
     void loadConfigurationFromFileReq(QString const& fileName);
 private slots:
-	void handleChannelConfiguration(ChannelsConfiguration const& configuration) noexcept;
+	void handleChannelConfiguration(ChannelsConfiguration const& configuration);
 public:
 	Controller6111(Device6991* const devIF, QWidget* parent = nullptr);
 };

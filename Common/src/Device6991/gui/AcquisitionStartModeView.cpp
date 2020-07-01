@@ -6,7 +6,7 @@
 
 void AcquisitionStartModeView::createConnections() noexcept {
 	connect(nowButton_, &QPushButton::clicked, [this]() { startDateTime_->setDateTime(QDateTime::currentDateTime()); });
-	connect(modeComboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	connect(modeComboBox_, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
 		[this]() {
 			if (modeComboBox_->currentData().toInt() == AcquisitionStartModeEnum::IMMEDIATE) {
 				startDateTime_->setEnabled(false);
@@ -47,7 +47,7 @@ AcquisitionStartModeModel AcquisitionStartModeView::model() const noexcept {
 	AcquisitionStartModeModel values;
 	values.mode_ = static_cast<AcquisitionStartModeEnum::Type>(modeComboBox_->currentData().toInt());
 	if (values.mode_ == AcquisitionStartModeEnum::PTP_ALARM)
-		values.ptpAlarm_ = { static_cast<int>(startDateTime_->dateTime().toSecsSinceEpoch()), 0 };
+		values.ptpAlarm_ = { static_cast<int>(startDateTime_->dateTime().toMSecsSinceEpoch()/1000), 0 };
 	return values;
 }
 
@@ -56,7 +56,7 @@ void AcquisitionStartModeView::setModel(AcquisitionStartModeModel const& model) 
 		modeComboBox_->setCurrentIndex(*model.mode_);
 	if (model.ptpAlarm_) {
 		QDateTime dateTime;
-		dateTime.setSecsSinceEpoch((*model.ptpAlarm_).seconds_);
+		dateTime.setMSecsSinceEpoch((*model.ptpAlarm_).seconds_*1000);
 		startDateTime_->setDateTime(dateTime);
 	}
 }

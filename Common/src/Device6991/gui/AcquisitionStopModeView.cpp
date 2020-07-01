@@ -5,7 +5,7 @@
 #include<QVBoxLayout>
 
 void AcquisitionStopModeView::createConnections() noexcept {
-	connect(modeComboBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+	connect(modeComboBox_, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
 		[this](int const index) {
 			if (modeComboBox_->currentData().toInt() == AcquisitionStopModeEnum::SCANS_TRESHOLD) {
 				numberOfScansSpinBox_->setEnabled(true);
