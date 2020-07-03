@@ -8,23 +8,27 @@ Device6716::Device6716(const QString& nameId, QObject* parent) noexcept : ScpiDe
 }
 
 bool Device6716::writeFPGAreg(const unsigned char address, const unsigned char data) const {
-	scpiCmd(QString("BINT:MAIN:FPGA #h%1, #h%2").arg(QString::number(address, 16), QString::number(data, 16)));
-	return true;
+	return invokeCmd(QString("BINT:MAIN:FPGA #h%1, #h%2").arg(QString::number(address, 16), QString::number(data, 16)));
 }
 
 unsigned char Device6716::readFPGAreg(const unsigned char address) const {
-	scpiCmd(QString("BINT:MAIN:FPGA? #h%1").arg(QString::number(address, 16)));
-	return readResponse().toUInt(nullptr, 16);
+	auto resp = invokeQuery(QString("BINT:MAIN:FPGA? #h%1").arg(QString::number(address, 16)));
+	if(resp)
+		return resp->toUInt(nullptr, 16);
+	emit reportError("Couldnt read register! 0xFF returned");
+	return 0xFF;
 }
 
 bool Device6716::writePortExpander(const int channelIndex, const unsigned short data) const {
-	scpiCmd(QString("input%1:smax7318aug #h%2").arg(QString::number(channelIndex), QString::number(data, 16)));
-	return true;
+	return invokeCmd(QString("input%1:smax7318aug #h%2").arg(QString::number(channelIndex), QString::number(data, 16)));
 }
 
 unsigned short Device6716::readPortExpander(const int channelIndex) const {
-	scpiCmd(QString("input%1:smax7318aug?").arg(QString::number(channelIndex)));
-	return readResponse().toUInt(nullptr, 16);
+	auto resp = invokeQuery(QString("input%1:smax7318aug?").arg(QString::number(channelIndex)));
+	if (resp)
+		return resp->toUInt(nullptr, 16);
+	emit reportError("Couldnt read register! 0xFFFF returned");
+	return 0xFFFF;
 }
 
 bool Device6716::writeTeds2(const unsigned char data) const {
@@ -94,32 +98,41 @@ ViStatus Device6716::oneWireCommander(unsigned short* cmds) const {
 }
 
 void Device6716::writeI2cNoAddress(const unsigned char i2c_address, const unsigned char data) const {
-	scpiCmd(QString("BINT:MAIN:ICNA #h%1, #h%2").arg(QString::number(i2c_address, 16), QString::number(data, 16)));
+	invokeCmd(QString("BINT:MAIN:ICNA #h%1, #h%2").arg(QString::number(i2c_address, 16), QString::number(data, 16)));
 }
 
 unsigned char Device6716::readI2cNoAddress(const unsigned char i2c_address) const {
-	scpiCmd(QString("BINT:MAIN:ICNA? #h%1").arg(i2c_address));
-	return readResponse().toUInt(nullptr, 16);
+	auto i2c = invokeQuery(QString("BINT:MAIN:ICNA? #h%1").arg(i2c_address));
+	if (i2c)
+		return i2c->toUInt(nullptr, 16);
+	emit reportError("Couldnt read I2C, 0xFF returned.");
+	return 0xFF;
 }
 
 void Device6716::writeI2c(const unsigned char i2c_address, const unsigned char address, const unsigned char data) const {
-	scpiCmd(QString("BINT:MAIN:IC #h%1, #h%2, #h%3").arg(QString::number(i2c_address, 16), QString::number(address, 16), QString::number(data, 16)));
+	invokeCmd(QString("BINT:MAIN:IC #h%1, #h%2, #h%3").arg(QString::number(i2c_address, 16), QString::number(address, 16), QString::number(data, 16)));
 }
 
 unsigned char Device6716::readI2c(const unsigned char i2c_address, const unsigned char address) const {
-	scpiCmd(QString("BINT:MAIN:ICNA? #h%1, #h%2").arg(QString::number(i2c_address, 16), QString::number(address, 16)));
-	return readResponse().toUInt(nullptr, 16);
+	auto i2c = invokeQuery(QString("BINT:MAIN:ICNA? #h%1, #h%2").arg(QString::number(i2c_address, 16), QString::number(address, 16)));
+	if (i2c)
+		return i2c->toUInt(nullptr, 16);
+	emit reportError("Couldnt read I2C, 0xFF returned.");
+	return 0xFF;
 }
 
 unsigned char Device6716::readDSR() const {
-	scpiCmd("*DSR?\n");
-	return readResponse().toUInt();
+	auto dsr = invokeQuery(QString("*DSR?"));
+	if(dsr)
+		return dsr->toUInt(nullptr, 16);
+	emit reportError("Couldnt read DSR, 0xFF returned.");
+	return 0xFF;
 }
 
 void Device6716::setAutoDAC(const double voltage, const short select) const {
 	for (auto& channel : channels())
 		if (channel.enabled())
-			select == AUTO_DAC_POSITIVE ? scpiCmd(QString("input%1:autodac:positive %2").arg(QString::number(channel.index()), QString::number(voltage, 'f', 2))) : scpiCmd(QString("input%1:autodac:negative %2").arg(QString::number(channel.index()), QString::number(voltage, 'f', 2)));
+			select == AUTO_DAC_POSITIVE ? invokeCmd(QString("input%1:autodac:positive %2").arg(QString::number(channel.index()), QString::number(voltage, 'f', 2))) : invokeCmd(QString("input%1:autodac:negative %2").arg(QString::number(channel.index()), QString::number(voltage, 'f', 2)));
 	bu3100_sleep(50);
 }
 
@@ -137,8 +150,24 @@ std::vector<double> Device6716::getAutoDAC(short select) const {
 	std::vector<double> voltages;
 	for (auto& channel : channels()) {
 		if (channel.enabled()) {
-			select == AUTO_DAC_POSITIVE ? scpiCmd(QString("input%1:autodac:positive?\n").arg(channel.index())) : scpiCmd(QString("input%1:autodac:negative?\n").arg(channel.index()));
-			voltages.push_back(readResponse().toUInt());
+			if (select == AUTO_DAC_POSITIVE) {
+				auto resp = invokeQuery(QString("input%1:autodac:positive?").arg(channel.index()));
+				if (resp)
+					voltages.push_back(resp->toUInt());
+				else {
+					voltages.push_back(0);
+					emit reportError(QString("Couldnt read voltage for channel! 0 returned").arg(channel.index()));
+				}
+			}
+			else {
+				auto resp = invokeQuery(QString("input%1:autodac:negative?").arg(channel.index()));
+				if (resp)
+					voltages.push_back(resp->toUInt());
+				else {
+					voltages.push_back(0);
+					emit reportError(QString("Couldnt read voltage for channel! 0 returned").arg(channel.index()));
+				}
+			}
 		}
 	}
 	return voltages;
@@ -163,15 +192,15 @@ bool Device6716::isSegment1(const int channelIndex) const noexcept {
 }
 
 void Device6716::saveSubtype(const QString& str) const {
-	scpiCmd(QString("BINT:MAIN:EEPROM:SUBTYPE '%1'\0").arg(str));
+	invokeCmd(QString("BINT:MAIN:EEPROM:SUBTYPE '%1'\0").arg(str));
 }
 
 void Device6716::saveSerialnumber(const QString& str) const {
-	scpiCmd(QString("BINT:MAIN:EEPROM:SERIAL #h%1\0").arg(str));
+	invokeCmd(QString("BINT:MAIN:EEPROM:SERIAL #h%1\0").arg(str));
 }
 
 void Device6716::saveFirmwareRevision(const QString& str) const {
-	scpiCmd(QString("BINT:MAIN:EEPROM:PREVISION #h%1\0").arg(str));
+	invokeCmd(QString("BINT:MAIN:EEPROM:PREVISION #h%1\0").arg(str));
 }
 
 void Device6716::saveDriverRevision(const QString& str) const {
@@ -179,26 +208,29 @@ void Device6716::saveDriverRevision(const QString& str) const {
 }
 
 QString Device6716::loadSubtype() const {
-	scpiCmd("*IDN?\0");
-	auto const& list = readResponse().split(',', QString::SplitBehavior::SkipEmptyParts);
-	if (list.size() == 4)
-		return list[1].right(2);
+	if (auto resp = invokeQuery("*IDN?\0"); resp) {
+		auto const& list = resp->split(',', QString::SplitBehavior::SkipEmptyParts);
+		if (list.size() == 4)
+			return list[1].right(2);
+	}
 	return "ER";
 }
 
 QString Device6716::loadSerialnumber() const {
-	scpiCmd("*IDN?\0");
-	auto const& list = readResponse().split(',', QString::SplitBehavior::SkipEmptyParts);
-	if (list.size() == 4)
-		return list[2];
+	if (auto resp = invokeQuery("*IDN?\0"); resp) {
+		auto const& list = resp->split(',', QString::SplitBehavior::SkipEmptyParts);
+		if (list.size() == 4)
+			return list[2];
+	}
 	return "error";
 }
 
 QString Device6716::loadFirmwareRevision() const {
-	scpiCmd("*IDN?\0");
-	auto const& list = readResponse().split(',', QString::SplitBehavior::SkipEmptyParts);
-	if (list.size() == 4)
-		return list[3];
+	if (auto resp = invokeQuery("*IDN?\0"); resp) {
+		auto const& list = resp->split(',', QString::SplitBehavior::SkipEmptyParts);
+		if (list.size() == 4)
+			return list[3];
+	}
 	return "error";
 }
 
